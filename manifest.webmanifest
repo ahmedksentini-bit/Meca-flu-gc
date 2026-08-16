@@ -1,0 +1,12 @@
+{
+  "name":"MécaFlu GC — Exercices interactifs",
+  "short_name":"MécaFlu GC",
+  "description":"Apprentissage de la mécanique des fluides pour le génie civil",
+  "lang":"fr",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "background_color":"#f3f8fb",
+  "theme_color":"#075985",
+  "icons":[{"src":"assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
