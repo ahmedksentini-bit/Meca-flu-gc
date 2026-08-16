@@ -85,7 +85,7 @@ function moodyChart(d) {
     const hot = er === nearest;
     const fEnd = colebrookF(1e8, er);
     const labelY = inPlot(1e8, fEnd) ? Y(fEnd) : Y(Math.min(Math.max(fEnd, 0.008), 0.1));
-    return `${path} stroke="${hot ? "#0f766e" : "#94a3b8"}" stroke-width="${hot ? 2.2 : 1}" ${hot ? "" : 'opacity="0.85"'}/>${t(R + 4, labelY + 3, fmtEr(er), `font-size="9px" fill="${hot ? "#0f766e" : "#64748b"}`)}`;
+    return `${path} stroke="${hot ? "#b91c1c" : "#0f172a"}" stroke-width="${hot ? 2.6 : 1.5}"/>${t(R + 4, labelY + 3, fmtEr(er), `font-size="9px" fill="${hot ? "#b91c1c" : "#334155"}"`)}`;
   }).join("");
   const laminar = sample(500, 2300, 16, re => 64 / re);
   const dashPts = [];
