@@ -1,0 +1,304 @@
+const esc = value => String(value ?? "").replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c]));
+const num = (value, digits = 3) => Number.isFinite(+value) ? Number(value).toLocaleString("fr-FR", { maximumSignificantDigits: digits }) : "—";
+
+function svg(label, body) {
+  return `<svg viewBox="0 0 560 250" role="img" aria-label="${esc(label)}"><defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v6" stroke="#94a3b8" stroke-width="1"/></pattern>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0l8 4-8 4z" fill="#0f172a"/></marker>
+    <marker id="arb" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0l8 4-8 4z" fill="#0369a1"/></marker>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0l8 4-8 4z" fill="#b91c1c"/></marker>
+    <style>text{font-family:Inter,system-ui,sans-serif;font-size:12.5px;font-weight:700;fill:#0f172a}</style>
+  </defs>${body}</svg>`;
+}
+
+const t = (x, y, text, extra = "") => `<text x="${x}" y="${y}" ${extra}>${text}</text>`;
+const line = (x1, y1, x2, y2, color = "#0f172a", width = 1.6, extra = "") =>
+  `<path d="M${x1} ${y1}L${x2} ${y2}" fill="none" stroke="${color}" stroke-width="${width}" ${extra}/>`;
+const hatch = (x, y, w, h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#hatch)" stroke="#334155" stroke-width="1.4"/>`;
+const water = (d, extra = "") => `<path d="${d}" fill="#bae6fd" stroke="#0284c7" stroke-width="1.6" ${extra}/>`;
+const oil = d => `<path d="${d}" fill="#fde68a" stroke="#b45309" stroke-width="1.4"/>`;
+const flow = d => `<path class="flow-animate" d="${d}" fill="none" stroke="#0284c7" stroke-width="3.2" stroke-dasharray="12 8" marker-end="url(#arb)"/>`;
+
+function dimV(x, y1, y2, label, side = 1) {
+  const mid = (y1 + y2) / 2, s = side >= 0 ? 1 : -1;
+  return `${line(x, y1, x, y2, "#b91c1c", 1.3)}${line(x - 5, y1, x + 5, y1, "#b91c1c", 1.3)}${line(x - 5, y2, x + 5, y2, "#b91c1c", 1.3)}${t(x + s * 8, mid + 4, label, `fill="#b91c1c" ${s < 0 ? 'text-anchor="end"' : ""}`)}`;
+}
+function dimH(y, x1, x2, label, side = -1) {
+  const mid = (x1 + x2) / 2;
+  return `${line(x1, y, x2, y, "#b91c1c", 1.3)}${line(x1, y - 5, x1, y + 5, "#b91c1c", 1.3)}${line(x2, y - 5, x2, y + 5, "#b91c1c", 1.3)}${t(mid, y + (side < 0 ? -6 : 16), label, 'text-anchor="middle" fill="#b91c1c"')}`;
+}
+
+const figures = {
+  viscosity(d) {
+    const arrows = [0, 1, 2, 3, 4].map(i => {
+      const y = 168 - i * 18, len = 18 + i * 28;
+      return `${line(70, y, 70 + len, y, "#0369a1", 2, 'marker-end="url(#arb)"')}`;
+    }).join("");
+    return {
+      caption: "Écoulement de Couette : le fluide adhère aux deux plaques. Le profil de vitesse est linéaire, donc τ = μU/e.",
+      svg: svg("Couette plan", `${hatch(40, 36, 360, 16)}${water("M40 52h360v120H40z")}${hatch(40, 172, 360, 16)}${arrows}${line(70, 168, 182, 96, "#0369a1", 1.4, 'stroke-dasharray="4 3"')}${line(80, 28, 250, 28, "#b91c1c", 2.2, 'marker-end="url(#arr)"')}${t(255, 24, `U = ${num(d.U)} m/s`, 'fill="#b91c1c"')}${t(255, 44, `F = ${num(d.F)} N`, 'fill="#b91c1c"')}${dimV(420, 52, 172, `e = ${num(d.e)} mm`)}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `A = ${num(d.A)} m²`)}`)
+    };
+  },
+
+  density(d) {
+    return {
+      caption: "Le poids W est une force verticale. On en déduit m = W/g, puis ρ = m/𝒱.",
+      svg: svg("Réservoir d’huile", `${hatch(150, 200, 220, 18)}${oil("M168 58h184v142H168z")}${line(168, 58, 352, 58, "#b45309", 3)}${t(200, 48, `huile · 𝒱 = ${num(d.volume)} m³`)}${line(260, 88, 260, 168, "#b91c1c", 2.2, 'marker-end="url(#arr)"')}${t(272, 132, `W = ${num(d.W)} kN`, 'fill="#b91c1c"')}${t(175, 188, "réservoir")}`)
+    };
+  },
+
+  compressibility(d) {
+    return {
+      caption: "Piston-cylindre fermé : la masse d’eau se conserve, seul le volume diminue quand p augmente.",
+      svg: svg("Compression d’un volume d’eau", `${hatch(70, 70, 28, 110)}<rect x="98" y="78" width="250" height="94" fill="#bae6fd" stroke="#0369a1" stroke-width="3"/>${hatch(348, 70, 22, 110)}${line(30, 125, 70, 125, "#b91c1c", 3, 'marker-end="url(#arr)"')}${t(28, 60, `p₁ = ${num(d.p1)} bar → p₂ = ${num(d.p2)} bar`)}${t(150, 130, `𝒱₁ = ${num(d.volume)} m³`)}${t(145, 155, `K = ${num(d.K)} GPa`)}${t(120, 220, "eau — compression isotherme")}`)
+    };
+  },
+
+  coaxialViscometer(d) {
+    return {
+      caption: "Coupe : le cylindre intérieur tourne, l’extérieur est fixe. L’entrefer mince e = Rₑ − Rᵢ est un Couette enroulé.",
+      svg: svg("Viscosimètre coaxial", `<rect x="120" y="36" width="88" height="168" fill="#e2e8f0" stroke="#334155" stroke-width="7"/><rect x="142" y="52" width="44" height="136" fill="#bae6fd" stroke="#075985" stroke-width="5"/>${t(250, 58, `N = ${num(d.rpm)} tr/min`)}${t(250, 86, `Rᵢ = ${num(d.ri)} mm`)}${t(250, 114, `Rₑ = ${num(d.ro)} mm`)}${t(250, 142, `L = ${num(d.L)} mm`)}${t(250, 170, `C = ${num(d.torque)} N·m`)}${line(210, 70, 248, 48, "#b91c1c", 1.8, 'marker-end="url(#arr)"')}${t(130, 228, "fixe")} ${t(155, 28, "ω")}`)
+    };
+  },
+
+  capillary(d) {
+    return {
+      caption: "Loi de Jurin : la composante verticale de σ équilibre le poids de la colonne. Un liquide mouillant (θ < 90°) monte.",
+      svg: svg("Ascension capillaire", `${water("M40 150h200v60H40z")}${hatch(40, 210, 200, 14)}<path d="M128 28v182" fill="none" stroke="#334155" stroke-width="14"/><path d="M137 208V78q0-16 11-16t11 16v130" fill="#7dd3fc" stroke="#0284c7" stroke-width="1"/>${dimV(175, 78, 150, `h`)}${t(250, 80, `d = ${num(d.d)} mm`)}${t(250, 108, `θ = ${num(d.theta)}°`)}${t(250, 136, `σ = ${num(d.sigma)} N/m`)}${t(48, 142, "surface libre")}`)
+    };
+  },
+
+  laplace(d) {
+    const bubble = +d.factor === 4;
+    return {
+      caption: bubble ? "Bulle de savon : deux interfaces, Δp = 4σ/R." : "Goutte : une seule interface, Δp = 2σ/R. Plus R est petit, plus la surpression est grande.",
+      svg: svg(bubble ? "Bulle de savon" : "Goutte", `<circle cx="200" cy="120" r="62" fill="#e0f2fe" stroke="#0284c7" stroke-width="3"/>${bubble ? '<circle cx="200" cy="120" r="52" fill="none" stroke="#7dd3fc" stroke-width="2"/>' : ""}${line(200, 120, 262, 120, "#b91c1c", 1.5)}${t(208, 112, `R = ${num(d.radius)} µm`, 'fill="#b91c1c"')}${t(330, 90, "p + Δp")}${t(330, 120, bubble ? "2 interfaces" : "1 interface")}${t(330, 150, `Δp = ${d.factor}σ/R`)}`)
+    };
+  },
+
+  idealGas(d) {
+    return {
+      caption: "Gaz parfait : la masse volumique se déduit de p et T absolues, ρ = p/(RT). Pas besoin de « voir » les molécules.",
+      svg: svg("Récipient de gaz", `<rect x="90" y="50" width="200" height="130" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="3.5"/><circle cx="290" cy="70" r="18" fill="#fff" stroke="#b91c1c" stroke-width="2"/>${t(282, 75, "p", 'fill="#b91c1c"')}<rect x="168" y="36" width="44" height="18" fill="#fff" stroke="#0369a1" stroke-width="2"/>${t(176, 50, "T")}${t(330, 90, `T = ${num(d.temp)} °C`)}${t(330, 120, `p = ${num(d.pressure)} bar`)}${t(330, 150, `R = ${num(d.R)} J/(kg·K)`)}${t(120, 210, "air — équation d’état")}`)
+    };
+  },
+
+  pressureDepth(d) {
+    return {
+      caption: "Hydrostatique : en descendant de h, la pression relative augmente de ρgh. L’absolue ajoute pₐₜₘ.",
+      svg: svg("Plongeur en profondeur", `${water("M40 48h360v150H40z")}${line(40, 48, 400, 48, "#0369a1", 3)}${t(48, 38, "surface libre · pₐₜₘ")}<circle cx="230" cy="168" r="13" fill="#ea580c"/>${dimV(250, 48, 168, `h = ${num(d.h)} m`)}${t(270, 175, "plongeur · p")}${t(420, 80, `ρ = ${num(d.rho)} kg/m³`)}`)
+    };
+  },
+
+  layeredPressure(d) {
+    const oilH = 46, waterH = Math.max(50, 46 * ((+d.hWater || 3) / (+d.hOil || 2)));
+    const yOil = 48, yWater = yOil + oilH;
+    return {
+      caption: "Deux fluides non miscibles : on ajoute ρgh couche par couche. La pression est continue à l’interface.",
+      svg: svg("Réservoir à deux couches", `${hatch(118, 28, 14, 190)}<path d="M132 28v190h230" fill="none" stroke="#334155" stroke-width="6"/>${oil(`M132 ${yOil}h230v${oilH}H132z`)}${water(`M132 ${yWater}h230v${waterH}H132z`)}${dimV(380, yOil, yWater, `huile ${num(d.hOil)} m`)}${dimV(380, yWater, yWater + waterH, `eau ${num(d.hWater)} m`)}${t(150, yOil + 28, "interface · pᵢ")}${t(150, yWater + waterH - 10, "fond · p_f")}`)
+    };
+  },
+
+  manometer(d) {
+    return {
+      caption: "Manomètre en U à la même cote : p₁ − p₂ = (ρₘ − ρ)gΔh. Le mercure est plus bas du côté de la plus forte pression.",
+      svg: svg("Manomètre différentiel", `<path d="M70 40v20h80" fill="none" stroke="#64748b" stroke-width="10"/><path d="M410 40v20h-80" fill="none" stroke="#64748b" stroke-width="10"/><path d="M150 60v70q0 28 28 28h204q28 0 28-28V60" fill="none" stroke="#475569" stroke-width="16"/><path d="M158 118v16q0 18 20 18h204q20 0 20-18V86" fill="none" stroke="#d97706" stroke-width="10"/>${dimV(430, 86, 134, `Δh = ${num(d.h)} mm`)}${t(40, 32, "prise 1 · p₁")}${t(400, 32, "prise 2 · p₂")}${t(240, 175, "mercure")}${t(200, 220, "eau")}`)
+    };
+  },
+
+  hydraulicPress(d) {
+    return {
+      caption: "Principe de Pascal : F₁/A₁ = F₂/A₂. Le volume chassé se conserve, donc le petit piston a une plus grande course.",
+      svg: svg("Presse hydraulique", `${water("M80 150h400v40H80z")}<rect x="118" y="70" width="36" height="80" fill="#64748b" stroke="#0f172a" stroke-width="2"/><rect x="350" y="48" width="90" height="102" fill="#475569" stroke="#0f172a" stroke-width="2"/>${line(136, 48, 136, 28, "#b91c1c", 2, 'marker-end="url(#arr)"')}${t(88, 24, `F₁ · d = ${num(d.dSmall)} mm`)}${line(395, 28, 395, 12, "#b91c1c", 2.4)}${t(330, 24, `F₂ = ${num(d.load)} N`)}${t(200, 220, `D₂ = ${num(d.dBig)} mm`)}`)
+    };
+  },
+
+  bargeStability(d) {
+    const draft = Math.max(0.4, +d.draft || 1.2), zG = +d.zG || 1.5;
+    const hull = 92, waterY = 70 + hull * (1 - 0.45);
+    const bottom = waterY + 52;
+    const zB = draft / 2, volume = (+d.L || 14) * (+d.B || 6) * draft;
+    const BM = ((+d.L || 14) * ((+d.B || 6) ** 3) / 12) / volume;
+    const scale = 52 / draft;
+    const yB = bottom - zB * scale, yG = bottom - zG * scale, yM = bottom - (zB + BM) * scale;
+    return {
+      caption: "Stabilité initiale au roulis : on place B (Te/2), G, puis M = B + I/∇. Stable si GM > 0, c’est-à-dire si M est au-dessus de G.",
+      svg: svg("Stabilité d’une barge", `${water("M40 148h480v70H40z")}<rect x="130" y="70" width="280" height="92" fill="#cbd5e1" stroke="#334155" stroke-width="3"/>${line(40, 148, 520, 148, "#0369a1", 2.4)}${line(270, 60, 270, 200, "#64748b", 1.2, 'stroke-dasharray="4 3"')}<circle cx="270" cy="${yB}" r="4" fill="#0369a1"/>${t(280, yB + 4, "B")}<circle cx="270" cy="${yG}" r="4" fill="#b91c1c"/>${t(280, yG + 4, "G")}<circle cx="270" cy="${yM}" r="4" fill="#15803d"/>${t(280, yM + 4, "M")}${t(140, 58, `L = ${num(d.L)} m · B = ${num(d.B)} m`)}${t(140, 230, `Tₑ = ${num(d.draft)} m · z_G = ${num(d.zG)} m`)}`)
+    };
+  },
+
+  planeForce(d) {
+    return {
+      caption: "Vanne affleurante : le triangle des pressions a son centre de gravité à H/2 et son centre de poussée à 2H/3.",
+      svg: svg("Poussée sur paroi plane", `${water("M70 40h250v160H70z")}${hatch(320, 28, 22, 184)}${line(70, 40, 320, 40, "#0369a1", 3)}<path d="M320 40L200 200H320z" fill="#2563eb55" stroke="#1d4ed8" stroke-width="1.5"/>${dimV(250, 40, 120, "ȳ = H/2", -1)}${dimV(400, 40, 147, "yₚ = 2H/3")}${line(210, 147, 318, 147, "#b91c1c", 2.4, 'marker-end="url(#arr)"')}${t(188, 143, "F", 'fill="#b91c1c"')}${dimV(350, 40, 200, `H = ${num(d.H)} m`)}${t(80, 32, "surface libre")}${t(80, 230, `largeur b = ${num(d.b)} m (hors plan)`)}`)
+    };
+  },
+
+  submergedGate(d) {
+    return {
+      caption: "Vanne entièrement immergée : le trapèze des pressions a son centre sous le centre géométrique. ȳ = y₀ + H/2.",
+      svg: svg("Vanne immergée", `${water("M50 36h280v180H50z")}${hatch(330, 36, 20, 180)}${line(50, 36, 330, 36, "#0369a1", 3)}<rect x="318" y="88" width="24" height="86" fill="#475569" stroke="#0f172a" stroke-width="2"/><path d="M318 88l-70 0 70 86z" fill="#2563eb44" stroke="#1d4ed8" stroke-width="1.4"/>${dimV(370, 36, 88, `y₀ = ${num(d.y0)} m`)}${dimV(400, 88, 174, `H = ${num(d.H)} m`)}${t(230, 128, "F")}${t(60, 28, "surface libre")}`)
+    };
+  },
+
+  circularGate(d) {
+    return {
+      caption: "Disque vertical immergé : F = ρgAȳ passe par le centre de poussée, légèrement sous le centre géométrique.",
+      svg: svg("Vanne circulaire", `${water("M40 36h300v180H40z")}${hatch(340, 28, 22, 196)}${line(40, 36, 340, 36, "#0369a1", 3)}<circle cx="250" cy="148" r="40" fill="#64748b" stroke="#0f172a" stroke-width="3"/>${dimV(370, 36, 148, `ȳ = ${num(d.yc)} m`)}${t(400, 175, `D = ${num(d.D)} m`)}${t(50, 28, "surface libre")}${t(232, 152, "G", 'fill="#fff"')}`)
+    };
+  },
+
+  pipeContinuity(d) {
+    return {
+      caption: "Une seule conduite actuelle : on calcule V = Q/A, puis le diamètre qui donnerait la vitesse cible. Ce n’est pas un réducteur.",
+      svg: svg("Conduite circulaire", `<path d="M40 90h300v70H40z" fill="#bae6fd" stroke="#0369a1" stroke-width="4"/>${flow("M60 125h250")}${t(50, 78, `D = ${num(d.D)} mm`)}${t(50, 188, `Q = ${num(d.Q)} L/s`)}<circle cx="450" cy="125" r="38" fill="none" stroke="#b91c1c" stroke-width="2.4" stroke-dasharray="7 5"/>${t(400, 78, `D cible`, 'fill="#b91c1c"')}${t(392, 188, `V = ${num(d.targetV)} m/s`, 'fill="#b91c1c"')}`)
+    };
+  },
+
+  twoSectionContinuity(d) {
+    return {
+      caption: "Tube de courant : Q = A₁V₁ = A₂V₂. Diviser le diamètre par 2 multiplie la vitesse par 4.",
+      svg: svg("Continuité entre deux sections", `<path d="M30 70h190l90 28h220v54H310l-90 28H30z" fill="#bae6fd" stroke="#0369a1" stroke-width="3.5"/>${flow("M50 125h430")}${t(50, 58, `1 · D₁ = ${num(d.D1)} mm`)}${t(340, 58, `2 · D₂ = ${num(d.D2)} mm`)}${t(190, 210, `Q = ${num(d.Q)} L/s  ·  A₁V₁ = A₂V₂`)}`)
+    };
+  },
+
+  networkNode(d) {
+    return {
+      caption: "Loi des nœuds : aucun stockage. Q₁ + Q₂ = Q₃ + Qᵦ.",
+      svg: svg("Nœud de réseau", `${line(30, 70, 250, 120, "#0369a1", 14)}${line(30, 180, 250, 130, "#0369a1", 14)}${line(270, 125, 520, 70, "#0369a1", 14)}${line(270, 130, 400, 210, "#0369a1", 12)}<circle cx="260" cy="125" r="16" fill="#075985"/>${t(40, 58, "Q₁")}${t(40, 210, "Q₂")}${t(470, 58, "Q₃")}${t(410, 230, `Qᵦ = ${num(d.Qbranch)} L/s`)}${t(200, 40, `D₁ = ${num(d.D1)} mm`)}`)
+    };
+  },
+
+  convectiveAcceleration(d) {
+    return {
+      caption: "Régime permanent : ∂V/∂t = 0, mais la particule accélère dans le convergent (terme convectif V dV/dx).",
+      svg: svg("Convergent", `<path d="M30 48h170l210 36h120v50H410l-210 36H30z" fill="#bae6fd" stroke="#0369a1" stroke-width="3.5"/>${flow("M50 110h430")}${t(40, 36, `V₁ = ${num(d.V1)} m/s`)}${t(400, 36, `V₂ = ${num(d.V2)} m/s`)}${dimH(200, 30, 530, `L = ${num(d.L)} m`)}${t(210, 230, "a = V · dV/dx")}`)
+    };
+  },
+
+  reservoirRise(d) {
+    return {
+      caption: "Bilan de volume sur le réservoir : A dh/dt = Qₑ − Qₛ. La surface libre monte si l’alimentation dépasse la vidange.",
+      svg: svg("Remplissage d’un réservoir", `${hatch(88, 28, 16, 190)}<path d="M104 28v190h220V28" fill="none" stroke="#334155" stroke-width="6"/>${water("M104 92h220v126H104z")}<path d="M104 68h220" stroke="#7dd3fc" stroke-width="2" stroke-dasharray="6 4"/>${flow("M30 70h74")}${flow("M324 190h90")}${dimV(350, 68, 92, "Δh")}${t(36, 58, "Qₑ")}${t(420, 186, "Qₛ")}${t(120, 230, `D = ${num(d.D)} m`)}`)
+    };
+  },
+
+  tankFilling(d) {
+    return {
+      caption: "On impose un temps de remplissage et une vitesse maximale dans la conduite d’amenée — il n’y a pas de vidange ici.",
+      svg: svg("Conduite de remplissage", `${hatch(200, 36, 16, 180)}<path d="M216 36v180h200V36" fill="none" stroke="#334155" stroke-width="6"/>${water("M216 100h200v116H216z")}${flow("M40 150h176")}${t(48, 130, `conduite`)}${t(48, 230, `𝒱 = ${num(d.volume)} m³ en ${num(d.hours)} h`)}${t(250, 88, `V ≤ ${num(d.maxV)} m/s`)}`)
+    };
+  },
+
+  distributedFlow(d) {
+    return {
+      caption: "Service en route : le débit décroît linéairement, Q(x) = Qₑ − qx. À mi-longueur, la moitié du prélèvement a déjà eu lieu.",
+      svg: svg("Conduite à débit réparti", `<path d="M40 90h480" stroke="#475569" stroke-width="18"/>${flow("M50 90h430")}${[90, 180, 270, 360, 450].map((x, i) => line(x, 90, x, 120 + i * 8, "#0284c7", 3)).join("")}${t(40, 70, `Qₑ = ${num(d.Qin)} L/s`)}${t(400, 70, `Qₛ = ${num(d.Qout)} L/s`)}${dimH(210, 40, 520, `L = ${num(d.L)} m`)}${t(200, 240, "q uniforme")}`)
+    };
+  },
+
+  venturi(d) {
+    return {
+      caption: "Venturi horizontal : le col accélère le fluide et abaisse p₂. Le U au mercure mesure p₁ − p₂.",
+      svg: svg("Tube de Venturi", `<path d="M20 40h150l70 32h70l70-32h150v64H380l-70 32h-70l-70-32H20z" fill="#bae6fd" stroke="#0369a1" stroke-width="3"/>${flow("M40 72h460")}${t(30, 30, `1 · D₁ = ${num(d.D1)} mm`)}${t(230, 86, `2 · D₂ = ${num(d.D2)} mm`)}<path d="M90 104v36h260v-20" fill="none" stroke="#475569" stroke-width="8"/><path d="M98 132h140v8H98z" fill="#d97706"/><path d="M250 116h92v24H250z" fill="#d97706"/>${dimV(400, 116, 140, `Δh = ${num(d.h)} mm`)}${t(160, 230, "mercure")}`)
+    };
+  },
+
+  torricelli(d) {
+    return {
+      caption: "Grande section, orifice à l’air libre : Bernoulli se réduit à Torricelli. Cᵈ corrige la contraction du jet.",
+      svg: svg("Vidange par orifice", `${hatch(48, 28, 16, 180)}<path d="M64 28v180h200V28" fill="none" stroke="#334155" stroke-width="6"/>${water("M64 56h200v152H64z")}<path d="M264 168q80 8 180 48" fill="none" stroke="#0284c7" stroke-width="7"/>${dimV(280, 56, 168, `h = ${num(d.h)} m`)}${t(300, 160, `V = Cᵈ√(2gh)`)}${t(300, 230, `d = ${num(d.d)} mm · Cᵈ = ${num(d.Cd)}`)}`)
+    };
+  },
+
+  bernoulliSections(d) {
+    const up = (+d.z2 || 0) >= (+d.z1 || 0);
+    return {
+      caption: "Bernoulli le long d’une ligne de courant : la pression baisse si on s’élève ou si le fluide accélère.",
+      svg: svg("Conduite avec dénivelée", `<path d="M24 150h170l90-50h250v48H284l-90 50H24z" fill="#bae6fd" stroke="#0369a1" stroke-width="3.2"/>${flow("M40 174h190l90-50h200")}${t(30, 130, `1 · z₁ = ${num(d.z1)} m`)}${t(30, 230, `p₁ = ${num(d.p1)} kPa · D₁ = ${num(d.D1)} mm`)}${t(340, 70, `2 · z₂ = ${num(d.z2)} m`)}${t(340, 230, `D₂ = ${num(d.D2)} mm`)}${t(200, 40, up ? "la conduite s’élève" : "la conduite descend")}`)
+    };
+  },
+
+  drainTime(d) {
+    return {
+      caption: "Niveau variable : on intègre −A dh/dt = Cᵈ a √(2gh) entre h₁ et h₂. Le débit diminue à mesure que la charge baisse.",
+      svg: svg("Temps de vidange", `${hatch(70, 24, 16, 190)}<path d="M86 24v190h200V24" fill="none" stroke="#334155" stroke-width="6"/>${water("M86 100h200v114H86z")}<path d="M86 58h200" stroke="#7dd3fc" stroke-width="2" stroke-dasharray="6 4"/>${flow("M286 190h140")}${dimV(310, 58, 100, "h₁ → h₂")}${t(330, 170, `orifice ${num(d.orificeD)} mm`)}${t(100, 48, "h₁")}${t(100, 92, "h₂")}`)
+    };
+  },
+
+  pitot(d) {
+    return {
+      caption: "Tube de Pitot-statique : le fluide est arrêté au point d’arrêt. Le mercure mesure p₀ − p, donc V = √(2Δp/ρ).",
+      svg: svg("Tube de Pitot", `<path d="M20 70h520v50H20z" fill="#bae6fd" stroke="#0369a1" stroke-width="3"/>${flow("M40 95h120")}<path d="M200 95h130l36-36h70" fill="none" stroke="#334155" stroke-width="7"/><path d="M200 108h40" stroke="#334155" stroke-width="3"/>${t(30, 58, "écoulement · p, V")}${t(330, 48, "point d’arrêt · p₀")}<path d="M436 59v70h70" fill="none" stroke="#d97706" stroke-width="7"/>${t(430, 160, `Hg · Δh = ${num(d.h)} mm`)}`)
+    };
+  },
+
+  siphon(d) {
+    return {
+      caption: "Points A (surface), C (sommet) et S (sortie à l’air). La dépression en C vaut ρg(z_C + V²/2g) ; c’est là que la cavitation menace.",
+      svg: svg("Siphon", `${hatch(36, 70, 14, 140)}<path d="M50 70v140h150V90" fill="none" stroke="#334155" stroke-width="5"/>${water("M50 100h150v110H50z")}<path d="M170 108c70-70 150-70 170 8v84" fill="none" stroke="#475569" stroke-width="12"/>${flow("M170 108c70-70 150-70 170 8v70")}${t(70, 92, "A")}${t(300, 28, `C · z_C = ${num(d.rise)} m`)}${t(400, 220, `S · Δz = ${num(d.drop)} m`)}${t(60, 230, "réservoir")}`)
+    };
+  },
+
+  hydraulicPower(d) {
+    return {
+      caption: "Bernoulli généralisé entre deux surfaces libres : HMT = H_g + pertes. La pompe fournit Pₕ = ρgQH.",
+      svg: svg("Pompage entre réservoirs", `${water("M36 150h140v60H36z")}${water("M380 48h140v50H380z")}${hatch(36, 210, 140, 12)}${hatch(380, 98, 140, 12)}<path d="M176 176h50v-70h80" fill="none" stroke="#475569" stroke-width="9"/><circle cx="250" cy="106" r="20" fill="#075985"/>${t(243, 111, "P", 'fill="#fff"')}${t(50, 140, "puits")}${t(390, 38, `H_g = ${num(d.head)} m`)}${t(200, 230, `Q = ${num(d.Q)} L/s · η = ${num(d.efficiency)}`)}`)
+    };
+  },
+
+  jetPlate(d) {
+    return {
+      caption: "Plaque fixe normale au jet : après l’impact, la composante axiale de V s’annule. F = ρQV sur la plaque.",
+      svg: svg("Jet sur plaque", `${flow("M30 120h250")}${hatch(300, 40, 16, 160)}<path d="M300 112q70-8 110-60M300 128q70 8 110 60" fill="none" stroke="#7dd3fc" stroke-width="10"/>${line(298, 120, 210, 120, "#b91c1c", 2.4, 'marker-end="url(#arr)"')}${t(70, 96, `V = ${num(d.V)} m/s`)}${t(70, 210, `d = ${num(d.d)} mm`)}${t(180, 150, "F = ρQV", 'fill="#b91c1c"')}`)
+    };
+  },
+
+  jetDeflect(d) {
+    const th = ((+d.theta || 135) * Math.PI) / 180;
+    const x2 = 290 + 130 * Math.cos(th), y2 = 120 - 130 * Math.sin(th);
+    return {
+      caption: "L’auget dévie le jet d’un angle θ sans changer |V|. La force suit |ΔV⃗| = 2V sin(θ/2).",
+      svg: svg("Jet dévié par un auget", `${flow("M20 120h250")}<path d="M270 120L${x2} ${y2}" fill="none" stroke="#38bdf8" stroke-width="14" stroke-linecap="round"/><path d="M268 92q40 28 40 28q0 0-40 28" fill="none" stroke="#334155" stroke-width="10"/>${line(270, 120, 200, 175, "#b91c1c", 2.2, 'marker-end="url(#arr)"')}${t(40, 96, `V = ${num(d.V)} m/s`)}${t(300, 40, `θ = ${num(d.theta)}°`)}${t(160, 220, "force sur l’auget")}`)
+    };
+  },
+
+  colebrook(d) {
+    return {
+      caption: "Perte régulière le long d’une conduite rugueuse : on passe par Re, puis λ (Colebrook), puis h_f = λ(L/D)V²/(2g).",
+      svg: svg("Perte de charge linéaire", `<path d="M40 100h480v40H40z" fill="#bae6fd" stroke="#0369a1" stroke-width="3.5"/>${[80, 140, 200, 260, 320, 380, 440].map(x => `<path d="M${x} 100v8M${x + 10} 140v-8" stroke="#64748b" stroke-width="2"/>`).join("")}${flow("M60 120h400")}${line(40, 48, 520, 72, "#0f766e", 2)}${t(48, 40, "ligne de charge")}${dimH(200, 40, 520, `L = ${num(d.L)} m`)}${t(48, 230, `D = ${num(d.D)} mm · ε = ${num(d.eps)} mm`)}`)
+    };
+  },
+
+  minorLosses(d) {
+    return {
+      caption: "Chaque singularité dissipe K V²/(2g). On additionne K entrée, n coudes, vanne et sortie — à la même vitesse de référence.",
+      svg: svg("Pertes singulières", `<path d="M30 130h90l40-50h90l40 50h70l40-40h130" fill="none" stroke="#475569" stroke-width="16"/>${flow("M40 130h80l40-50h90l40 50h70l40-40h110")}${t(40, 170, "entrée")}${t(200, 60, `${num(d.nElbows)} coudes`)}${t(300, 170, "vanne")}${t(460, 70, "sortie")}${t(160, 230, `D = ${num(d.D)} mm · Q = ${num(d.Q)} L/s`)}`)
+    };
+  },
+
+  froudeSimilarity(d) {
+    return {
+      caption: "Même ouvrage, deux échelles. La similitude de Froude impose λV = √λL et λQ = λL^(5/2), avec λL = N.",
+      svg: svg("Modèle et prototype", `<path d="M40 70h200v90H40z" fill="#e2e8f0" stroke="#334155" stroke-width="3"/>${water("M40 118h200v42H40z")}<path d="M90 70v48h40v-48" fill="#94a3b8"/><path d="M340 120h140v50H340z" fill="#e2e8f0" stroke="#334155" stroke-width="3"/>${water("M340 148h140v22H340z")}<path d="M372 120v28h24v-28" fill="#94a3b8"/>${t(70, 58, "prototype")}${t(360, 108, `modèle 1/${num(d.N)}`)}${t(60, 220, "Vₚ, Qₚ")}${t(350, 220, `Vₘ = ${num(d.Vm)} m/s`)}`)
+    };
+  },
+
+  manningChannel(d) {
+    return {
+      caption: "Section rectangulaire — pas trapézoïdale. Le périmètre mouillé est b + 2y : la surface libre ne fait pas partie de P.",
+      svg: svg("Canal rectangulaire", `${hatch(90, 200, 380, 16)}<path d="M120 40v160h320V40" fill="none" stroke="#334155" stroke-width="8"/>${water("M124 110h312v90H124z")}${t(220, 158, "écoulement ⊙")}${dimV(90, 110, 200, `y = ${num(d.y)} m`, -1)}${dimH(230, 124, 436, `b = ${num(d.b)} m`)}${t(250, 96, `S = ${num(d.S)} ‰ · Kₛ = ${num(d.Ks)}`)}`)
+    };
+  }
+};
+
+export function drawFigure(type, data) {
+  const figure = figures[type];
+  if (!figure) {
+    return {
+      caption: "Repérer les sections, les cotes et le sens de l’écoulement avant d’écrire les bilans.",
+      svg: svg("Schéma", `${t(40, 120, "Schéma non disponible pour ce type.")}`)
+    };
+  }
+  return figure(data);
+}

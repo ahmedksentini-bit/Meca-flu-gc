@@ -1,5 +1,5 @@
-const CACHE = "mecaflu-v2-8";
-const ASSETS = ["./","./index.html","./styles.css","./enhancements.css","./src/app.js","./src/solvers.js","./data/exercises.json","./data/exercises-ch1-ch2.json","./data/exercises-ch3-ch4.json","./manifest.webmanifest","./assets/icon.svg"];
+const CACHE = "mecaflu-v2-9";
+const ASSETS = ["./","./index.html","./styles.css","./enhancements.css","./src/app.js","./src/solvers.js","./src/diagrams.js","./data/exercises.json","./data/exercises-ch1-ch2.json","./data/exercises-ch3-ch4.json","./manifest.webmanifest","./assets/icon.svg"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => { if (event.request.method !== "GET") return; event.respondWith(fetch(event.request).then(response => { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); return response; }).catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))); });
