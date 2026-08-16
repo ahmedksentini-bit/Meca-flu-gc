@@ -4,6 +4,26 @@ const steps = (values, solutionSteps) => ({ values, steps: solutionSteps });
 const n = (x, digits = 4) => Number(x).toLocaleString("fr-FR", { maximumSignificantDigits: digits });
 
 export const solvers = {
+  density(d) {
+    const mass = d.W * 1000 / G;
+    const rho = mass / d.volume;
+    const gamma = d.W / d.volume;
+    const relative = rho / 1000;
+    return steps({ mass, rho, gamma, relative }, [
+      ["Poids et masse", `m = W/g = ${n(mass)} kg`],
+      ["Masse volumique", `ρ = m/𝒱 = ${n(rho)} kg/m³`],
+      ["Poids volumique", `γ = W/𝒱 = ${n(gamma)} kN/m³`],
+      ["Densité", `d = ρ/ρeau = ${n(relative)}`]
+    ]);
+  },
+  pressureDepth(d) {
+    const relative = d.rho * G * d.h;
+    const absolute = relative + d.patm * 1000;
+    return steps({ relative, absolute }, [
+      ["Pression relative", `p − pₐₜₘ = ρgh = ${n(relative)} Pa`],
+      ["Pression absolue", `p_abs = pₐₜₘ + ρgh = ${n(absolute)} Pa`]
+    ]);
+  },
   viscosity(d) {
     const e = d.e / 1000;
     const tau = d.F / d.A;

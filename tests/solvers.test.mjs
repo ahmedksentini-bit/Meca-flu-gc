@@ -19,6 +19,14 @@ assert.ok(losses.Re > 200000 && losses.Re < 400000);
 assert.ok(losses.f > 0.015 && losses.f < 0.025);
 assert.ok(losses.hf > 2 && losses.hf < 8);
 
+const oil = solvers.density({ volume:6.5,W:55 }).values;
+assert.ok(isClose(oil.rho, 862.65, 0.001));
+assert.ok(isClose(oil.relative, oil.rho / 1000, 1e-12));
+
+const diver = solvers.pressureDepth({ h:28,rho:1025,patm:101.3 }).values;
+assert.ok(isClose(diver.relative, 281547, 1e-12));
+assert.ok(isClose(diver.absolute, 382847, 1e-12));
+
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));
 console.log("✓ 12 assertions métier validées");
