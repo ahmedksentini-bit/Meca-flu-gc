@@ -52,7 +52,7 @@ function moodyPoint(d) {
   return { Re, epsRel, f: colebrookF(Re, epsRel) };
 }
 
-function moodyChart(d) {
+function moodyChart(d, options = {}) {
   const { Re, epsRel, f } = moodyPoint(d);
   const L = 58, T = 26, R = 592, B = 368, W = R - L, H = B - T;
   const x0 = Math.log10(500), x1 = Math.log10(1e8), y0 = Math.log10(0.008), y1 = Math.log10(0.1);
@@ -110,11 +110,12 @@ function moodyChart(d) {
   const point = inPlot(Re, f)
     ? `${line(xP, T, xP, B, "#b91c1c", 1, 'stroke-dasharray="4 3"')}${line(L, yP, R, yP, "#b91c1c", 1, 'stroke-dasharray="4 3"')}<circle cx="${xP}" cy="${yP}" r="5" fill="#b91c1c"/>`
     : "";
-  const zone = `<rect x="${X(2000)}" y="${T}" width="${X(4000) - X(2000)}" height="${H}" fill="url(#moodyHatch)" opacity="0.55"/>`;
+  const hatchId = options.hatchId || "moodyHatch";
+  const zone = `<rect x="${X(2000)}" y="${T}" width="${X(4000) - X(2000)}" height="${H}" fill="url(#${hatchId})" opacity="0.55"/>`;
   return {
-    caption: `Diagramme de Moody : entrer par Re = ${num(Re, 3)}, suivre ε/D = ${num(epsRel, 2)}, lire λ = ${num(f, 3)}. À droite de la ligne tiretée, λ ne dépend plus que de ε/D.`,
+    caption: `Diagramme de Moody : entrer par Re = ${num(Re, 3)}, suivre ε/D = ${num(epsRel, 2)}, lire λ = ${num(f, 3)}. Cliquez pour agrandir et déplacer les curseurs Re et ε/D.`,
     svg: `<svg class="moody-chart" viewBox="0 0 680 400" role="img" aria-label="Diagramme de Moody"><defs>
-      <pattern id="moodyHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v6" stroke="#f59e0b" stroke-width="1"/></pattern>
+      <pattern id="${hatchId}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v6" stroke="#f59e0b" stroke-width="1"/></pattern>
       <style>text{font-family:Inter,system-ui,sans-serif;font-weight:700;fill:#0f172a}</style>
     </defs>
     <rect x="0" y="0" width="680" height="400" fill="#fff"/>
@@ -638,6 +639,8 @@ const aliases = {
   froudeScale: "froudeSpillway",
   reynoldsSpeed: "reynoldsDrag"
 };
+
+export { moodyChart, moodyPoint };
 
 export function drawFigure(type, data) {
   const figure = figures[type] || figures[aliases[type]];

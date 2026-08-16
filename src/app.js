@@ -1,5 +1,5 @@
 import { solve, isClose } from "./solvers.js";
-import { drawFigure } from "./diagrams.js";
+import { drawFigure, moodyChart, moodyPoint } from "./diagrams.js";
 import { courseRecap } from "./recaps.js";
 
 const app = document.querySelector("#app");
@@ -98,6 +98,7 @@ const formatTime = seconds => `${String(Math.floor(seconds / 60)).padStart(2,"0"
 const toast = text => { const el = document.querySelector("#toast"); el.textContent = text; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); };
 
 function home() {
+  closeMoodyReader();
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
   app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = state.catalog.exercises.filter(e => e.chapter === ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
@@ -115,6 +116,7 @@ function chapterPage(chapterId) {
 }
 
 function openExercise(exercise, mode = state.mode) {
+  closeMoodyReader();
   stopTimer(); state.exercise = exercise; state.mode = mode; state.attempts = {};
   state.data = Object.fromEntries(exercise.variables.map(v => [v.key, mode === "learn" ? v.value : randomValue(v)]));
   renderExercise();
@@ -163,6 +165,67 @@ function bindExerciseEvents() {
   document.querySelector("#randomize")?.addEventListener("click", () => openExercise(state.exercise, state.mode));
 }
 
+function formatRe(value) {
+  return Number(value).toLocaleString("fr-FR", { maximumSignificantDigits: 3 });
+}
+function formatEpsRel(value) {
+  if (!(value > 0)) return "lisse (0)";
+  return Number(value).toLocaleString("fr-FR", { maximumSignificantDigits: 3 });
+}
+function sliderFromLog(value, min, max) {
+  const v = Math.min(Math.max(value, min), max);
+  return Math.round(1000 * (Math.log10(v) - Math.log10(min)) / (Math.log10(max) - Math.log10(min)));
+}
+function logFromSlider(pos, min, max) {
+  return 10 ** (Math.log10(min) + (Math.log10(max) - Math.log10(min)) * pos / 1000);
+}
+
+function closeMoodyReader() {
+  document.querySelector("#moodyOverlay")?.remove();
+}
+
+function openMoodyReader() {
+  closeMoodyReader();
+  const point = moodyPoint(state.data);
+  document.body.insertAdjacentHTML("beforeend", `<div class="moody-overlay" id="moodyOverlay" role="dialog" aria-modal="true" aria-label="Diagramme de Moody agrandi">
+    <div class="moody-dialog">
+      <header class="moody-head"><h2>Diagramme de Moody</h2><button type="button" class="ghost" id="moodyClose">Fermer</button></header>
+      <div class="moody-big" id="moodyBig"></div>
+      <div class="moody-cursors">
+        <label>Curseur Re <input id="moodyRe" type="range" min="0" max="1000" step="1"><output id="moodyReOut"></output></label>
+        <label>Curseur ε/D <input id="moodyEr" type="range" min="0" max="1000" step="1"><output id="moodyErOut"></output></label>
+        <p class="moody-readout">λ lu = <strong id="moodyLambda"></strong></p>
+      </div>
+    </div>
+  </div>`);
+  const reInput = document.querySelector("#moodyRe");
+  const erInput = document.querySelector("#moodyEr");
+  reInput.value = sliderFromLog(point.Re, 500, 1e8);
+  erInput.value = point.epsRel > 0 ? sliderFromLog(point.epsRel, 1e-6, 0.05) : 0;
+  const paint = () => {
+    const Re = logFromSlider(+reInput.value, 500, 1e8);
+    const epsRel = +erInput.value === 0 ? 0 : logFromSlider(+erInput.value, 1e-6, 0.05);
+    const figure = moodyChart({ Re, epsRel }, { hatchId: "moodyHatchZoom" });
+    document.querySelector("#moodyBig").innerHTML = figure.svg;
+    document.querySelector("#moodyReOut").textContent = formatRe(Re);
+    document.querySelector("#moodyErOut").textContent = formatEpsRel(epsRel);
+    document.querySelector("#moodyLambda").textContent = formatRe(moodyPoint({ Re, epsRel }).f);
+    if (state.exercise?.solver === "moodyRead") {
+      state.data.Re = Re;
+      state.data.epsRel = epsRel;
+      const reField = document.querySelector("#v_Re");
+      const erField = document.querySelector("#v_epsRel");
+      if (reField) reField.value = String(Math.round(Re));
+      if (erField) erField.value = String(Number(epsRel.toPrecision(4)));
+    }
+  };
+  reInput.addEventListener("input", paint);
+  erInput.addEventListener("input", paint);
+  document.querySelector("#moodyClose").addEventListener("click", closeMoodyReader);
+  document.querySelector("#moodyOverlay").addEventListener("click", event => { if (event.target.id === "moodyOverlay") closeMoodyReader(); });
+  paint();
+}
+
 function refreshDiagram() {
   if (!state.exercise) return;
   const figure = drawFigure(state.exercise.solver, state.data);
@@ -170,11 +233,18 @@ function refreshDiagram() {
   const note = document.querySelector("#diagramNote");
   if (box) box.innerHTML = figure.svg;
   if (note) note.textContent = figure.caption;
+  const chart = box?.querySelector(".moody-chart");
+  if (chart) {
+    box.classList.add("diagram-zoomable");
+    box.title = "Cliquer pour agrandir";
+    box.onclick = openMoodyReader;
+  }
 }
 
 function startTimer() { state.seconds = 0; state.timer = setInterval(() => { state.seconds++; const clock = document.querySelector("#clock"); if (clock) clock.textContent = `Temps ${formatTime(state.seconds)}`; }, 1000); }
 function stopTimer() { clearInterval(state.timer); state.timer = null; }
 
+document.addEventListener("keydown", event => { if (event.key === "Escape") closeMoodyReader(); });
 document.querySelector("#homeButton").addEventListener("click", home);
 window.addEventListener("hashchange", () => {
   if (!state.catalog) return;
