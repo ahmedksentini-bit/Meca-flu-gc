@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>MécaFlu GC</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f1f5f9;color:#0f172a}
+main{max-width:900px;margin:auto;padding:15px}
+header{background:#0f172a;color:white;padding:25px;border-radius:22px}
+h1{margin:3px 0;font-size:38px}
+.sub{color:#bae6fd}
+.card{background:white;margin-top:15px;padding:20px;border-radius:18px;box-shadow:0 5px 20px #0001}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+label{font-weight:600;font-size:14px}
+input{width:100%;padding:12px;margin-top:5px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px}
+button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;background:#0ea5e9;color:white}
+.step{padding:15px 0;border-bottom:1px solid #e2e8f0}
+.answer{display:flex;gap:8px;align-items:center;margin-top:8px}
+.answer input{max-width:230px}
+.check{background:#e2e8f0;color:#0f172a}
+.ok{color:#15803d;font-weight:bold}
+.bad{color:#b91c1c;font-weight:bold}
+#correction{display:none}
+.result{background:#ecfeff;padding:15px;border-left:5px solid #06b6d4;border-radius:10px}
+svg{width:100%}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.answer{flex-wrap:wrap}}
+</style>
+</head>
+
+<body>
+<main>
+
+<header>
+<div class="sub">Génie civil · Mécanique des fluides</div>
+<h1>MécaFlu GC</h1>
+<div>Exercices interactifs</div>
+</header>
+
+<section class="card">
+<h2>Débitmètre de Venturi</h2>
+
+<p>
+Un Venturi horizontal est installé sur une conduite d'eau.
+Un manomètre différentiel au mercure relie l'entrée 1 au col 2.
+Déterminer le débit.
+</p>
+
+<div class="grid">
+<label>
+D₁ (mm)
+<input id="d1" type="number" value="200">
+</label>
+
+<label>
+D₂ (mm)
+<input id="d2" type="number" value="100">
+</label>
+
+<label>
+Δh mercure (mm)
+<input id="h" type="number" value="100">
+</label>
+</div>
+</section>
+
+<section class="card">
+
+<svg viewBox="0 0 800 260">
+
+<path
+d="M40 70 H250 L350 110 H470 L570 70 H760
+V190 H570 L470 150 H350 L250 190 H40 Z"
+fill="#7dd3fc"
+stroke="#0369a1"
+stroke-width="4"/>
+
+<text x="120" y="55">Section 1</text>
+<text x="385" y="100">Col 2</text>
+
+<line x1="170" y1="70" x2="170" y2="205"
+stroke="#0f172a" stroke-width="3"/>
+
+<line x1="410" y1="110" x2="410" y2="170"
+stroke="#0f172a" stroke-width="3"/>
+
+<path
+d="M170 190 V230 H410 V150"
+fill="none"
+stroke="#475569"
+stroke-width="8"/>
+
+<path
+d="M195 218 H385"
+stroke="#f59e0b"
+stroke-width="15"/>
+
+</svg>
+
+</section>
+
+<section class="card">
+
+<h2>Résolution guidée</h2>
+
+<div id="steps"></div>
+
+<br>
+
+<button onclick="showCorrection()">
+Voir la correction complète
+</button>
+
+</section>
+
+<section class="card" id="correction"></section>
+
+</main>
+
+<script>
+
+const rho=1000;
+const rhoHg=13600;
+const g=9.81;
+
+function solutions(){
+
+let D1=+document.getElementById("d1").value/1000;
+let D2=+document.getElementById("d2").value/1000;
+let h=+document.getElementById("h").value/1000;
+
+let S1=Math.PI*D1*D1/4;
+let S2=Math.PI*D2*D2/4;
+
+let dp=(rhoHg-rho)*g*h;
+
+let Q=Math.sqrt(
+(2*dp/rho)/
+(1/(S2*S2)-1/(S1*S1))
+);
+
+let V1=Q/S1;
+let V2=Q/S2;
+
+return {S1,S2,dp,Q,V1,V2};
+
+}
+
+const questions=[
+["S1","1. Calculer S₁","m²"],
+["S2","2. Calculer S₂","m²"],
+["dp","3. Calculer p₁ − p₂","Pa"],
+["Q","4. Calculer le débit Q","m³/s"],
+["V1","5. Calculer V₁","m/s"],
+["V2","6. Calculer V₂","m/s"]
+];
+
+function createSteps(){
+
+let box=document.getElementById("steps");
+
+questions.forEach(q=>{
+
+box.innerHTML+=`
+
+<div class="step">
+
+<strong>${q[1]}</strong>
+
+<div class="answer">
+
+<input
+id="a_${q[0]}"
+inputmode="decimal"
+placeholder="Votre réponse">
+
+<span>${q[2]}</span>
+
+<button
+class="check"
+onclick="verify('${q[0]}')">
+Vérifier
+</button>
+
+<span id="r_${q[0]}"></span>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+}
+
+function verify(k){
+
+let s=solutions();
+
+let input=
+document.getElementById("a_"+k)
+.value.replace(",",".");
+
+let v=Number(input);
+
+let target=s[k];
+
+let error=
+Math.abs(v-target)/
+Math.max(Math.abs(target),1e-12);
+
+let r=document.getElementById("r_"+k);
+
+if(error<0.025){
+
+r.innerHTML="✓ Correct";
+r.className="ok";
+
+}else{
+
+r.innerHTML="✕ À revoir";
+r.className="bad";
+
+}
+
+}
+
+function showCorrection(){
+
+let s=solutions();
+
+let c=document.getElementById("correction");
+
+c.style.display="block";
+
+c.innerHTML=`
+
+<h2>Correction</h2>
+
+<p>
+<b>Sections</b><br>
+S₁ = πD₁²/4 =
+${s.S1.toFixed(6)} m²
+<br>
+S₂ =
+${s.S2.toFixed(6)} m²
+</p>
+
+<p>
+<b>Manomètre différentiel</b><br>
+Δp =
+(ρHg − ρeau)gΔh
+=
+${s.dp.toFixed(0)} Pa
+</p>
+
+<p>
+<b>Continuité</b><br>
+Q = S₁V₁ = S₂V₂
+</p>
+
+<p>
+<b>Bernoulli</b><br>
+p₁ + ½ρV₁² =
+p₂ + ½ρV₂²
+</p>
+
+<div class="result">
+
+Débit :
+<b>
+${s.Q.toFixed(5)} m³/s
+=
+${(s.Q*1000).toFixed(2)} L/s
+</b>
+
+<br><br>
+
+V₁ =
+${s.V1.toFixed(2)} m/s
+
+<br>
+
+V₂ =
+${s.V2.toFixed(2)} m/s
+
+</div>
+
+`;
+
+c.scrollIntoView({behavior:"smooth"});
+
+}
+
+createSteps();
+
+</script>
+
+</body>
+</html>
