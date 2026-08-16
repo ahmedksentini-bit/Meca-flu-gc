@@ -24,6 +24,67 @@ export const solvers = {
       ["Pression absolue", `p_abs = pₐₜₘ + ρgh = ${n(absolute)} Pa`]
     ]);
   },
+  compressibility(d) {
+    const dp = (d.p2 - d.p1) * 1e5;
+    const ratio = dp / (d.K * 1e9);
+    const deltaV = d.volume * ratio;
+    const finalVolume = d.volume - deltaV;
+    return steps({ dp, ratio: ratio * 100, deltaV, finalVolume }, [
+      ["Variation de pression", `Δp = (${n(d.p2)} − ${n(d.p1)}) bar = ${n(dp)} Pa`],
+      ["Module d’élasticité", `K = −Δp/(Δ𝒱/𝒱) ⟹ diminution relative = Δp/K = ${n(ratio * 100)} %`],
+      ["Variation de volume", `|Δ𝒱| = 𝒱Δp/K = ${n(deltaV)} m³`],
+      ["Volume final", `𝒱₂ = 𝒱₁ − |Δ𝒱| = ${n(finalVolume)} m³`]
+    ]);
+  },
+  layeredPressure(d) {
+    const interfaceP = d.rhoOil * G * d.hOil;
+    const bottomP = interfaceP + d.rhoWater * G * d.hWater;
+    const head = bottomP / (d.rhoWater * G);
+    return steps({ interfaceP, bottomP, head }, [
+      ["Interface huile–eau", `pᵢ = ρhuile·g·hhuile = ${n(interfaceP)} Pa`],
+      ["Fond du réservoir", `p_f = ρhuile·g·hhuile + ρeau·g·heau = ${n(bottomP)} Pa`],
+      ["Hauteur d’eau", `H = p_f/(ρeau g) = ${n(head)} mCE`]
+    ]);
+  },
+  submergedGate(d) {
+    const area = d.b * d.H, yc = d.y0 + d.H / 2;
+    const force = d.rho * G * area * yc, ig = d.b * d.H ** 3 / 12;
+    const yp = yc + ig / (area * yc);
+    return steps({ yc, force, yp }, [
+      ["Centre de gravité", `ȳ = y₀ + H/2 = ${n(yc)} m`],
+      ["Poussée", `F = ρgAȳ = ${n(force)} N`],
+      ["Centre de poussée", `yₚ = ȳ + Iᴳ/(Aȳ) = ${n(yp)} m`]
+    ]);
+  },
+  torricelli(d) {
+    const diameter = d.d / 1000, area = Math.PI * diameter ** 2 / 4;
+    const V = d.Cd * Math.sqrt(2 * G * d.h), Q = area * V;
+    return steps({ area, V, Q }, [
+      ["Section de l’orifice", `S = πd²/4 = ${n(area)} m²`],
+      ["Torricelli corrigé", `V = Cᵈ√(2gh) = ${n(V)} m/s`],
+      ["Débit", `Q = SV = ${n(Q)} m³/s = ${n(Q * 1000)} L/s`]
+    ]);
+  },
+  jetDeflect(d) {
+    const diameter = d.d / 1000, area = Math.PI * diameter ** 2 / 4;
+    const Q = area * d.V, theta = d.theta * Math.PI / 180;
+    const force = 2 * d.rho * Q * d.V * Math.sin(theta / 2);
+    return steps({ Q, force }, [
+      ["Débit massique", `Q = πd²V/4 = ${n(Q)} m³/s ; ṁ = ρQ`],
+      ["Variation de quantité de mouvement", `|F| = 2ρQV sin(θ/2)`],
+      ["Résultante sur l’auget", `F = ${n(force)} N`]
+    ]);
+  },
+  minorLosses(d) {
+    const D = d.D / 1000, Q = d.Q / 1000, area = Math.PI * D ** 2 / 4;
+    const V = Q / area, Ksum = d.Kentry + d.Kelbows * d.nElbows + d.Kvalve + d.Kexit;
+    const hf = Ksum * V ** 2 / (2 * G);
+    return steps({ V, Ksum, hf }, [
+      ["Vitesse", `V = Q/S = ${n(V)} m/s`],
+      ["Somme des coefficients", `ΣK = Kₑ + nKc + Kv + Ks = ${n(Ksum)}`],
+      ["Pertes singulières", `hₛ = ΣK·V²/(2g) = ${n(hf)} m`]
+    ]);
+  },
   viscosity(d) {
     const e = d.e / 1000;
     const tau = d.F / d.A;

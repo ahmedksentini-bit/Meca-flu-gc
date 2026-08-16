@@ -27,6 +27,13 @@ const diver = solvers.pressureDepth({ h:28,rho:1025,patm:101.3 }).values;
 assert.ok(isClose(diver.relative, 281547, 1e-12));
 assert.ok(isClose(diver.absolute, 382847, 1e-12));
 
+assert.ok(isClose(solvers.compressibility({volume:1,p1:1,p2:100,K:2.2}).values.ratio, 0.45, 0.001));
+assert.ok(solvers.layeredPressure({hOil:2,rhoOil:850,hWater:3,rhoWater:1000}).values.bottomP > 45000);
+assert.ok(solvers.submergedGate({b:2,H:1.8,y0:1.2,rho:1000}).values.yp > 2.1);
+assert.ok(solvers.torricelli({d:40,h:6,Cd:0.62}).values.Q > 0.008);
+assert.ok(solvers.jetDeflect({d:50,V:20,theta:135,rho:1000}).values.force > 1400);
+assert.ok(solvers.minorLosses({D:150,Q:30,Kentry:.5,Kelbows:.3,nElbows:2,Kvalve:.2,Kexit:1}).values.hf > 0);
+
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));
-console.log("✓ 12 assertions métier validées");
+console.log("✓ Assertions métier validées");
