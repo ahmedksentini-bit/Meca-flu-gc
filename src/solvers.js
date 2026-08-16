@@ -108,6 +108,23 @@ export const solvers = {
       ["Régime", `Fr = V/√(gy) = ${n(Fr)} : ${Fr < 1 ? "fluvial" : Fr > 1 ? "torrentiel" : "critique"}`]
     ]);
   },
+  coaxialViscometer(d) {
+    const ri=d.ri/1000, ro=d.ro/1000, L=d.L/1000, omega=2*Math.PI*d.rpm/60, gap=ro-ri;
+    const mu=d.torque*gap/(2*Math.PI*omega*L*ri**3), U=omega*ri, tau=mu*U/gap;
+    return steps({omega,U,gap,mu,tau},[["Vitesse angulaire",`ω=2πN/60=${n(omega)} rad/s`],["Vitesse périphérique",`U=ωRᵢ=${n(U)} m/s`],["Entrefer",`e=Rₑ−Rᵢ=${n(gap)} m`],["Bilan du couple",`C=τ(2πRᵢL)Rᵢ et τ=μU/e`],["Viscosité",`μ=Ce/(2πωLRᵢ³)=${n(mu)} Pa·s`],["Contrainte",`τ=μU/e=${n(tau)} Pa`]]);
+  },
+  capillary(d) {
+    const diameter=d.d/1000, theta=d.theta*Math.PI/180, h=4*d.sigma*Math.cos(theta)/(d.rho*G*diameter);
+    return steps({h},[["Équilibre vertical","La composante verticale de la tension superficielle équilibre le poids de la colonne."],["Loi de Jurin",`h=4σcosθ/(ρgd)=${n(h)} m`]]);
+  },
+  laplace(d) {
+    const radius=d.radius/1e6, dp=d.factor*d.sigma/radius;
+    return steps({dp},[["Rayon en SI",`R=${n(radius)} m`],["Loi de Laplace",`Δp=${d.factor}σ/R=${n(dp)} Pa`]]);
+  },
+  idealGas(d) {
+    const T=d.temp+273.15, p=d.pressure*1e5, rho=p/(d.R*T);
+    return steps({T,p,rho},[["Température absolue",`T=${d.temp}+273,15=${n(T)} K`],["Pression absolue",`p=${n(p)} Pa`],["Gaz parfait",`ρ=p/(RT)=${n(rho)} kg/m³`]]);
+  },
   viscosity(d) {
     const e = d.e / 1000;
     const tau = d.F / d.A;
@@ -119,6 +136,18 @@ export const solvers = {
       ["Loi de Newton", `τ = μ·U/e ⟹ μ = τe/U = ${n(mu)} Pa·s`],
       ["Viscosité cinématique", `ν = μ/ρ = ${n(nu)} m²/s`]
     ]);
+  },
+  hydraulicPress(d) {
+    const ratio=(d.dBig/d.dSmall)**2, smallForce=d.load/ratio, smallTravel=d.bigTravel*ratio;
+    return steps({ratio,smallForce,smallTravel},[["Rapport des surfaces",`A₂/A₁=(D₂/D₁)²=${n(ratio)}`],["Principe de Pascal",`F₁/A₁=F₂/A₂ ⟹ F₁=${n(smallForce)} N`],["Conservation du volume",`A₁x₁=A₂x₂ ⟹ x₁=${n(smallTravel)} mm`]]);
+  },
+  circularGate(d) {
+    const D=d.D, area=Math.PI*D**2/4, ig=Math.PI*D**4/64, force=d.rho*G*area*d.yc, yp=d.yc+ig/(area*d.yc);
+    return steps({area,force,yp},[["Aire",`A=πD²/4=${n(area)} m²`],["Poussée",`F=ρgAȳ=${n(force)} N`],["Inertie centrale",`Iᴳ=πD⁴/64=${n(ig)} m⁴`],["Centre de poussée",`yₚ=ȳ+Iᴳ/(Aȳ)=${n(yp)} m`]]);
+  },
+  bargeStability(d) {
+    const volume=d.L*d.B*d.draft, mass=d.rho*volume, zB=d.draft/2, inertia=d.L*d.B**3/12, BM=inertia/volume, GM=zB+BM-d.zG;
+    return steps({volume,mass,zB,BM,GM},[["Volume déplacé",`∇=LBTe=${n(volume)} m³`],["Équilibre de flottaison",`m=ρ∇=${n(mass)} kg`],["Centre de carène",`zB=Te/2=${n(zB)} m`],["Rayon métacentrique",`BM=I/∇=${n(BM)} m`],["Hauteur métacentrique",`GM=zB+BM−zG=${n(GM)} m : ${GM>0?"stable":"instable"}`]]);
   },
   manometer(d) {
     const h = d.h / 1000;
