@@ -310,14 +310,25 @@ const recaps = {
     watch: "θ est l’angle de déviation du jet, pas l’angle d’attaque de la plaque. Ne pas oublier le facteur 2."
   },
   colebrook: {
-    title: "Pertes linéaires — Darcy et Colebrook",
-    lead: "Dans un fluide réel, la charge diminue le long de la conduite. On passe par le Reynolds (régime), le coefficient λ, puis Darcy–Weisbach.",
+    title: "Pertes linéaires — Darcy, Colebrook et Moody",
+    lead: "Dans un fluide réel, la charge diminue le long de la conduite. On passe par le Reynolds (régime), le coefficient λ lu sur le diagramme de Moody (ou calculé par Colebrook), puis Darcy–Weisbach.",
     points: [
       "Re = V D / ν. Laminaire si Re < 2000 ; turbulent au-delà de 4000.",
-      "Turbulent : Colebrook donne λ(Re, ε/D), implicite (itérations ou Swamee–Jain).",
+      "Le diagramme de Moody est le graphe de Colebrook : λ = λ(Re, ε/D).",
       "h_f = λ (L/D) V² / (2g). Laminaire : λ = 64/Re."
     ],
     watch: "ε et D doivent être dans la même unité pour ε/D. ν de l’eau à 20 °C ≈ 10⁻⁶ m²/s."
+  },
+  moodyRead: {
+    title: "Diagramme de Moody",
+    lead: "Moody (1944) trace λ en fonction de Re pour une famille de rugosités relatives ε/D. C’est la lecture graphique de Colebrook–White, exigée au §6.4.3 du cours.",
+    points: [
+      "Abscisse log Re, ordonnée log λ. Courbe unique à gauche : λ = 64/Re (laminaire).",
+      "Bande hachurée : transition (2000–4000), lecture incertaine.",
+      "Famille de courbes turbulentes. À droite de la ligne tiretée, régime rugueux : λ = λ(ε/D) seulement.",
+      "Ordres de ε : PVC 0,01 mm ; acier neuf 0,05–0,1 mm ; fonte incrustée 1–3 mm ; béton 0,3–3 mm."
+    ],
+    watch: "Ne pas lire une courbe d’ε/D trop loin du point. En turbulent lisse (ε/D → 0), λ continue de baisser avec Re."
   },
   minorLosses: {
     title: "Pertes singulières",

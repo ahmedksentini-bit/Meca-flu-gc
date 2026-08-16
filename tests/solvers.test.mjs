@@ -178,6 +178,10 @@ assert.equal(prop.a, 1);
 assert.equal(prop.b, 3);
 assert.equal(prop.c, 5);
 
+const moody = solvers.moodyRead({ Re: 200000, epsRel: 0.00075 }).values;
+assert.ok(moody.f > 0.018 && moody.f < 0.025);
+assert.ok(moody.fInf > 0.015 && moody.fInf < 0.025);
+
 const venturiK = solvers.venturi({ D1: 250, D2: 125, dpK: 20, rho: 1000 }).values;
 assert.ok(venturiK.Q > 0.05 && venturiK.Q < 0.2);
 assert.ok(isClose(venturiK.V2, venturiK.V1 * 4, 1e-12));

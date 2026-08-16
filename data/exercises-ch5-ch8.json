@@ -115,6 +115,22 @@
     ]
   },
   {
+    "id": "LOSS_MOODY_03",
+    "chapter": "losses",
+    "solver": "moodyRead",
+    "title": "Lecture du diagramme de Moody",
+    "difficulty": 2,
+    "statement": "Sur le diagramme de Moody du cours (§6.4.3), on entre par le Reynolds et on suit la courbe de rugosité relative ε/D. Lire le facteur de Darcy λ et indiquer la limite rugueuse λ∞.",
+    "variables": [
+      {"key": "Re", "label": "Reynolds Re", "unit": "—", "value": 200000, "min": 4000, "max": 8000000, "step": 10000},
+      {"key": "epsRel", "label": "Rugosité relative ε/D", "unit": "—", "value": 0.00075, "min": 0.00001, "max": 0.02, "step": 0.00005}
+    ],
+    "questions": [
+      {"key": "f", "label": "Facteur λ lu sur Moody", "unit": "—"},
+      {"key": "fInf", "label": "Limite rugueuse λ∞", "unit": "—"}
+    ]
+  },
+  {
     "id": "LOSS_DH_02",
     "chapter": "losses",
     "solver": "hydraulicDiameter",

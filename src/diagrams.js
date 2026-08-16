@@ -28,6 +28,112 @@ function dimH(y, x1, x2, label, side = -1) {
   return `${line(x1, y, x2, y, "#b91c1c", 1.3)}${line(x1, y - 5, x1, y + 5, "#b91c1c", 1.3)}${line(x2, y - 5, x2, y + 5, "#b91c1c", 1.3)}${t(mid, y + (side < 0 ? -6 : 16), label, 'text-anchor="middle" fill="#b91c1c"')}`;
 }
 
+function colebrookF(Re, epsRel) {
+  if (!(Re > 0)) return NaN;
+  if (Re < 2000) return 64 / Re;
+  let f = 0.02;
+  const er = Math.max(+epsRel || 0, 0);
+  for (let i = 0; i < 24; i++) f = 1 / (-2 * Math.log10(er / 3.7 + 2.51 / (Re * Math.sqrt(f)))) ** 2;
+  return f;
+}
+
+function moodyPoint(d) {
+  const D = Number.isFinite(+d.D) ? +d.D / 1000 : NaN;
+  const eps = Number.isFinite(+d.eps) ? +d.eps / 1000 : NaN;
+  const nu = Number.isFinite(+d.nu) ? +d.nu * 1e-6 : 1e-6;
+  let V = +d.V;
+  if (!Number.isFinite(V) && Number.isFinite(+d.Q) && D > 0) V = (+d.Q / 1000) / (Math.PI * D * D / 4);
+  let Re = +d.Re;
+  if (!Number.isFinite(Re) && Number.isFinite(V) && D > 0) Re = V * D / nu;
+  let epsRel = +d.epsRel;
+  if (!Number.isFinite(epsRel) && D > 0 && Number.isFinite(eps)) epsRel = eps / D;
+  if (!Number.isFinite(Re)) Re = 2e5;
+  if (!Number.isFinite(epsRel)) epsRel = 7.5e-4;
+  return { Re, epsRel, f: colebrookF(Re, epsRel) };
+}
+
+function moodyChart(d) {
+  const { Re, epsRel, f } = moodyPoint(d);
+  const L = 58, T = 26, R = 592, B = 368, W = R - L, H = B - T;
+  const x0 = Math.log10(500), x1 = Math.log10(1e8), y0 = Math.log10(0.008), y1 = Math.log10(0.1);
+  const X = re => L + ((Math.log10(Math.min(Math.max(re, 500), 1e8)) - x0) / (x1 - x0)) * W;
+  const Y = lam => T + (1 - (Math.log10(Math.min(Math.max(lam, 0.008), 0.1)) - y0) / (y1 - y0)) * H;
+  const inPlot = (re, lam) => re >= 500 && re <= 1e8 && lam >= 0.008 && lam <= 0.1;
+  const sample = (from, to, n, fn) => {
+    const pts = [];
+    for (let i = 0; i <= n; i++) {
+      const re = 10 ** (Math.log10(from) + (Math.log10(to) - Math.log10(from)) * i / n);
+      const lam = fn(re);
+      if (inPlot(re, lam)) pts.push([X(re).toFixed(1), Y(lam).toFixed(1)]);
+    }
+    return pts.length > 1 ? `<path d="M${pts.map(p => p.join(",")).join("L")}" fill="none"` : "";
+  };
+  const curves = [0, 1e-5, 5e-5, 1e-4, 2e-4, 4e-4, 6e-4, 8e-4, 0.001, 0.002, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05];
+  const nearest = curves.reduce((best, er) => Math.abs(Math.log10(Math.max(er, 1e-8)) - Math.log10(Math.max(epsRel, 1e-8))) < Math.abs(Math.log10(Math.max(best, 1e-8)) - Math.log10(Math.max(epsRel, 1e-8))) ? er : best, curves[0]);
+  const fmtEr = er => {
+    if (er === 0) return "lisse";
+    if (er >= 0.001) return String(er).replace(".", ",");
+    const exp = Math.floor(Math.log10(er) + 1e-12);
+    const mant = Math.round(er / 10 ** exp);
+    const sup = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+    const expTxt = String(Math.abs(exp)).split("").map(c => sup[c]).join("");
+    return (mant === 1 ? "" : `${mant}×`) + "10⁻" + expTxt;
+  };
+  const curvePaths = curves.map(er => {
+    const path = sample(4000, 1e8, 48, re => colebrookF(re, er));
+    if (!path) return "";
+    const hot = er === nearest;
+    const fEnd = colebrookF(1e8, er);
+    const labelY = inPlot(1e8, fEnd) ? Y(fEnd) : Y(Math.min(Math.max(fEnd, 0.008), 0.1));
+    return `${path} stroke="${hot ? "#0f766e" : "#94a3b8"}" stroke-width="${hot ? 2.2 : 1}" ${hot ? "" : 'opacity="0.85"'}/>${t(R + 4, labelY + 3, fmtEr(er), `font-size="9px" fill="${hot ? "#0f766e" : "#64748b"}`)}`;
+  }).join("");
+  const laminar = sample(500, 2300, 16, re => 64 / re);
+  const dashPts = [];
+  for (const er of curves.filter(er => er > 0)) {
+    const fInf = 1 / (-2 * Math.log10(er / 3.7)) ** 2;
+    const reC = 200 / (er * Math.sqrt(fInf));
+    if (inPlot(reC, fInf)) dashPts.push([X(reC).toFixed(1), Y(fInf).toFixed(1)]);
+  }
+  const ticksRe = [1e3, 2e3, 4e3, 1e4, 2e4, 4e4, 1e5, 2e5, 4e5, 1e6, 2e6, 4e6, 1e7, 2e7, 4e7, 1e8];
+  const labelsRe = { 1000: "10³", 10000: "10⁴", 100000: "10⁵", 1000000: "10⁶", 10000000: "10⁷", 100000000: "10⁸" };
+  const ticksF = [0.008, 0.009, 0.01, 0.012, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05, 0.06, 0.08, 0.1];
+  const labelsF = new Set([0.008, 0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.08, 0.1]);
+  const grid = [
+    ...ticksRe.map(re => `${line(X(re), T, X(re), B, re in labelsRe ? "#cbd5e1" : "#e2e8f0", re in labelsRe ? 1 : 0.6)}`),
+    ...ticksF.map(lam => `${line(L, Y(lam), R, Y(lam), labelsF.has(lam) ? "#cbd5e1" : "#e2e8f0", labelsF.has(lam) ? 1 : 0.6)}`)
+  ].join("");
+  const axisLabels = [
+    ...ticksRe.map(re => `${line(X(re), B, X(re), B + 5, "#334155", 1)}${labelsRe[re] ? t(X(re), B + 18, labelsRe[re], 'text-anchor="middle" font-size="10px"') : ""}`),
+    ...ticksF.map(lam => `${line(L - 5, Y(lam), L, Y(lam), "#334155", 1)}${labelsF.has(lam) ? t(L - 8, Y(lam) + 3, String(lam).replace(".", ","), 'text-anchor="end" font-size="10px"') : ""}`)
+  ].join("");
+  const xP = X(Re), yP = Y(f);
+  const point = inPlot(Re, f)
+    ? `${line(xP, T, xP, B, "#b91c1c", 1, 'stroke-dasharray="4 3"')}${line(L, yP, R, yP, "#b91c1c", 1, 'stroke-dasharray="4 3"')}<circle cx="${xP}" cy="${yP}" r="5" fill="#b91c1c"/>`
+    : "";
+  const zone = `<rect x="${X(2000)}" y="${T}" width="${X(4000) - X(2000)}" height="${H}" fill="url(#moodyHatch)" opacity="0.55"/>`;
+  return {
+    caption: `Diagramme de Moody : entrer par Re = ${num(Re, 3)}, suivre ε/D = ${num(epsRel, 2)}, lire λ = ${num(f, 3)}. À droite de la ligne tiretée, λ ne dépend plus que de ε/D.`,
+    svg: `<svg class="moody-chart" viewBox="0 0 680 400" role="img" aria-label="Diagramme de Moody"><defs>
+      <pattern id="moodyHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0v6" stroke="#f59e0b" stroke-width="1"/></pattern>
+      <style>text{font-family:Inter,system-ui,sans-serif;font-weight:700;fill:#0f172a}</style>
+    </defs>
+    <rect x="0" y="0" width="680" height="400" fill="#fff"/>
+    ${t(L, 16, "Diagramme de Moody  ·  λ (Re, ε/D)", 'font-size="13px"')}
+    ${t(R, 16, "ε/D", 'text-anchor="end" font-size="11px" fill="#0f766e"')}
+    ${grid}${zone}
+    ${laminar ? `${laminar} stroke="#0369a1" stroke-width="2.1"/>` : ""}
+    ${curvePaths}
+    ${dashPts.length > 1 ? `<path d="M${dashPts.map(p => p.join(",")).join("L")}" fill="none" stroke="#0f172a" stroke-width="1.3" stroke-dasharray="6 4"/>` : ""}
+    <rect x="${L}" y="${T}" width="${W}" height="${H}" fill="none" stroke="#0f172a" stroke-width="1.6"/>
+    ${axisLabels}${point}
+    ${t((L + R) / 2, 394, "Nombre de Reynolds Re", 'text-anchor="middle" font-size="12px"')}
+    ${t(16, (T + B) / 2, "λ", 'font-size="13px"')}
+    ${t(L + 8, T + 16, "laminaire 64/Re", 'font-size="10px" fill="#0369a1"')}
+    ${t(X(2600), T + 16, "crit.", 'font-size="10px" fill="#b45309"')}
+    </svg>`
+  };
+}
+
 const figures = {
   viscosity(d) {
     const arrows = [0, 1, 2, 3, 4].map(i => {
@@ -267,10 +373,10 @@ const figures = {
   },
 
   colebrook(d) {
-    return {
-      caption: "Perte régulière le long d’une conduite rugueuse : on passe par Re, puis λ (Colebrook), puis h_f = λ(L/D)V²/(2g).",
-      svg: svg("Perte de charge linéaire", `<path d="M40 100h480v40H40z" fill="#bae6fd" stroke="#0369a1" stroke-width="3.5"/>${[80, 140, 200, 260, 320, 380, 440].map(x => `<path d="M${x} 100v8M${x + 10} 140v-8" stroke="#64748b" stroke-width="2"/>`).join("")}${flow("M60 120h400")}${line(40, 48, 520, 72, "#0f766e", 2)}${t(48, 40, "ligne de charge")}${dimH(200, 40, 520, `L = ${num(d.L)} m`)}${t(48, 230, `D = ${num(d.D)} mm · ε = ${num(d.eps)} mm`)}`)
-    };
+    return moodyChart(d);
+  },
+  moodyRead(d) {
+    return moodyChart(d);
   },
 
   minorLosses(d) {

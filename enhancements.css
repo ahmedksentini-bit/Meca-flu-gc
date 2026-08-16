@@ -1,4 +1,5 @@
 .header-actions{display:flex;align-items:center;gap:8px}.course-link{text-decoration:none}
 .equation-card{border-top:4px solid #0891b2}.equation-intro{margin:-5px 0 12px;color:#64748b;font-size:13px}.equation-line{margin:7px 0;padding:10px 12px;border-radius:9px;background:linear-gradient(90deg,#ecfeff,#f8fafc);font-family:"Cambria Math",Cambria,serif;font-size:18px;color:#164e63;text-align:center}
 .recap-card{border-top:4px solid #0f766e;background:linear-gradient(180deg,#f0fdfa,#fff 42%)}.recap-kicker{margin:0 0 6px;color:#0f766e;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.recap-card h2{margin:0 0 10px;font-size:19px}.recap-lead{margin:0 0 12px;color:#334155}.recap-points{margin:0;padding:0 0 0 18px}.recap-points li{margin:6px 0;color:#0f172a}.recap-watch{margin:14px 0 0;padding:11px 13px;border-radius:11px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:14px}.recap-watch strong{color:#c2410c}
+.diagram svg{width:100%;height:auto;display:block}.diagram svg.moody-chart{min-height:280px}
 @media(max-width:560px){.course-link{padding:8px 10px;font-size:12px}.brand small{display:none}}

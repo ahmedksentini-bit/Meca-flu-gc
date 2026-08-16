@@ -328,8 +328,20 @@ export const solvers = {
     return steps({ V, Re, f, hf }, [
       ["Conversions et vitesse", `D = ${n(D)} m ; Q = ${n(Q)} m³/s ; V = Q/S = ${n(V)} m/s`],
       ["Nombre de Reynolds", `Re = VD/ν = ${n(Re)} : régime ${regime}`],
-      [Re < 2000 ? "Loi laminaire" : "Colebrook-White", Re < 2000 ? `λ = 64/Re = ${n(f)}` : `1/√λ = −2 log₁₀[ε/(3,7D) + 2,51/(Re√λ)] ⟹ λ = ${n(f)}`],
+      [Re < 2000 ? "Loi laminaire" : "Colebrook-White / Moody", Re < 2000 ? `λ = 64/Re = ${n(f)}` : `1/√λ = −2 log₁₀[ε/(3,7D) + 2,51/(Re√λ)] ⟹ λ = ${n(f)} (même lecture sur le diagramme de Moody)`],
       ["Darcy-Weisbach", `h_f = λ(L/D)V²/(2g) = ${n(hf)} m`]
+    ]);
+  },
+  moodyRead(d) {
+    const Re = d.Re, epsRel = d.epsRel, f = darcyFriction(Re, epsRel);
+    const fInf = epsRel > 0 ? 1 / (-2 * Math.log10(epsRel / 3.7)) ** 2 : 0;
+    const rough = epsRel > 0 && Re > 200 / (epsRel * Math.sqrt(f));
+    const zone = Re < 2000 ? "laminaire" : Re < 4000 ? "transition" : rough ? "turbulent rugueux" : "turbulent de transition";
+    return steps({ f, fInf, epsRel }, [
+      ["Lecture du Moody", "Entrer par Re en abscisse (échelle log), suivre la courbe ε/D, lire λ en ordonnée (échelle log)."],
+      ["Rugosité relative", `ε/D = ${n(epsRel)}`],
+      ["Facteur lu / Colebrook", `λ = ${n(f)} — zone ${zone}`],
+      ["Limite rugueuse", epsRel > 0 ? `À droite de la ligne tiretée, λ → λ∞ = [−2 log₁₀(ε/3,7D)]⁻² = ${n(fInf)}` : "Conduite hydrauliquement lisse : λ continue de baisser quand Re augmente."]
     ]);
   },
   jetMobile(d) {
