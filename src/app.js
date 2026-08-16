@@ -100,12 +100,8 @@ const toast = text => { const el = document.querySelector("#toast"); el.textCont
 function home() {
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
-  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="featured-tools"><button type="button" data-open="LOSS_MOODY_03">Diagramme de Moody →</button></div><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = state.catalog.exercises.filter(e => e.chapter === ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
+  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = state.catalog.exercises.filter(e => e.chapter === ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
   document.querySelectorAll("[data-chapter]").forEach(button => button.addEventListener("click", () => chapterPage(button.dataset.chapter)));
-  document.querySelectorAll("[data-open]").forEach(button => button.addEventListener("click", () => {
-    const exercise = state.catalog.exercises.find(e => e.id === button.dataset.open);
-    if (exercise) openExercise(exercise);
-  }));
   history.replaceState({}, "", location.pathname);
 }
 
