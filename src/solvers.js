@@ -85,6 +85,29 @@ export const solvers = {
       ["Pertes singulières", `hₛ = ΣK·V²/(2g) = ${n(hf)} m`]
     ]);
   },
+  froudeSimilarity(d) {
+    const velocityScale = Math.sqrt(d.N), Vp = d.Vm * velocityScale;
+    const flowScale = d.N ** 2.5, Qp = d.Qm / 1000 * flowScale;
+    return steps({ velocityScale, Vp, flowScale, Qp }, [
+      ["Similitude de Froude", "Frₘ = Frₚ : les rapports inertie/pesanteur sont identiques"],
+      ["Échelle des vitesses", `λV = √λL = √${n(d.N)} = ${n(velocityScale)}`],
+      ["Vitesse prototype", `Vₚ = VₘλV = ${n(Vp)} m/s`],
+      ["Échelle des débits", `λQ = λL²λV = λL^(5/2) = ${n(flowScale)}`],
+      ["Débit prototype", `Qₚ = QₘλQ = ${n(Qp)} m³/s`]
+    ]);
+  },
+  manningChannel(d) {
+    const slope = d.S / 1000, area = d.b * d.y, perimeter = d.b + 2 * d.y;
+    const R = area / perimeter, V = d.Ks * R ** (2/3) * Math.sqrt(slope);
+    const Q = area * V, Fr = V / Math.sqrt(G * d.y);
+    return steps({ R, V, Q, Fr }, [
+      ["Géométrie mouillée", `A = by = ${n(area)} m² ; P = b + 2y = ${n(perimeter)} m`],
+      ["Rayon hydraulique", `R = A/P = ${n(R)} m`],
+      ["Manning-Strickler", `V = KₛR^(2/3)√S = ${n(V)} m/s`],
+      ["Débit", `Q = AV = ${n(Q)} m³/s`],
+      ["Régime", `Fr = V/√(gy) = ${n(Fr)} : ${Fr < 1 ? "fluvial" : Fr > 1 ? "torrentiel" : "critique"}`]
+    ]);
+  },
   viscosity(d) {
     const e = d.e / 1000;
     const tau = d.F / d.A;
