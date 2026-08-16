@@ -78,6 +78,110 @@ assert.ok(isClose(pump.H, 35, 1e-12));
 assert.ok(isClose(pump.waterPower, 17167.5, 0.001));
 assert.ok(isClose(pump.inputPower, 24525, 0.001));
 
+const mobile = solvers.jetMobile({ d: 50, V: 18, u: 6, rho: 1000 }).values;
+assert.ok(isClose(mobile.uOpt, 6, 1e-12));
+assert.ok(isClose(mobile.Ffixed / mobile.Fmoving, (18 / 12) ** 2, 1e-12));
+
+const elbow = solvers.elbowForce({ D: 200, Q: 150, p1: 450, rho: 1000 }).values;
+assert.ok(isClose(elbow.Fx, elbow.Fy, 1e-12));
+assert.ok(isClose(elbow.F, elbow.Fx * Math.SQRT2, 1e-12));
+
+const incline = solvers.inclinedPlate({ V: 12, Q: 40, theta: 60, rho: 1000 }).values;
+assert.ok(isClose(incline.Qdown, 30, 1e-12));
+assert.ok(isClose(incline.Qup, 10, 1e-12));
+
+const react = solvers.jetReaction({ h: 4, A: 20, rho: 1000 }).values;
+assert.ok(isClose(react.F, 2 * 1000 * 9.81 * 4 * 0.002, 0.001));
+
+const oilLam = solvers.poiseuilleOil({ rho: 880, mu: 0.12, D: 40, L: 25, Q: 1.2 }).values;
+assert.ok(oilLam.Re < 2000);
+assert.ok(isClose(oilLam.f, 64 / oilLam.Re, 1e-12));
+
+const grav = solvers.gravityPipe({ D: 200, L: 2500, H: 25, eps: 0.25, Ksum: 4.5, nu: 1 }).values;
+assert.ok(grav.Q > 20 && grav.Q < 80);
+assert.ok(grav.f > 0.015 && grav.f < 0.04);
+
+const size = solvers.pipeSizing({ Q: 80, L: 2000, H: 20, eps: 0.1, nu: 1 }).values;
+assert.ok([150, 200, 250, 300, 350, 400].includes(size.Dmm));
+assert.ok(size.hf <= 20 + 1e-6);
+
+const stokes = solvers.stokesViscosity({ rhoS: 7850, d: 2, V: 0.012, rhoF: 880 }).values;
+assert.ok(stokes.mu > 0.8 && stokes.mu < 1.8);
+
+const trap = solvers.trapezoidalChannel({ b: 2, z: 1.5, y: 1.2, S: 0.8, Ks: 70 }).values;
+assert.ok(trap.Q > 2 && trap.Fr < 1);
+
+const yn = solvers.normalDepth({ b: 1.2, S: 2, Ks: 80, Q: 2.4 }).values;
+assert.ok(yn.y > 0.4 && yn.y < 1.5);
+
+const wave = solvers.waveCelerity({ y: 2.5, V: 1.2, Lkm: 3 }).values;
+assert.ok(isClose(wave.c, Math.sqrt(9.81 * 2.5), 1e-12));
+assert.ok(wave.cUp > 0);
+
+const ritter = solvers.damBreakRitter({ h0: 20, xKm: 8 }).values;
+assert.ok(isClose(ritter.hDam, 80 / 9, 1e-12));
+assert.ok(ritter.t > 200 && ritter.t < 400);
+
+const sluice = solvers.damSluice({ b: 1.8, H: 1.2, hSill: 12, mu: 0.3, W: 8, Cd: 0.62, rho: 1000 }).values;
+assert.ok(sluice.force > 2e5);
+assert.ok(sluice.yp > 11.3 && sluice.yp < 11.5);
+
+const borda = solvers.bordaCarnot({ D1: 100, D2: 200, Q: 30, rho: 1000 }).values;
+assert.ok(borda.dp > 0 && borda.hs > 0);
+
+const spill = solvers.froudeSpillway({ N: 50, Qp: 250, Vm: 3.2, tMin: 2, Fm: 12 }).values;
+assert.ok(isClose(spill.Vp, 3.2 * Math.sqrt(50), 1e-12));
+assert.ok(isClose(spill.Fp, 12 * 50 ** 3, 1e-12));
+
+const damWall = solvers.retainingWall({ H: 4, t: 2.4, Hwall: 4.8, rhoC: 2400, rho: 1000 }).values;
+assert.ok(isClose(damWall.F, 1000 * 9.81 * 8, 1e-12));
+assert.ok(damWall.FS > 1);
+
+const cannon = solvers.waterCannon({ d: 20, D1: 50, p1: 8, rho: 1000 }).values;
+assert.ok(cannon.V2 > 30 && cannon.Fplate > cannon.Frecoil * 0.2);
+
+const npsh = solvers.npshCavitation({ Q: 40, z0: 100, ze: 103.5, D: 200, L: 8, f: 0.02, K: 3.5, patm: 101.3, pv: 2.3, NPSHr: 4.2, margin: 0.5, rho: 1000 }).values;
+assert.ok(npsh.NPSHd > 4.2);
+assert.ok(npsh.zMax > 103.5);
+
+const ice = solvers.iceberg({ rhoI: 917, rhoW: 1025 }).values;
+assert.ok(isClose(ice.emerge, (1 - 917 / 1025) * 100, 1e-12));
+
+const ft = solvers.froudeForceTime({ N: 25, Fm: 46, tm: 1.6 }).values;
+assert.ok(isClose(ft.tp, 8, 1e-12));
+assert.ok(isClose(ft.Fp, 46 * 25 ** 3, 1e-12));
+
+const air = solvers.idealGasTwo({ temp1: 35, p1: 0.95, temp2: 0, p2: 1.013, R: 287 }).values;
+assert.ok(isClose(air.rho1, 0.95e5 / (287 * 308.15), 1e-12));
+assert.ok(isClose(air.rho2, 1.013e5 / (287 * 273.15), 1e-12));
+
+const re2 = solvers.reynoldsTwo({ D1: 20, V1: 0.1, nu1: 1, D2: 100, V2: 1.2, nu2: 400 }).values;
+assert.ok(isClose(re2.Re1, 2000, 1e-12));
+assert.ok(isClose(re2.Re2, 300, 1e-12));
+
+const field = solvers.kinematicField({ k: 1, x: 1, y: 2 }).values;
+assert.equal(field.div, 0);
+assert.ok(isClose(field.rot, -4, 1e-12));
+
+const mlt = solvers.dimensionsMLT({ ok: 1 }).values;
+assert.equal(mlt.pT, -3);
+assert.equal(mlt.tL, 0);
+assert.equal(mlt.gL, -2);
+
+const pend = solvers.pendulumPi({ ok: 1 }).values;
+assert.ok(isClose(pend.a, 0.5, 1e-12));
+assert.ok(isClose(pend.b, -0.5, 1e-12));
+assert.equal(pend.c, 0);
+
+const prop = solvers.propellerPi({ ok: 1 }).values;
+assert.equal(prop.a, 1);
+assert.equal(prop.b, 3);
+assert.equal(prop.c, 5);
+
+const venturiK = solvers.venturi({ D1: 250, D2: 125, dpK: 20, rho: 1000 }).values;
+assert.ok(venturiK.Q > 0.05 && venturiK.Q < 0.2);
+assert.ok(isClose(venturiK.V2, venturiK.V1 * 4, 1e-12));
+
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));
 console.log("✓ Assertions métier validées");

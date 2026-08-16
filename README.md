@@ -5,9 +5,10 @@ Application web statique et PWA d’exercices de mécanique des fluides pour le 
 ## Architecture
 
 - `data/exercises.json` : chapitres et premier lot d’exercices ;
-- `data/exercises-ch1-ch2.json`, `data/exercises-ch3-ch4.json` : lots suivants ;
+- `data/exercises-ch1-ch2.json`, `data/exercises-ch3-ch4.json`, `data/exercises-ch5-ch8.json`, `data/exercises-exam-td.json`, `data/exercises-td.json` : lots suivants ;
 - `src/solvers.js` : lois physiques, conversions SI et corrections ;
 - `src/app.js` : moteur générique et interface ;
+- `src/recaps.js` : rappel de cours affiché à gauche de chaque exercice ;
 - `src/diagrams.js` : figures de cours, une par situation physique ;
 - `sw.js` et `manifest.webmanifest` : installation et fonctionnement hors connexion ;
 - `tests/` : contrôles numériques des solveurs.

@@ -1,7 +1,16 @@
 export const G = 9.81;
+const COMMERCIAL_DN = [150, 200, 250, 300, 350, 400];
 
 const steps = (values, solutionSteps) => ({ values, steps: solutionSteps });
 const n = (x, digits = 4) => Number(x).toLocaleString("fr-FR", { maximumSignificantDigits: digits });
+const circle = D => Math.PI * D ** 2 / 4;
+
+function darcyFriction(Re, epsRel) {
+  if (Re < 2000) return 64 / Math.max(Re, 1e-9);
+  let f = 0.02;
+  for (let i = 0; i < 20; i++) f = 1 / (-2 * Math.log10(epsRel / 3.7 + 2.51 / (Re * Math.sqrt(f)))) ** 2;
+  return f;
+}
 
 export const solvers = {
   density(d) {
@@ -146,7 +155,7 @@ export const solvers = {
   },
   tankFilling(d) {
     const time = d.hours * 3600, Q = d.volume / time, A = Q / d.maxV, D = Math.sqrt(4 * A / Math.PI);
-    return steps({ Q, D }, [
+    return steps({ Q, Qls: Q * 1000, D, Dmm: D * 1000 }, [
       ["Débit requis", `Q = 𝒱/t = ${n(Q)} m³/s`],
       ["Section minimale", `A = Q/Vmax = ${n(A)} m²`],
       ["Diamètre minimal", `D = √(4A/π) = ${n(D)} m`]
@@ -191,7 +200,8 @@ export const solvers = {
   siphon(d) {
     const D = d.D / 1000, V = Math.sqrt(2 * G * d.drop), Q = Math.PI * D ** 2 / 4 * V;
     const pHigh = (d.patm || 101.3) * 1000 - d.rho * G * (d.rise + V ** 2 / (2 * G));
-    return steps({ V, Q, pHigh }, [
+    const pRel = pHigh - (d.patm || 101.3) * 1000;
+    return steps({ V, Q, Qls: Q * 1000, pHigh, pRel }, [
       ["Surface vers sortie", `V = √(2gΔz) = ${n(V)} m/s`],
       ["Débit", `Q = πD²V/4 = ${n(Q)} m³/s`],
       ["Surface vers point haut", `p_C = pₐₜₘ − ρg(z_C + V²/2g) = ${n(pHigh)} Pa`]
@@ -282,14 +292,14 @@ export const solvers = {
     ]);
   },
   venturi(d) {
-    const D1 = d.D1 / 1000, D2 = d.D2 / 1000, h = d.h / 1000;
+    const D1 = d.D1 / 1000, D2 = d.D2 / 1000, h = (d.h || 0) / 1000;
     const S1 = Math.PI * D1 ** 2 / 4, S2 = Math.PI * D2 ** 2 / 4;
-    const dp = (d.rhoM - d.rho) * G * h;
+    const dp = Number.isFinite(d.dpK) ? d.dpK * 1000 : (d.rhoM - d.rho) * G * h;
     const Q = Math.sqrt((2 * dp / d.rho) / (1 / S2 ** 2 - 1 / S1 ** 2));
     const V1 = Q / S1, V2 = Q / S2;
     return steps({ S1, S2, dp, Q, V1, V2 }, [
       ["Sections", `S₁ = πD₁²/4 = ${n(S1)} m² ; S₂ = ${n(S2)} m²`],
-      ["Manomètre", `p₁ − p₂ = (ρHg − ρ)gΔh = ${n(dp)} Pa`],
+      ["Différence de pression", Number.isFinite(d.dpK) ? `p₁ − p₂ = ${n(d.dpK)} kPa = ${n(dp)} Pa` : `p₁ − p₂ = (ρHg − ρ)gΔh = ${n(dp)} Pa`],
       ["Continuité", "Q = S₁V₁ = S₂V₂"],
       ["Bernoulli horizontal", "p₁ + ½ρV₁² = p₂ + ½ρV₂²"],
       ["Débit", `Q = √[(2Δp/ρ)/(1/S₂² − 1/S₁²)] = ${n(Q)} m³/s`],
@@ -320,6 +330,488 @@ export const solvers = {
       ["Nombre de Reynolds", `Re = VD/ν = ${n(Re)} : régime ${regime}`],
       [Re < 2000 ? "Loi laminaire" : "Colebrook-White", Re < 2000 ? `λ = 64/Re = ${n(f)}` : `1/√λ = −2 log₁₀[ε/(3,7D) + 2,51/(Re√λ)] ⟹ λ = ${n(f)}`],
       ["Darcy-Weisbach", `h_f = λ(L/D)V²/(2g) = ${n(hf)} m`]
+    ]);
+  },
+  jetMobile(d) {
+    const A = d.d ? circle(d.d / 1000) : (d.Q / 1000) / d.V, Q = A * d.V, Vrel = Math.max(d.V - d.u, 0);
+    const Ffixed = 2 * d.rho * Q * d.V, Fmoving = 2 * d.rho * A * Vrel ** 2;
+    const power = Fmoving * d.u, uOpt = d.V / 3;
+    return steps({ Ffixed, Fmoving, power, uOpt }, [
+      ["Auget fixe à 180°", `F_fixe = 2ρQV = ${n(Ffixed)} N`],
+      ["Vitesse relative", `V − u = ${n(Vrel)} m/s`],
+      ["Auget mobile", `F = 2ρA(V − u)² = ${n(Fmoving)} N`],
+      ["Puissance recueillie", `P = F u = ${n(power)} W`],
+      ["Optimum", `dP/du = 0 ⟹ u_opt = V/3 = ${n(uOpt)} m/s`]
+    ]);
+  },
+  elbowForce(d) {
+    const A = circle(d.D / 1000), Q = d.Q / 1000, V = Q / A, p = d.p1 * 1000;
+    const th = ((d.theta ?? 90) * Math.PI) / 180, pack = p * A + d.rho * Q * V;
+    const Fx = pack * (1 - Math.cos(th)), Fy = pack * Math.sin(th), F = 2 * pack * Math.sin(th / 2);
+    return steps({ V, Fx, Fy, F }, [
+      ["Section et vitesse", `A = ${n(A)} m² ; V = Q/A = ${n(V)} m/s`],
+      ["Paquet pression + quantité de mouvement", `pA + ρQV = ${n(pack)} N`],
+      ["Composante axiale", `Fₓ = (pA+ρQV)(1 − cosθ) = ${n(Fx)} N`],
+      ["Composante transversale", `Fᵧ = (pA+ρQV) sinθ = ${n(Fy)} N`],
+      ["Résultante d’ancrage", `F = 2(pA+ρQV) sin(θ/2) = ${n(F)} N, bissectrice extérieure`]
+    ]);
+  },
+  convergentForce(d) {
+    const A1 = circle(d.D1 / 1000), A2 = circle(d.D2 / 1000), Q = d.Q / 1000;
+    const V1 = Q / A1, V2 = Q / A2, p1 = d.p1 * 1000;
+    const p2 = p1 + 0.5 * d.rho * (V1 ** 2 - V2 ** 2);
+    const F = p1 * A1 - p2 * A2 - d.rho * Q * (V2 - V1);
+    return steps({ V1, V2, p2, F }, [
+      ["Vitesses", `V₁ = ${n(V1)} m/s ; V₂ = ${n(V2)} m/s`],
+      ["Bernoulli horizontal", `p₂ = p₁ + ½ρ(V₁² − V₂²) = ${n(p2)} Pa`],
+      ["Euler axial", "R_eau→pièce = p₁A₁ − p₂A₂ − ρQ(V₂ − V₁)"],
+      ["Effort sur le convergent", `F = ${n(F)} N (positif vers l’aval)`]
+    ]);
+  },
+  jetReaction(d) {
+    const A = d.A / 1e4, V = Math.sqrt(2 * G * d.h), Q = A * V, F = d.rho * Q * V;
+    return steps({ V, Q, F }, [
+      ["Torricelli", `V = √(2gh) = ${n(V)} m/s`],
+      ["Débit", `Q = AV = ${n(Q)} m³/s`],
+      ["Réaction du réservoir", `F = ρQV = 2ρghA = ${n(F)} N`],
+      ["Lecture", "La poussée vaut le double de la force hydrostatique sur un bouchon fermant l’orifice."]
+    ]);
+  },
+  inclinedPlate(d) {
+    const th = d.theta * Math.PI / 180, Q = d.Q / 1000;
+    const Fn = d.rho * Q * d.V * Math.sin(th);
+    const Qdown = d.Q * (1 + Math.cos(th)) / 2, Qup = d.Q * (1 - Math.cos(th)) / 2;
+    return steps({ Fn, Qdown, Qup }, [
+      ["Plaque lisse", "La réaction est purement normale : aucune force tangentielle."],
+      ["Force normale", `Fₙ = ρQV sinθ = ${n(Fn)} N`],
+      ["Répartition du débit", `Q₊ = Q(1+cosθ)/2 = ${n(Qdown)} L/s ; Q₋ = ${n(Qup)} L/s`]
+    ]);
+  },
+  reynoldsRegime(d) {
+    const D = d.D / 1000, Q = d.Q / 1000, nu = d.nu * 1e-6, V = Q / circle(D), Re = V * D / nu;
+    return steps({ V, Re }, [
+      ["Vitesse moyenne", `V = Q/A = ${n(V)} m/s`],
+      ["Nombre de Reynolds", `Re = VD/ν = ${n(Re)}`],
+      ["Régime", Re < 2000 ? "laminaire (Re < 2000)" : Re < 4000 ? "transition (2000–4000)" : "turbulent (Re > 4000)"]
+    ]);
+  },
+  hydraulicDiameter(d) {
+    const a = d.a / 1000, b = d.b / 1000, nu = d.nu * 1e-6;
+    const Dh = 2 * a * b / (a + b), Re = d.V * Dh / nu;
+    return steps({ Dh, Re }, [
+      ["Section pleine", `A = ab ; P = 2(a+b)`],
+      ["Diamètre hydraulique", `Dₕ = 4A/P = 2ab/(a+b) = ${n(Dh)} m`],
+      ["Reynolds", `Re = V Dₕ/ν = ${n(Re)}`]
+    ]);
+  },
+  fallingFilm(d) {
+    const e = d.e / 1000, sina = Math.sin(d.alpha * Math.PI / 180);
+    const uSurface = d.rho * G * e ** 2 * sina / (2 * d.mu);
+    const q = d.rho * G * e ** 3 * sina / (3 * d.mu);
+    const uMean = (2 / 3) * uSurface, Re = d.rho * uMean * e / d.mu;
+    return steps({ uSurface, q, Re }, [
+      ["Équilibre NS", "pesanteur motrice = viscosité ; adhérence au parement, τ = 0 à la surface libre"],
+      ["Profil demi-Poiseuille", `u(e) = ρge²sinα/(2μ) = ${n(uSurface)} m/s`],
+      ["Débit linéique", `q = ρge³sinα/(3μ) = ${n(q)} m²/s`],
+      ["Contrôle a posteriori", `Re = ρūe/μ = ${n(Re)} — laminaire seulement si Re ≲ 500`]
+    ]);
+  },
+  poiseuilleOil(d) {
+    const D = d.D / 1000, Q = d.Q / 1000, V = Q / circle(D), Re = d.rho * V * D / d.mu;
+    const f = 64 / Re, hf = f * (d.L / D) * V ** 2 / (2 * G), dp = d.rho * G * hf, power = Q * dp;
+    return steps({ V, Re, f, hf, dp, power }, [
+      ["Vitesse et Reynolds", `V = ${n(V)} m/s ; Re = ${n(Re)}`],
+      ["Loi laminaire", `λ = 64/Re = ${n(f)}`],
+      ["Perte de charge", `h_f = λ(L/D)V²/(2g) = ${n(hf)} m`],
+      ["Chute de pression", `Δp = ρgh_f = ${n(dp)} Pa`],
+      ["Puissance dissipée", `P = QΔp = ${n(power)} W`]
+    ]);
+  },
+  gravityPipe(d) {
+    const D = d.D / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
+    let V = Math.sqrt(2 * G * d.H / (0.02 * d.L / D + d.Ksum)), f = 0.02, Re = 0;
+    for (let i = 0; i < 16; i++) {
+      Re = V * D / nu;
+      f = darcyFriction(Re, eps / D);
+      V = Math.sqrt(2 * G * d.H / (f * d.L / D + d.Ksum));
+    }
+    const Q = circle(D) * V * 1000, hf = f * (d.L / D) * V ** 2 / (2 * G);
+    return steps({ V, f, Q, hf }, [
+      ["Bernoulli entre surfaces libres", `H = (λL/D + ΣK) V²/(2g)`],
+      ["Itération Colebrook", `λ = ${n(f)} ; Re = ${n(Re)}`],
+      ["Vitesse", `V = ${n(V)} m/s`],
+      ["Débit", `Q = AV = ${n(Q)} L/s`]
+    ]);
+  },
+  pipeSizing(d) {
+    const Q = d.Q / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
+    const rows = COMMERCIAL_DN.map(Dmm => {
+      const D = Dmm / 1000, V = Q / circle(D), Re = V * D / nu, f = darcyFriction(Re, eps / D);
+      const hf = f * (d.L / D) * V ** 2 / (2 * G);
+      return { Dmm, V, hf, ok: hf <= d.H };
+    });
+    const chosen = rows.find(r => r.ok) || rows[rows.length - 1];
+    return steps({ Dmm: chosen.Dmm, V: chosen.V, hf: chosen.hf }, [
+      ["Charge disponible", `H = ${n(d.H)} m à consommer en pertes linéaires`],
+      ["Série commerciale", COMMERCIAL_DN.map(D => `${D}`).join(" / ") + " mm"],
+      ["Diamètre retenu", `DN ${chosen.Dmm} : h_f = ${n(chosen.hf)} m ${chosen.ok ? "≤" : ">"} ${n(d.H)} m`],
+      ["Vitesse", `V = ${n(chosen.V)} m/s`]
+    ]);
+  },
+  pumpStation(d) {
+    const Q = d.Q / 1000, Ds = d.Ds / 1000, Dd = d.Dd / 1000;
+    const Vs = Q / circle(Ds), Vd = Q / circle(Dd);
+    const hfs = (d.f * d.Ls / Ds + d.Ks) * Vs ** 2 / (2 * G);
+    const hfd = (d.f * d.Ld / Dd + d.Kd) * Vd ** 2 / (2 * G);
+    const HMT = (d.z2 - d.z1) + hfs + hfd;
+    const waterPower = d.rho * G * Q * HMT, inputPower = waterPower / d.eta;
+    return steps({ HMT, hfs, hfd, waterPower, inputPower }, [
+      ["Vitesses", `V_asp = ${n(Vs)} m/s ; V_ref = ${n(Vd)} m/s`],
+      ["Pertes aspiration", `h_asp = ${n(hfs)} m`],
+      ["Pertes refoulement", `h_ref = ${n(hfd)} m`],
+      ["Hauteur manométrique", `HMT = Δz + h_asp + h_ref = ${n(HMT)} m`],
+      ["Puissances", `Pₕ = ${n(waterPower)} W ; P_abs = Pₕ/η = ${n(inputPower)} W`]
+    ]);
+  },
+  bordaCarnot(d) {
+    const A1 = circle(d.D1 / 1000), A2 = circle(d.D2 / 1000), Q = d.Q / 1000;
+    const V1 = Q / A1, V2 = Q / A2, hs = (V1 - V2) ** 2 / (2 * G);
+    const dp = 0.5 * d.rho * (V1 ** 2 - V2 ** 2) - d.rho * G * hs;
+    return steps({ V1, V2, hs, dp }, [
+      ["Vitesses", `V₁ = ${n(V1)} m/s ; V₂ = ${n(V2)} m/s`],
+      ["Borda–Carnot", `hₛ = (V₁ − V₂)²/(2g) = ${n(hs)} m`],
+      ["Bernoulli généralisé", `p₂ − p₁ = ½ρ(V₁² − V₂²) − ρghₛ = ${n(dp)} Pa`],
+      ["Lecture", "La pression remonte, mais moins qu’en fluide parfait : le diffuseur brusque dissipe une partie de l’énergie cinétique."]
+    ]);
+  },
+  reynoldsDrag(d) {
+    const velScale = 1 / d.N, Fp = d.Fm;
+    return steps({ velScale, Fp }, [
+      ["Similitude de Reynolds", "Même fluide : Vₘ Lₘ = Vₚ Lₚ ⟹ Vₘ/Vₚ = N"],
+      ["Échelle des vitesses", `λV = 1/N = ${n(velScale)} — le modèle doit aller N fois plus vite`],
+      ["Échelle des forces", `F ~ ρV²L² ⟹ Fₚ/Fₘ = 1`],
+      ["Force prototype", `Fₚ = Fₘ = ${n(Fp)} N`]
+    ]);
+  },
+  froudeSpillway(d) {
+    const Qm = d.Qp / d.N ** 2.5, Vp = d.Vm * Math.sqrt(d.N);
+    const tp = d.tMin * 60 * Math.sqrt(d.N), Fp = d.Fm * d.N ** 3;
+    return steps({ Qm, Vp, tp, Fp }, [
+      ["Échelle des débits", `λQ = N^(5/2) ⟹ Qₘ = Qₚ/λQ = ${n(Qm)} m³/s`],
+      ["Vitesse prototype", `Vₚ = Vₘ√N = ${n(Vp)} m/s`],
+      ["Temps prototype", `tₚ = tₘ√N = ${n(tp)} s`],
+      ["Force prototype", `λF = N³ ⟹ Fₚ = ${n(Fp)} N`]
+    ]);
+  },
+  stokesViscosity(d) {
+    const diam = d.d / 1000, mu = (d.rhoS - d.rhoF) * G * diam ** 2 / (18 * d.V);
+    const Re = d.rhoF * d.V * diam / mu;
+    return steps({ mu, Re }, [
+      ["Équilibre à vitesse limite", "poids = Archimède + traînée de Stokes 3πμdV"],
+      ["Viscosité", `μ = (ρₛ − ρ)gd²/(18V) = ${n(mu)} Pa·s`],
+      ["Contrôle", `Re = ρVd/μ = ${n(Re)} — Stokes valable si Re ≲ 1`]
+    ]);
+  },
+  trapezoidalChannel(d) {
+    const slope = d.S / 1000, A = (d.b + d.z * d.y) * d.y, P = d.b + 2 * d.y * Math.sqrt(1 + d.z ** 2);
+    const R = A / P, V = d.Ks * R ** (2 / 3) * Math.sqrt(slope), Q = A * V;
+    const T = d.b + 2 * d.z * d.y, ym = A / T, Fr = V / Math.sqrt(G * ym);
+    return steps({ R, V, Q, Fr }, [
+      ["Géométrie trapézoïdale", `A = (b + zy)y = ${n(A)} m² ; P = b + 2y√(1+z²) = ${n(P)} m`],
+      ["Rayon hydraulique", `R = A/P = ${n(R)} m`],
+      ["Strickler", `V = Kₛ R^(2/3)√S = ${n(V)} m/s ; Q = ${n(Q)} m³/s`],
+      ["Froude", `Fr = V/√(gȳ) = ${n(Fr)} avec ȳ = A/T = ${n(ym)} m`]
+    ]);
+  },
+  normalDepth(d) {
+    const slope = d.S / 1000, manningQ = y => {
+      const A = d.b * y, R = A / (d.b + 2 * y);
+      return A * d.Ks * R ** (2 / 3) * Math.sqrt(slope);
+    };
+    let lo = 0.02, hi = 8;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (manningQ(mid) < d.Q) lo = mid; else hi = mid;
+    }
+    const y = (lo + hi) / 2, A = d.b * y, V = d.Q / A, Fr = V / Math.sqrt(G * y);
+    return steps({ y, V, Fr }, [
+      ["Équation à résoudre", "Q = A Kₛ R^(2/3) √S avec A = by et R = A/(b+2y)"],
+      ["Profondeur normale", `yₙ = ${n(y)} m`],
+      ["Vitesse", `V = Q/A = ${n(V)} m/s`],
+      ["Régime", `Fr = ${n(Fr)} : ${Fr < 1 ? "fluvial" : Fr > 1 ? "torrentiel" : "critique"}`]
+    ]);
+  },
+  waveCelerity(d) {
+    const c = Math.sqrt(G * d.y), cDown = d.V + c, cUp = c - d.V, tUp = d.Lkm * 1000 / cUp;
+    return steps({ c, cDown, cUp, tUp }, [
+      ["Célérité relative", `c = √(gy) = ${n(c)} m/s`],
+      ["Front aval", `V + c = ${n(cDown)} m/s`],
+      ["Front amont", `c − V = ${n(cUp)} m/s (remonte si Fr < 1)`],
+      ["Délai vers l’amont", `t = L/(c − V) = ${n(tUp)} s`]
+    ]);
+  },
+  damBreakRitter(d) {
+    const cFront = 2 * Math.sqrt(G * d.h0), hDam = 4 / 9 * d.h0;
+    const vDam = (2 / 3) * Math.sqrt(G * d.h0), t = d.xKm * 1000 / cFront;
+    return steps({ cFront, hDam, vDam, t }, [
+      ["Front sur fond sec", `c_f = 2√(gh₀) = ${n(cFront)} m/s`],
+      ["Au droit du barrage", `h = 4h₀/9 = ${n(hDam)} m ; V = 2√(gh₀)/3 = ${n(vDam)} m/s`],
+      ["Temps d’arrivée", `t = x/c_f = ${n(t)} s`],
+      ["Lecture", "Ritter est un majorant sans frottement : les études réelles résolvent Saint-Venant complet."]
+    ]);
+  },
+  damSluice(d) {
+    const y0 = d.hSill - d.H, yc = y0 + d.H / 2, A = d.b * d.H;
+    const force = d.rho * G * A * yc, ig = d.b * d.H ** 3 / 12, yp = yc + ig / (A * yc);
+    const lift = d.W * 1000 + d.mu * force, Q = d.Cd * A * Math.sqrt(2 * G * yc);
+    return steps({ force, yp, lift, Q }, [
+      ["Centre de gravité", `ȳ = h_seuil − H/2 = ${n(yc)} m`],
+      ["Poussée fermée", `F = ρgAȳ = ${n(force)} N`],
+      ["Centre de poussée", `yₚ = ȳ + Iᴳ/(Aȳ) = ${n(yp)} m`],
+      ["Effort de levage", `T = W + μF = ${n(lift)} N`],
+      ["Débit vanne ouverte", `Q = Cᵈ A √(2gȳ) = ${n(Q)} m³/s`]
+    ]);
+  },
+  npshCavitation(d) {
+    const Q = d.Q / 1000, D = d.D / 1000, V = Q / circle(D);
+    const hf = (d.f * d.L / D + d.K) * V ** 2 / (2 * G);
+    const patm = d.patm * 1000 / (d.rho * G), pv = d.pv * 1000 / (d.rho * G), Hs = d.ze - d.z0;
+    const NPSHd = patm - pv - Hs - hf;
+    const pe = (patm - Hs - V ** 2 / (2 * G) - hf) * d.rho * G;
+    const zMax = d.z0 + (patm - pv - d.NPSHr - d.margin - hf);
+    return steps({ V, hf, pe, NPSHd, zMax }, [
+      ["Aspiration", `V = ${n(V)} m/s ; h_asp = (λL/D+K)V²/(2g) = ${n(hf)} m`],
+      ["Pression à l’entrée", `pₑ = pₐₜₘ + ρg(z₀−zₑ) − ρV²/2 − ρgh_asp = ${n(pe)} Pa abs.`],
+      ["NPSH disponible", `NPSH_d = pₐₜₘ/ρg − pᵥ/ρg − Hₛ − h_asp = ${n(NPSHd)} m`],
+      ["Cote max. de l’axe", `z_max = z₀ + (pₐₜₘ−pᵥ)/ρg − NPSHᵣ − marge − h_asp = ${n(zMax)} m`],
+      ["Conclusion", NPSHd > d.NPSHr ? `NPSH_d > NPSHᵣ (${n(d.NPSHr)} m) : pas de cavitation.` : `NPSH_d < NPSHᵣ : risque de cavitation.`]
+    ]);
+  },
+  waterCannon(d) {
+    const A1 = circle(d.D1 / 1000), A2 = circle(d.d / 1000), p1 = d.p1 * 1e5, beta = A2 / A1;
+    const V2 = Math.sqrt((2 * p1 / d.rho) / (1 - beta ** 2)), V1 = V2 * beta, Q = A2 * V2;
+    const Fplate = d.rho * Q * V2, Frecoil = p1 * A1 - d.rho * Q * (V2 - V1);
+    return steps({ V2, Q, Fplate, Frecoil }, [
+      ["Bernoulli + continuité", `V₂² − V₁² = 2p₁/ρ et V₁ = V₂ (d/D₁)²`],
+      ["Jet", `V₂ = ${n(V2)} m/s ; Q = ${n(Q)} m³/s`],
+      ["Écran perpendiculaire", `F = ρQV₂ = ${n(Fplate)} N`],
+      ["Recul de la lance", `F_recul = p₁A₁ − ρQ(V₂−V₁) = ${n(Frecoil)} N vers l’amont`]
+    ]);
+  },
+  cofferdamBallast(d) {
+    const W = d.W * 1000, Te = W / (d.rho * G * d.L * d.B), vol = d.L * d.B * Te;
+    const KB = Te / 2, BM = (d.L * d.B ** 3 / 12) / vol, GM = KB + BM - d.zG;
+    const Farch = d.rho * G * d.L * d.B * d.immerse, Wballast = Farch - W - d.Rmin * 1000;
+    const Vballast = Wballast / (d.rho * G);
+    return steps({ Te, GM, Vballast }, [
+      ["Tirant au remorquage", `Tₑ = W/(ρgLB) = ${n(Te)} m`],
+      ["Stabilité transversale", `GM = KB + BM − KG = ${n(GM)} m : ${GM > 0 ? "stable" : "instable"}`],
+      ["Poussée posée", `Π = ρg L B h = ${n(Farch)} N sur h = ${n(d.immerse)} m`],
+      ["Ballast", `W + W_b + R = Π ⟹ 𝒱_b = ${n(Vballast)} m³`]
+    ]);
+  },
+  oilSeason(d) {
+    const D = d.D / 1000, L = d.Lkm * 1000, Q = d.Q / 1000, V = Q / circle(D);
+    const run = nu6 => {
+      const nu = nu6 * 1e-6, Re = V * D / nu, f = darcyFriction(Re, 0), hf = f * (L / D) * V ** 2 / (2 * G);
+      return { Re, f, hf, P: d.rho * G * Q * hf / d.eta };
+    };
+    const s = run(d.nuS), w = run(d.nuW);
+    return steps({ ReS: s.Re, hfS: s.hf, PS: s.P, ReW: w.Re, hfW: w.hf, PW: w.P }, [
+      ["Vitesse", `V = ${n(V)} m/s sur L = ${n(L)} m`],
+      ["Été", `Re = ${n(s.Re)} ; λ = ${n(s.f)} ; h_f = ${n(s.hf)} m ; P_abs = ${n(s.P)} W`],
+      ["Hiver (ν double)", `Re = ${n(w.Re)} ; λ = ${n(w.f)} ; h_f = ${n(w.hf)} m ; P_abs = ${n(w.P)} W`],
+      ["Comparaison", w.P < s.P ? "Ici le laminaire d’hiver dissipe moins — proche de la transition, rester prudent." : "L’hiver, plus visqueux, coûte davantage en pompage."]
+    ]);
+  },
+  retainingWall(d) {
+    const F = d.rho * G * d.H ** 2 / 2, yp = d.H / 3, W = d.rhoC * G * d.t * d.Hwall;
+    const Mstab = W * (d.t / 2), Mrev = F * yp, FS = Mstab / Mrev;
+    return steps({ F, yp, W, Mrev, FS }, [
+      ["Poussée par mètre", `F = ρgH²/2 = ${n(F)} N/m, appliquée à H/3 = ${n(yp)} m du pied`],
+      ["Poids du mur", `W = ρ_c g t H_mur = ${n(W)} N/m`],
+      ["Moments au pied aval", `M_stab = W·t/2 = ${n(Mstab)} N·m/m ; M_renv = F·H/3 = ${n(Mrev)} N·m/m`],
+      ["Sécurité au renversement", `FS = M_stab/M_renv = ${n(FS)}`]
+    ]);
+  },
+  gravityValve(d) {
+    const D = d.D / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
+    const iterate = Ksum => {
+      let V = Math.sqrt(2 * G * d.H / (0.02 * d.L / D + Ksum)), f = 0.02, Re = 0;
+      for (let i = 0; i < 16; i++) {
+        Re = V * D / nu;
+        f = darcyFriction(Re, eps / D);
+        V = Math.sqrt(2 * G * d.H / (f * d.L / D + Ksum));
+      }
+      return { V, f, Re, Q: circle(D) * V * 1000 };
+    };
+    const full = iterate(d.Kother + d.Kv0);
+    const V2 = full.V / 2, Re2 = V2 * D / nu, f2 = darcyFriction(Re2, eps / D);
+    const Kvalve = 2 * G * d.H / V2 ** 2 - f2 * d.L / D - d.Kother;
+    return steps({ V: full.V, Q: full.Q, Kvalve }, [
+      ["Bernoulli", `H = (λL/D + ΣK) V²/(2g)`],
+      ["Ouverture actuelle", `V = ${n(full.V)} m/s ; Q = ${n(full.Q)} L/s ; λ = ${n(full.f)}`],
+      ["Demi-débit", `V' = V/2 = ${n(V2)} m/s ; λ' = ${n(f2)}`],
+      ["K vanne requis", `Kᵥ = 2gH/V'² − λ'L/D − K_autres = ${n(Kvalve)}`]
+    ]);
+  },
+  viscosityForce(d) {
+    const e = d.e / 1000, tau = d.mu * d.U / e, F = tau * d.A;
+    return steps({ tau, F }, [
+      ["Gradient", `U/e = ${n(d.U / e)} s⁻¹`],
+      ["Loi de Newton", `τ = μU/e = ${n(tau)} Pa`],
+      ["Force", `F = τA = ${n(F)} N`]
+    ]);
+  },
+  bearingLoss(d) {
+    const R = d.d / 2000, e = d.gap / 1000, L = d.L / 1000, omega = 2 * Math.PI * d.rpm / 60;
+    const U = omega * R, tau = d.mu * U / e, C = tau * (2 * Math.PI * R * L) * R, P = C * omega;
+    return steps({ C, P }, [
+      ["Cinématique", `ω = ${n(omega)} rad/s ; U = ωR = ${n(U)} m/s`],
+      ["Couette du jeu", `τ = μU/e = ${n(tau)} Pa`],
+      ["Couple", `C = τ(2πRL)R = ${n(C)} N·m`],
+      ["Puissance dissipée", `P = Cω = ${n(P)} W`]
+    ]);
+  },
+  pressureUnits(d) {
+    const pBar = d.bar * 1e5, hBar = pBar / (1000 * G);
+    const pHg = (d.mmHg / 1000) * 13600 * G, hHg = pHg / (1000 * G);
+    const pPsi = d.psi * 6894.757, hPsi = pPsi / (1000 * G);
+    return steps({ pBar, hBar, pHg, hHg, pPsi, hPsi }, [
+      ["Bar", `${n(d.bar)} bar = ${n(pBar)} Pa = ${n(hBar)} mCE`],
+      ["Mercure", `${n(d.mmHg)} mmHg = ${n(pHg)} Pa = ${n(hHg)} mCE`],
+      ["PSI", `${n(d.psi)} psi = ${n(pPsi)} Pa = ${n(hPsi)} mCE`]
+    ]);
+  },
+  pipeGage(d) {
+    const p = (d.rhoM * d.hHg - d.rho * d.z) * G;
+    return steps({ p }, [
+      ["Cheminement", "Du centre : on descend dans l’eau jusqu’au ménisque bas, puis on remonte dans le mercure jusqu’à l’atmosphère."],
+      ["Pression relative", `p = (ρₘ Δh − ρ z) g = ${n(p)} Pa`]
+    ]);
+  },
+  woodLog(d) {
+    const V = circle(d.D) * d.L, mass = d.s * 1000 * V, Vimm = d.s * V;
+    return steps({ Vimm, mass }, [
+      ["Volume du tronc", `𝒱 = πD²L/4 = ${n(V)} m³`],
+      ["Flottaison", `𝒱_imm / 𝒱 = d = ${n(d.s)} ⟹ 𝒱_imm = ${n(Vimm)} m³`],
+      ["Masse", `m = d ρeau 𝒱 = ${n(mass)} kg`]
+    ]);
+  },
+  iceberg(d) {
+    const emerge = (1 - d.rhoI / d.rhoW) * 100;
+    return steps({ emerge }, [
+      ["Archimède", "Le poids égale la poussée : ρᵢ 𝒱 g = ρₑ 𝒱_imm g"],
+      ["Fraction immergée", `𝒱_imm/𝒱 = ρᵢ/ρₑ = ${n(d.rhoI / d.rhoW)}`],
+      ["Fraction émergée", `1 − ρᵢ/ρₑ = ${n(emerge)} %`]
+    ]);
+  },
+  channelDischarge(d) {
+    const Q = d.b * d.y * d.V, Qh = Q * 3600;
+    return steps({ Q, Qh }, [
+      ["Section mouillée", `A = by = ${n(d.b * d.y)} m²`],
+      ["Débit", `Q = AV = ${n(Q)} m³/s = ${n(Qh)} m³/h`]
+    ]);
+  },
+  pitotWater(d) {
+    const h = d.h / 1000, V = Math.sqrt(2 * G * h);
+    return steps({ V }, [
+      ["Hauteur dynamique", `h = V²/2g = ${n(h)} mCE`],
+      ["Vitesse locale", `V = √(2gh) = ${n(V)} m/s`]
+    ]);
+  },
+  turbinePower(d) {
+    const P = d.eta * d.rho * G * d.Q * d.H;
+    return steps({ P }, [
+      ["Puissance hydraulique", `Pₕ = ρgQH = ${n(d.rho * G * d.Q * d.H)} W`],
+      ["Puissance électrique", `P = η Pₕ = ${n(P)} W`]
+    ]);
+  },
+  momentumHold(d) {
+    const Q = d.Q / 1000, F = d.rho * Q * d.V;
+    return steps({ F }, [
+      ["Débit massique", `ṁ = ρQ = ${n(d.rho * Q)} kg/s`],
+      ["Réaction", `F = ρQV = ${n(F)} N`]
+    ]);
+  },
+  froudeForceTime(d) {
+    const tp = d.tm * Math.sqrt(d.N), Fp = d.Fm * d.N ** 3;
+    return steps({ tp, Fp }, [
+      ["Échelles de Froude", `λt = √N ; λF = N³ (même fluide)`],
+      ["Période prototype", `tₚ = tₘ√N = ${n(tp)} s`],
+      ["Force prototype", `Fₚ = Fₘ N³ = ${n(Fp)} N`]
+    ]);
+  },
+  froudeScale(d) {
+    const velocityScale = Math.sqrt(d.N), Qm = d.Qp / d.N ** 2.5;
+    return steps({ velocityScale, Qm }, [
+      ["Échelle des vitesses", `λV = √N = ${n(velocityScale)}`],
+      ["Échelle des débits", `λQ = N^(5/2) = ${n(d.N ** 2.5)}`],
+      ["Débit modèle", `Qₘ = Qₚ/λQ = ${n(Qm)} m³/s`]
+    ]);
+  },
+  reynoldsSpeed(d) {
+    const Vp = d.Vm / d.N;
+    return steps({ Vp }, [
+      ["Similitude de Reynolds, même fluide", "Vₘ Lₘ = Vₚ Lₚ"],
+      ["Vitesse prototype", `Vₚ = Vₘ/N = ${n(Vp)} m/s`]
+    ]);
+  },
+  idealGasTwo(d) {
+    const T1 = d.temp1 + 273.15, T2 = d.temp2 + 273.15;
+    const p1 = d.p1 * 1e5, p2 = d.p2 * 1e5;
+    const rho1 = p1 / (d.R * T1), rho2 = p2 / (d.R * T2);
+    return steps({ rho1, rho2 }, [
+      ["État 1", `T₁ = ${n(T1)} K ; p₁ = ${n(p1)} Pa ; ρ₁ = p₁/(RT₁) = ${n(rho1)} kg/m³`],
+      ["État 2", `T₂ = ${n(T2)} K ; p₂ = ${n(p2)} Pa ; ρ₂ = p₂/(RT₂) = ${n(rho2)} kg/m³`]
+    ]);
+  },
+  reynoldsTwo(d) {
+    const Re1 = d.V1 * (d.D1 / 1000) / (d.nu1 * 1e-6);
+    const Re2 = d.V2 * (d.D2 / 1000) / (d.nu2 * 1e-6);
+    return steps({ Re1, Re2 }, [
+      ["Cas 1", `Re₁ = V₁D₁/ν₁ = ${n(Re1)}`],
+      ["Cas 2", `Re₂ = V₂D₂/ν₂ = ${n(Re2)}`],
+      ["Régimes", `${Re1 < 2000 ? "1 laminaire" : Re1 < 4000 ? "1 transition" : "1 turbulent"} ; ${Re2 < 2000 ? "2 laminaire" : Re2 < 4000 ? "2 transition" : "2 turbulent"}`]
+    ]);
+  },
+  kinematicField(d) {
+    const div = 0, rot = -2 * d.k * d.y;
+    return steps({ div, rot }, [
+      ["Champ", `u = ${n(d.k)} x² ; v = −${n(2 * d.k)} x y`],
+      ["Incompressibilité", `div V⃗ = ∂u/∂x + ∂v/∂y = 2kx − 2kx = ${n(div)}`],
+      ["Rotationnel", `ω_z = ∂v/∂x − ∂u/∂y = −2k y = ${n(rot)} au point y = ${n(d.y)} m`],
+      ["Lecture", "div = 0 partout ; irrotationnel seulement sur y = 0."]
+    ]);
+  },
+  dimensionsMLT(d) {
+    return steps({
+      pM: 1, pL: 2, pT: -3, cM: 1, cL: 2, cT: -2, sM: 1, sL: -1, sT: -2,
+      mM: 1, mL: 0, mT: -1, tM: 1, tL: 0, tT: -2, gM: 1, gL: -2, gT: -2
+    }, [
+      ["Rappel", "Toute grandeur mécanique s’écrit Mᵅ Lᵝ Tᵞ. On lit le tableau du cours §7.1."],
+      ["Puissance", "P = F V → M L² T⁻³"],
+      ["Couple", "C = F ℓ → M L² T⁻²"],
+      ["Contrainte", "σ = F/A → M L⁻¹ T⁻²"],
+      ["Débit massique", "ṁ = ρ Q → M T⁻¹"],
+      ["Tension superficielle", "σ = F/ℓ → M T⁻²"],
+      ["Gradient de pression", "dp/dx → M L⁻² T⁻²"]
+    ]);
+  },
+  pendulumPi(d) {
+    return steps({ a: 0.5, b: -0.5, c: 0 }, [
+      ["Grandeurs", "T = k Lᵃ gᵇ mᶜ ; dimensions M, L, T."],
+      ["Équation aux dimensions", "[T] = T = Lᵃ (L T⁻²)ᵇ Mᶜ"],
+      ["Identification", "c = 0 (la masse n’apparaît pas) ; a + b = 0 ; −2b = 1"],
+      ["Exposants", `a = ${n(0.5)} ; b = ${n(-0.5)} ; c = 0 ⟹ T ∝ √(L/g)`]
+    ]);
+  },
+  propellerPi(d) {
+    return steps({ a: 1, b: 3, c: 5 }, [
+      ["Grandeurs", "P = k ρᵃ nᵇ Dᶜ"],
+      ["Dimensions", "M L² T⁻³ = (M L⁻³)ᵃ (T⁻¹)ᵇ Lᶜ"],
+      ["Identification", "a = 1 ; −3a + c = 2 ; −b = −3"],
+      ["Forme", `P = ρ n³ D⁵ f(…) ; a = 1, b = 3, c = 5`]
     ]);
   }
 };

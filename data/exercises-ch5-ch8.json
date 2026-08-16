@@ -1,0 +1,420 @@
+[
+  {
+    "id": "MOM_BUCKET_03",
+    "chapter": "momentum",
+    "solver": "jetMobile",
+    "title": "Auget en U fixe puis mobile",
+    "difficulty": 3,
+    "statement": "Un jet d’eau frappe un auget en U qui le retourne à 180°. Calculer la force sur l’auget fixe, puis la force et la puissance lorsque l’auget avance à la vitesse u dans le sens du jet. En déduire la vitesse qui maximise la puissance.",
+    "variables": [
+      {"key": "d", "label": "Diamètre du jet d", "unit": "mm", "value": 50, "min": 30, "max": 80, "step": 5},
+      {"key": "V", "label": "Vitesse du jet V", "unit": "m/s", "value": 18, "min": 10, "max": 28, "step": 1},
+      {"key": "u", "label": "Vitesse de l’auget u", "unit": "m/s", "value": 6, "min": 2, "max": 12, "step": 1},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "Ffixed", "label": "Force auget fixe F_fixe", "unit": "N"},
+      {"key": "Fmoving", "label": "Force auget mobile F", "unit": "N"},
+      {"key": "power", "label": "Puissance P", "unit": "W"},
+      {"key": "uOpt", "label": "Vitesse optimale u_opt", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "MOM_ELBOW_04",
+    "chapter": "momentum",
+    "solver": "elbowForce",
+    "title": "Force d’ancrage d’un coude à 90°",
+    "difficulty": 3,
+    "statement": "Un coude horizontal à 90° de diamètre constant transporte de l’eau. La pression relative à l’entrée est connue. Fluide parfait, même diamètre : p et V se conservent. Calculer la force exercée par l’eau sur le coude (composantes et résultante).",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 200, "min": 150, "max": 400, "step": 25},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 150, "min": 50, "max": 300, "step": 10},
+      {"key": "p1", "label": "Pression relative p₁", "unit": "kPa", "value": 450, "min": 100, "max": 800, "step": 25},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Fx", "label": "Composante Fₓ", "unit": "N"},
+      {"key": "Fy", "label": "Composante Fᵧ", "unit": "N"},
+      {"key": "F", "label": "Résultante F", "unit": "N"}
+    ]
+  },
+  {
+    "id": "MOM_CONV_05",
+    "chapter": "momentum",
+    "solver": "convergentForce",
+    "title": "Effort axial sur un convergent",
+    "difficulty": 3,
+    "statement": "Un convergent horizontal fait passer une conduite d’eau de D₁ à D₂. Fluide parfait. Calculer les vitesses, la pression aval par Bernoulli, puis la force axiale exercée par l’eau sur le convergent (positive vers l’aval).",
+    "variables": [
+      {"key": "D1", "label": "Diamètre amont D₁", "unit": "mm", "value": 300, "min": 200, "max": 400, "step": 25},
+      {"key": "D2", "label": "Diamètre aval D₂", "unit": "mm", "value": 150, "min": 80, "max": 220, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 80, "min": 40, "max": 160, "step": 10},
+      {"key": "p1", "label": "Pression amont p₁", "unit": "kPa", "value": 80, "min": 40, "max": 160, "step": 10},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s"},
+      {"key": "p2", "label": "Pression aval p₂", "unit": "Pa"},
+      {"key": "F", "label": "Effort sur le convergent F", "unit": "N"}
+    ]
+  },
+  {
+    "id": "MOM_REACT_06",
+    "chapter": "momentum",
+    "solver": "jetReaction",
+    "title": "Réaction d’un jet à la sortie d’un réservoir",
+    "difficulty": 2,
+    "statement": "Un réservoir sur rouleaux (frottement négligeable) se vide par un orifice latéral profilé (Cᵈ = 1) de section A, sous une charge h. Calculer la force horizontale à exercer pour maintenir le réservoir immobile.",
+    "variables": [
+      {"key": "h", "label": "Charge h", "unit": "m", "value": 4, "min": 1.5, "max": 8, "step": 0.5},
+      {"key": "A", "label": "Section de l’orifice A", "unit": "cm²", "value": 20, "min": 8, "max": 40, "step": 2},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse de sortie V", "unit": "m/s"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "F", "label": "Force de retenue F", "unit": "N"}
+    ]
+  },
+  {
+    "id": "MOM_INCLINE_07",
+    "chapter": "momentum",
+    "solver": "inclinedPlate",
+    "title": "Jet incliné sur une plaque lisse",
+    "difficulty": 3,
+    "statement": "Un jet plan horizontal frappe une plaque lisse inclinée de θ sur la direction du jet. Pesanteur et frottements négligés : |V| se conserve le long de la plaque. Calculer la force normale et la répartition du débit entre les deux nappes.",
+    "variables": [
+      {"key": "V", "label": "Vitesse du jet V", "unit": "m/s", "value": 12, "min": 6, "max": 20, "step": 1},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 40, "min": 15, "max": 80, "step": 5},
+      {"key": "theta", "label": "Inclinaison θ", "unit": "°", "value": 60, "min": 20, "max": 80, "step": 5},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "Fn", "label": "Force normale Fₙ", "unit": "N"},
+      {"key": "Qdown", "label": "Débit aval Q₊", "unit": "L/s"},
+      {"key": "Qup", "label": "Débit amont Q₋", "unit": "L/s"}
+    ]
+  },
+  {
+    "id": "LOSS_RE_01",
+    "chapter": "losses",
+    "solver": "reynoldsRegime",
+    "title": "Régime d’écoulement en conduite",
+    "difficulty": 1,
+    "statement": "De l’eau circule dans une conduite circulaire. Calculer la vitesse moyenne et le nombre de Reynolds, puis conclure sur le régime (laminaire, transition ou turbulent).",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 100, "min": 40, "max": 300, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 8, "min": 1, "max": 40, "step": 1},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 20, "step": 0.2}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Re", "label": "Nombre de Reynolds Re", "unit": "—"}
+    ]
+  },
+  {
+    "id": "LOSS_DH_02",
+    "chapter": "losses",
+    "solver": "hydraulicDiameter",
+    "title": "Diamètre hydraulique d’une gaine",
+    "difficulty": 1,
+    "statement": "Une gaine rectangulaire pleine de côtés a × b transporte un fluide à la vitesse V. Calculer le diamètre hydraulique puis le nombre de Reynolds.",
+    "variables": [
+      {"key": "a", "label": "Côté a", "unit": "mm", "value": 200, "min": 80, "max": 400, "step": 20},
+      {"key": "b", "label": "Côté b", "unit": "mm", "value": 50, "min": 20, "max": 150, "step": 10},
+      {"key": "V", "label": "Vitesse V", "unit": "m/s", "value": 1.5, "min": 0.4, "max": 3, "step": 0.1},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 15, "step": 0.2}
+    ],
+    "questions": [
+      {"key": "Dh", "label": "Diamètre hydraulique Dₕ", "unit": "m"},
+      {"key": "Re", "label": "Nombre de Reynolds Re", "unit": "—"}
+    ]
+  },
+  {
+    "id": "LOSS_FILM_03",
+    "chapter": "losses",
+    "solver": "fallingFilm",
+    "title": "Film ruisselant sur un parement",
+    "difficulty": 3,
+    "statement": "Une lame d’eau d’épaisseur e ruisselle en régime laminaire permanent sur un parement incliné de α. Surface libre à contrainte nulle. Établir la vitesse en surface, le débit par mètre de largeur, puis contrôler a posteriori l’hypothèse laminaire.",
+    "variables": [
+      {"key": "e", "label": "Épaisseur e", "unit": "mm", "value": 2, "min": 0.4, "max": 4, "step": 0.2},
+      {"key": "alpha", "label": "Inclinaison α", "unit": "°", "value": 30, "min": 10, "max": 60, "step": 5},
+      {"key": "mu", "label": "Viscosité μ", "unit": "Pa·s", "value": 0.001, "min": 0.001, "max": 0.2, "step": 0.001},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 850, "max": 1020, "step": 10}
+    ],
+    "questions": [
+      {"key": "uSurface", "label": "Vitesse en surface u(e)", "unit": "m/s"},
+      {"key": "q", "label": "Débit linéique q", "unit": "m²/s"},
+      {"key": "Re", "label": "Reynolds du film Re", "unit": "—"}
+    ]
+  },
+  {
+    "id": "LOSS_LAM_04",
+    "chapter": "losses",
+    "solver": "poiseuilleOil",
+    "title": "Écoulement laminaire d’une huile",
+    "difficulty": 2,
+    "statement": "Une huile circule dans une conduite horizontale. Vérifier le régime, calculer λ = 64/Re, la perte de charge, la chute de pression et la puissance dissipée.",
+    "variables": [
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 880, "min": 820, "max": 950, "step": 10},
+      {"key": "mu", "label": "Viscosité μ", "unit": "Pa·s", "value": 0.12, "min": 0.04, "max": 0.4, "step": 0.02},
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 40, "min": 20, "max": 80, "step": 5},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 25, "min": 8, "max": 60, "step": 2},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 1.2, "min": 0.4, "max": 3, "step": 0.2}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Re", "label": "Reynolds Re", "unit": "—"},
+      {"key": "f", "label": "Facteur λ", "unit": "—"},
+      {"key": "hf", "label": "Perte de charge h_f", "unit": "m"},
+      {"key": "dp", "label": "Chute de pression Δp", "unit": "Pa"},
+      {"key": "power", "label": "Puissance dissipée P", "unit": "W"}
+    ]
+  },
+  {
+    "id": "LOSS_GRAV_05",
+    "chapter": "losses",
+    "solver": "gravityPipe",
+    "title": "Conduite gravitaire entre deux réservoirs",
+    "difficulty": 3,
+    "statement": "Deux réservoirs à surface libre sont reliés par une conduite rugueuse. La dénivelée H est entièrement consommée par les pertes linéaires et singulières. Calculer le débit transité (problème de débitance : λ dépend de V).",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 200, "min": 150, "max": 350, "step": 25},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 2500, "min": 800, "max": 5000, "step": 100},
+      {"key": "H", "label": "Dénivelée H", "unit": "m", "value": 25, "min": 8, "max": 50, "step": 1},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.25, "min": 0.05, "max": 1, "step": 0.05},
+      {"key": "Ksum", "label": "Somme ΣK", "unit": "—", "value": 4.5, "min": 1.5, "max": 8, "step": 0.5},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "f", "label": "Facteur λ", "unit": "—"},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s"}
+    ]
+  },
+  {
+    "id": "LOSS_SIZE_06",
+    "chapter": "losses",
+    "solver": "pipeSizing",
+    "title": "Dimensionnement d’une adduction gravitaire",
+    "difficulty": 3,
+    "statement": "On veut transiter un débit Q entre deux réservoirs distants de L avec une dénivelée disponible H. Pertes singulières négligées. Déterminer le plus petit diamètre commercial (série 150–400 mm) tel que h_f ≤ H, puis la vitesse correspondante.",
+    "variables": [
+      {"key": "Q", "label": "Débit de projet Q", "unit": "L/s", "value": 80, "min": 30, "max": 160, "step": 10},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 2000, "min": 800, "max": 4000, "step": 100},
+      {"key": "H", "label": "Charge disponible H", "unit": "m", "value": 20, "min": 8, "max": 40, "step": 2},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.1, "min": 0.05, "max": 0.4, "step": 0.05},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "Dmm", "label": "Diamètre commercial DN", "unit": "mm"},
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "hf", "label": "Perte de charge h_f", "unit": "m"}
+    ]
+  },
+  {
+    "id": "LOSS_PUMP_07",
+    "chapter": "losses",
+    "solver": "pumpStation",
+    "title": "Station de pompage complète",
+    "difficulty": 3,
+    "statement": "Une pompe refoule un débit d’une bâche vers un réservoir. Aspiration et refoulement ont des diamètres, longueurs et coefficients K distincts. Le facteur de Darcy λ est donné. Calculer la HMT et les puissances hydraulique et absorbée.",
+    "variables": [
+      {"key": "z1", "label": "Cote bâche z₁", "unit": "m", "value": 2, "min": 0, "max": 8, "step": 0.5},
+      {"key": "z2", "label": "Cote réservoir z₂", "unit": "m", "value": 48, "min": 20, "max": 70, "step": 2},
+      {"key": "Ds", "label": "Diamètre aspiration Dₛ", "unit": "mm", "value": 200, "min": 150, "max": 300, "step": 25},
+      {"key": "Ls", "label": "Longueur aspiration Lₛ", "unit": "m", "value": 15, "min": 6, "max": 40, "step": 1},
+      {"key": "Ks", "label": "ΣK aspiration", "unit": "—", "value": 4, "min": 2, "max": 8, "step": 0.5},
+      {"key": "Dd", "label": "Diamètre refoulement Dᵣ", "unit": "mm", "value": 150, "min": 100, "max": 250, "step": 25},
+      {"key": "Ld", "label": "Longueur refoulement Lᵣ", "unit": "m", "value": 180, "min": 60, "max": 400, "step": 20},
+      {"key": "Kd", "label": "ΣK refoulement", "unit": "—", "value": 3.5, "min": 1.5, "max": 8, "step": 0.5},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 40, "min": 15, "max": 80, "step": 5},
+      {"key": "f", "label": "Facteur λ", "unit": "—", "value": 0.02, "min": 0.016, "max": 0.03, "step": 0.002},
+      {"key": "eta", "label": "Rendement η", "unit": "—", "value": 0.72, "min": 0.55, "max": 0.85, "step": 0.01},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "HMT", "label": "Hauteur manométrique HMT", "unit": "m"},
+      {"key": "waterPower", "label": "Puissance hydraulique Pₕ", "unit": "W"},
+      {"key": "inputPower", "label": "Puissance absorbée P_abs", "unit": "W"}
+    ]
+  },
+  {
+    "id": "LOSS_BORDA_08",
+    "chapter": "losses",
+    "solver": "bordaCarnot",
+    "title": "Élargissement brusque — Borda–Carnot",
+    "difficulty": 2,
+    "statement": "Une conduite passe brusquement de D₁ à D₂. Calculer la perte singulière de Borda–Carnot, puis la variation de pression à travers l’élargissement (conduite horizontale).",
+    "variables": [
+      {"key": "D1", "label": "Diamètre amont D₁", "unit": "mm", "value": 100, "min": 60, "max": 200, "step": 10},
+      {"key": "D2", "label": "Diamètre aval D₂", "unit": "mm", "value": 200, "min": 120, "max": 350, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 30, "min": 10, "max": 80, "step": 5},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s"},
+      {"key": "hs", "label": "Perte Borda–Carnot hₛ", "unit": "m"},
+      {"key": "dp", "label": "Variation p₂ − p₁", "unit": "Pa"}
+    ]
+  },
+  {
+    "id": "SIM_REYNOLDS_02",
+    "chapter": "similarity",
+    "solver": "reynoldsDrag",
+    "title": "Traînée d’une pile de pont (Reynolds)",
+    "difficulty": 2,
+    "statement": "La force de traînée sur une pile cylindrique dépend de D, V, ρ et μ. Des essais au 1/N en similitude de Reynolds, dans le même fluide, donnent une force Fₘ. Quelle est la force sur le prototype ?",
+    "variables": [
+      {"key": "N", "label": "Échelle N = Lₚ/Lₘ", "unit": "—", "value": 20, "min": 5, "max": 50, "step": 5},
+      {"key": "Fm", "label": "Force modèle Fₘ", "unit": "N", "value": 45, "min": 10, "max": 120, "step": 5}
+    ],
+    "questions": [
+      {"key": "velScale", "label": "Échelle des vitesses λV", "unit": "—"},
+      {"key": "Fp", "label": "Force prototype Fₚ", "unit": "N"}
+    ]
+  },
+  {
+    "id": "SIM_SPILL_03",
+    "chapter": "similarity",
+    "solver": "froudeSpillway",
+    "title": "Modèle d’évacuateur de crues",
+    "difficulty": 3,
+    "statement": "Un évacuateur de crues est étudié au 1/N en similitude de Froude. Transposer le débit de projet sur le modèle, puis une vitesse, une durée et une force mesurées sur le modèle vers le prototype.",
+    "variables": [
+      {"key": "N", "label": "Échelle N", "unit": "—", "value": 50, "min": 20, "max": 80, "step": 5},
+      {"key": "Qp", "label": "Débit prototype Qₚ", "unit": "m³/s", "value": 250, "min": 80, "max": 600, "step": 10},
+      {"key": "Vm", "label": "Vitesse modèle Vₘ", "unit": "m/s", "value": 3.2, "min": 1, "max": 6, "step": 0.2},
+      {"key": "tMin", "label": "Durée modèle tₘ", "unit": "min", "value": 2, "min": 1, "max": 8, "step": 0.5},
+      {"key": "Fm", "label": "Force modèle Fₘ", "unit": "N", "value": 12, "min": 4, "max": 40, "step": 1}
+    ],
+    "questions": [
+      {"key": "Qm", "label": "Débit modèle Qₘ", "unit": "m³/s"},
+      {"key": "Vp", "label": "Vitesse prototype Vₚ", "unit": "m/s"},
+      {"key": "tp", "label": "Durée prototype tₚ", "unit": "s"},
+      {"key": "Fp", "label": "Force prototype Fₚ", "unit": "N"}
+    ]
+  },
+  {
+    "id": "SIM_STOKES_04",
+    "chapter": "similarity",
+    "solver": "stokesViscosity",
+    "title": "Chute d’une bille — viscosimètre de Stokes",
+    "difficulty": 2,
+    "statement": "Une bille d’acier tombe à vitesse limite constante dans une huile. En régime de Stokes, la traînée vaut 3πμdV. En déduire la viscosité, puis vérifier Re ≲ 1.",
+    "variables": [
+      {"key": "rhoS", "label": "Masse volumique bille ρₛ", "unit": "kg/m³", "value": 7850, "min": 2700, "max": 8000, "step": 50},
+      {"key": "d", "label": "Diamètre d", "unit": "mm", "value": 2, "min": 0.8, "max": 4, "step": 0.2},
+      {"key": "V", "label": "Vitesse limite V", "unit": "m/s", "value": 0.012, "min": 0.004, "max": 0.04, "step": 0.002},
+      {"key": "rhoF", "label": "Masse volumique fluide ρ", "unit": "kg/m³", "value": 880, "min": 800, "max": 1000, "step": 10}
+    ],
+    "questions": [
+      {"key": "mu", "label": "Viscosité μ", "unit": "Pa·s"},
+      {"key": "Re", "label": "Reynolds de la bille Re", "unit": "—"}
+    ]
+  },
+  {
+    "id": "FS_TRAP_02",
+    "chapter": "freeSurface",
+    "solver": "trapezoidalChannel",
+    "title": "Canal trapézoïdal en régime uniforme",
+    "difficulty": 2,
+    "statement": "Un canal d’irrigation trapézoïdal (largeur au fond b, fruits des talus z = ΔH/ΔV) a une pente S. Calculer le débit pour une profondeur y, puis le nombre de Froude (profondeur moyenne A/T).",
+    "variables": [
+      {"key": "b", "label": "Largeur au fond b", "unit": "m", "value": 2, "min": 1, "max": 5, "step": 0.25},
+      {"key": "z", "label": "Fruit z (H/V)", "unit": "—", "value": 1.5, "min": 0.5, "max": 2.5, "step": 0.25},
+      {"key": "y", "label": "Profondeur y", "unit": "m", "value": 1.2, "min": 0.5, "max": 2.5, "step": 0.1},
+      {"key": "S", "label": "Pente S", "unit": "‰", "value": 0.8, "min": 0.2, "max": 3, "step": 0.1},
+      {"key": "Ks", "label": "Strickler Kₛ", "unit": "m⅓/s", "value": 70, "min": 35, "max": 90, "step": 5}
+    ],
+    "questions": [
+      {"key": "R", "label": "Rayon hydraulique R", "unit": "m"},
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "Fr", "label": "Nombre de Froude Fr", "unit": "—"}
+    ]
+  },
+  {
+    "id": "FS_NORMAL_03",
+    "chapter": "freeSurface",
+    "solver": "normalDepth",
+    "title": "Profondeur normale d’un collecteur",
+    "difficulty": 3,
+    "statement": "Un caniveau rectangulaire de largeur b et de pente S doit évacuer un débit Q. Calculer la profondeur normale yₙ (itération de Manning–Strickler) et vérifier le régime.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 1.2, "min": 0.6, "max": 3, "step": 0.2},
+      {"key": "S", "label": "Pente S", "unit": "‰", "value": 2, "min": 0.5, "max": 8, "step": 0.5},
+      {"key": "Ks", "label": "Strickler Kₛ", "unit": "m⅓/s", "value": 80, "min": 50, "max": 100, "step": 5},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 2.4, "min": 0.6, "max": 6, "step": 0.2}
+    ],
+    "questions": [
+      {"key": "y", "label": "Profondeur normale yₙ", "unit": "m"},
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Fr", "label": "Nombre de Froude Fr", "unit": "—"}
+    ]
+  },
+  {
+    "id": "FS_WAVE_04",
+    "chapter": "freeSurface",
+    "solver": "waveCelerity",
+    "title": "Célérité d’une intumescence",
+    "difficulty": 2,
+    "statement": "Une vanne de tête d’un canal rectangulaire large (profondeur y, vitesse V) est manœuvrée, créant une petite intumescence. Calculer la célérité et les vitesses absolues des fronts, puis le temps pour atteindre un ouvrage situé à L en amont.",
+    "variables": [
+      {"key": "y", "label": "Profondeur y", "unit": "m", "value": 2.5, "min": 1, "max": 5, "step": 0.25},
+      {"key": "V", "label": "Vitesse V", "unit": "m/s", "value": 1.2, "min": 0.3, "max": 2.5, "step": 0.1},
+      {"key": "Lkm", "label": "Distance amont L", "unit": "km", "value": 3, "min": 0.5, "max": 8, "step": 0.5}
+    ],
+    "questions": [
+      {"key": "c", "label": "Célérité c", "unit": "m/s"},
+      {"key": "cDown", "label": "Vitesse du front aval", "unit": "m/s"},
+      {"key": "cUp", "label": "Vitesse du front amont", "unit": "m/s"},
+      {"key": "tUp", "label": "Temps vers l’amont t", "unit": "s"}
+    ]
+  },
+  {
+    "id": "FS_RITTER_05",
+    "chapter": "freeSurface",
+    "solver": "damBreakRitter",
+    "title": "Onde de rupture de barrage (Ritter)",
+    "difficulty": 3,
+    "statement": "Un barrage retenant une hauteur h₀ sur fond horizontal et sec cède instantanément. Solution de Ritter (Saint-Venant sans frottement) : calculer la célérité du front, la profondeur et la vitesse au droit du barrage, puis le temps d’arrivée à une distance x.",
+    "variables": [
+      {"key": "h0", "label": "Hauteur retenue h₀", "unit": "m", "value": 20, "min": 8, "max": 40, "step": 2},
+      {"key": "xKm", "label": "Distance aval x", "unit": "km", "value": 8, "min": 2, "max": 20, "step": 1}
+    ],
+    "questions": [
+      {"key": "cFront", "label": "Célérité du front c_f", "unit": "m/s"},
+      {"key": "hDam", "label": "Profondeur au barrage h", "unit": "m"},
+      {"key": "vDam", "label": "Vitesse au barrage V", "unit": "m/s"},
+      {"key": "t", "label": "Temps d’arrivée t", "unit": "s"}
+    ]
+  },
+  {
+    "id": "SYN_GATE_01",
+    "chapter": "synthesis",
+    "solver": "damSluice",
+    "title": "Vanne de chasse d’un barrage",
+    "difficulty": 3,
+    "statement": "Un pertuis de fond rectangulaire (largeur b, hauteur H) est fermé par une vanne plane verticale. Le plan d’eau amont est à h au-dessus du seuil ; l’aval est à sec. Calculer la poussée et son point d’application, l’effort de levage au décollement (poids W, frottement μ), puis le débit une fois la vanne ouverte (orifice sous la charge au centre).",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 1.8, "min": 1, "max": 3, "step": 0.2},
+      {"key": "H", "label": "Hauteur de vanne H", "unit": "m", "value": 1.2, "min": 0.6, "max": 2, "step": 0.2},
+      {"key": "hSill", "label": "Charge sur le seuil h", "unit": "m", "value": 12, "min": 6, "max": 20, "step": 1},
+      {"key": "mu", "label": "Frottement μ", "unit": "—", "value": 0.3, "min": 0.15, "max": 0.45, "step": 0.05},
+      {"key": "W", "label": "Poids de la vanne W", "unit": "kN", "value": 8, "min": 4, "max": 16, "step": 1},
+      {"key": "Cd", "label": "Coefficient Cᵈ", "unit": "—", "value": 0.62, "min": 0.58, "max": 0.68, "step": 0.01},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1020, "step": 5}
+    ],
+    "questions": [
+      {"key": "force", "label": "Poussée F", "unit": "N"},
+      {"key": "yp", "label": "Centre de poussée yₚ", "unit": "m"},
+      {"key": "lift", "label": "Effort de levage T", "unit": "N"},
+      {"key": "Q", "label": "Débit évacué Q", "unit": "m³/s"}
+    ]
+  }
+]

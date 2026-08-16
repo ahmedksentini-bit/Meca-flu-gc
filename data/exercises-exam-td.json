@@ -1,0 +1,732 @@
+[
+  {
+    "id": "SYN_NPSH_03",
+    "chapter": "synthesis",
+    "solver": "npshCavitation",
+    "title": "Station de pompage et cavitation",
+    "difficulty": 3,
+    "statement": "Une pompe prélève un débit dans une bâche. Calculer la vitesse et les pertes à l’aspiration, la pression absolue à l’entrée, le NPSH disponible, puis la cote maximale admissible de l’axe (marge de sécurité comprise).",
+    "variables": [
+      {
+        "key": "Q",
+        "label": "Débit Q",
+        "unit": "L/s",
+        "value": 40,
+        "min": 15,
+        "max": 80,
+        "step": 5
+      },
+      {
+        "key": "z0",
+        "label": "Cote plan d’eau z₀",
+        "unit": "m",
+        "value": 100,
+        "min": 90,
+        "max": 110,
+        "step": 1
+      },
+      {
+        "key": "ze",
+        "label": "Cote axe pompe zₑ",
+        "unit": "m",
+        "value": 103.5,
+        "min": 100,
+        "max": 108,
+        "step": 0.5
+      },
+      {
+        "key": "D",
+        "label": "Diamètre aspiration D",
+        "unit": "mm",
+        "value": 200,
+        "min": 150,
+        "max": 300,
+        "step": 25
+      },
+      {
+        "key": "L",
+        "label": "Longueur aspiration L",
+        "unit": "m",
+        "value": 8,
+        "min": 4,
+        "max": 20,
+        "step": 1
+      },
+      {
+        "key": "f",
+        "label": "Facteur λ",
+        "unit": "—",
+        "value": 0.02,
+        "min": 0.016,
+        "max": 0.03,
+        "step": 0.002
+      },
+      {
+        "key": "K",
+        "label": "ΣK aspiration",
+        "unit": "—",
+        "value": 3.5,
+        "min": 2,
+        "max": 6,
+        "step": 0.5
+      },
+      {
+        "key": "patm",
+        "label": "Pression atmosphérique",
+        "unit": "kPa",
+        "value": 101.3,
+        "min": 90,
+        "max": 102,
+        "step": 0.1
+      },
+      {
+        "key": "pv",
+        "label": "Pression de vapeur pᵥ",
+        "unit": "kPa",
+        "value": 2.3,
+        "min": 1.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "key": "NPSHr",
+        "label": "NPSH requis",
+        "unit": "m",
+        "value": 4.2,
+        "min": 2,
+        "max": 7,
+        "step": 0.2
+      },
+      {
+        "key": "margin",
+        "label": "Marge de sécurité",
+        "unit": "m",
+        "value": 0.5,
+        "min": 0.3,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique ρ",
+        "unit": "kg/m³",
+        "value": 1000,
+        "min": 990,
+        "max": 1010,
+        "step": 5
+      }
+    ],
+    "questions": [
+      {
+        "key": "V",
+        "label": "Vitesse d’aspiration V",
+        "unit": "m/s"
+      },
+      {
+        "key": "hf",
+        "label": "Pertes d’aspiration h_asp",
+        "unit": "m"
+      },
+      {
+        "key": "pe",
+        "label": "Pression absolue pₑ",
+        "unit": "Pa"
+      },
+      {
+        "key": "NPSHd",
+        "label": "NPSH disponible",
+        "unit": "m"
+      },
+      {
+        "key": "zMax",
+        "label": "Cote max. de l’axe z_max",
+        "unit": "m"
+      }
+    ]
+  },
+  {
+    "id": "SYN_CANNON_04",
+    "chapter": "synthesis",
+    "solver": "waterCannon",
+    "title": "Canon à eau sur un écran",
+    "difficulty": 3,
+    "statement": "Un canon hydraulique délivre un jet sous une pression relative amont, à travers une lance qui se rétrécit. Fluide parfait, lance horizontale. Calculer la vitesse et le débit du jet, la force sur un écran perpendiculaire, puis le recul supporté par la lance.",
+    "variables": [
+      {
+        "key": "d",
+        "label": "Diamètre du jet d",
+        "unit": "mm",
+        "value": 20,
+        "min": 10,
+        "max": 40,
+        "step": 2
+      },
+      {
+        "key": "D1",
+        "label": "Diamètre amont D₁",
+        "unit": "mm",
+        "value": 50,
+        "min": 30,
+        "max": 80,
+        "step": 5
+      },
+      {
+        "key": "p1",
+        "label": "Pression amont p₁",
+        "unit": "bar",
+        "value": 8,
+        "min": 3,
+        "max": 16,
+        "step": 1
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique ρ",
+        "unit": "kg/m³",
+        "value": 1000,
+        "min": 990,
+        "max": 1010,
+        "step": 5
+      }
+    ],
+    "questions": [
+      {
+        "key": "V2",
+        "label": "Vitesse du jet V₂",
+        "unit": "m/s"
+      },
+      {
+        "key": "Q",
+        "label": "Débit Q",
+        "unit": "m³/s"
+      },
+      {
+        "key": "Fplate",
+        "label": "Force sur l’écran F",
+        "unit": "N"
+      },
+      {
+        "key": "Frecoil",
+        "label": "Recul de la lance",
+        "unit": "N"
+      }
+    ]
+  },
+  {
+    "id": "SYN_VENTURI_05",
+    "chapter": "synthesis",
+    "solver": "venturi",
+    "title": "Venturi vertical ascendant",
+    "difficulty": 2,
+    "statement": "Un Venturi est monté sur une conduite verticale ascendante. Le manomètre différentiel au mercure mesure une différence de cotes piézométriques, indépendante de la dénivelée des prises. En déduire le débit comme pour un Venturi horizontal.",
+    "variables": [
+      {
+        "key": "D1",
+        "label": "Diamètre entrée D₁",
+        "unit": "mm",
+        "value": 200,
+        "min": 150,
+        "max": 300,
+        "step": 10
+      },
+      {
+        "key": "D2",
+        "label": "Diamètre du col D₂",
+        "unit": "mm",
+        "value": 100,
+        "min": 70,
+        "max": 140,
+        "step": 5
+      },
+      {
+        "key": "h",
+        "label": "Dénivellation Hg",
+        "unit": "mm",
+        "value": 180,
+        "min": 60,
+        "max": 280,
+        "step": 10
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique eau",
+        "unit": "kg/m³",
+        "value": 1000,
+        "min": 990,
+        "max": 1010,
+        "step": 5
+      },
+      {
+        "key": "rhoM",
+        "label": "Masse volumique Hg",
+        "unit": "kg/m³",
+        "value": 13600,
+        "min": 13400,
+        "max": 13600,
+        "step": 50
+      }
+    ],
+    "questions": [
+      {
+        "key": "S1",
+        "label": "Section S₁",
+        "unit": "m²"
+      },
+      {
+        "key": "S2",
+        "label": "Section S₂",
+        "unit": "m²"
+      },
+      {
+        "key": "dp",
+        "label": "Δ(p/ρg) en pascals",
+        "unit": "Pa"
+      },
+      {
+        "key": "Q",
+        "label": "Débit Q",
+        "unit": "m³/s"
+      },
+      {
+        "key": "V1",
+        "label": "Vitesse V₁",
+        "unit": "m/s"
+      },
+      {
+        "key": "V2",
+        "label": "Vitesse V₂",
+        "unit": "m/s"
+      }
+    ]
+  },
+  {
+    "id": "SYN_COFFER_06",
+    "chapter": "synthesis",
+    "solver": "cofferdamBallast",
+    "title": "Batardeau flottant puis ballasté",
+    "difficulty": 3,
+    "statement": "Un caisson parallélépipédique en acier est remorqué à vide, puis coulé sur un fond en l’emplissant d’eau de mer. Calculer le tirant d’eau au remorquage, vérifier la stabilité transversale, puis le volume de ballast qui garantit une réaction d’appui minimale.",
+    "variables": [
+      {
+        "key": "L",
+        "label": "Longueur L",
+        "unit": "m",
+        "value": 12,
+        "min": 8,
+        "max": 20,
+        "step": 1
+      },
+      {
+        "key": "B",
+        "label": "Largeur B",
+        "unit": "m",
+        "value": 5,
+        "min": 3,
+        "max": 8,
+        "step": 0.5
+      },
+      {
+        "key": "W",
+        "label": "Poids à vide W",
+        "unit": "kN",
+        "value": 720,
+        "min": 400,
+        "max": 1200,
+        "step": 20
+      },
+      {
+        "key": "zG",
+        "label": "Centre de gravité z_G",
+        "unit": "m",
+        "value": 1.8,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.1
+      },
+      {
+        "key": "immerse",
+        "label": "Immersion sur fond h",
+        "unit": "m",
+        "value": 3.6,
+        "min": 2.5,
+        "max": 4.5,
+        "step": 0.1
+      },
+      {
+        "key": "Rmin",
+        "label": "Réaction d’appui min.",
+        "unit": "kN",
+        "value": 200,
+        "min": 80,
+        "max": 400,
+        "step": 20
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique mer",
+        "unit": "kg/m³",
+        "value": 1025,
+        "min": 1020,
+        "max": 1030,
+        "step": 5
+      }
+    ],
+    "questions": [
+      {
+        "key": "Te",
+        "label": "Tirant d’eau Tₑ",
+        "unit": "m"
+      },
+      {
+        "key": "GM",
+        "label": "Hauteur métacentrique GM",
+        "unit": "m"
+      },
+      {
+        "key": "Vballast",
+        "label": "Volume de ballast 𝒱_b",
+        "unit": "m³"
+      }
+    ]
+  },
+  {
+    "id": "SYN_OIL_07",
+    "chapter": "synthesis",
+    "solver": "oilSeason",
+    "title": "Oléoduc été / hiver",
+    "difficulty": 3,
+    "statement": "Un oléoduc transporte un fioul à débit constant. Comparer le régime, la perte de charge et la puissance de pompage en été et en hiver, lorsque la viscosité cinématique double.",
+    "variables": [
+      {
+        "key": "D",
+        "label": "Diamètre D",
+        "unit": "mm",
+        "value": 200,
+        "min": 100,
+        "max": 400,
+        "step": 25
+      },
+      {
+        "key": "Lkm",
+        "label": "Longueur L",
+        "unit": "km",
+        "value": 12,
+        "min": 4,
+        "max": 30,
+        "step": 1
+      },
+      {
+        "key": "Q",
+        "label": "Débit Q",
+        "unit": "L/s",
+        "value": 40,
+        "min": 15,
+        "max": 80,
+        "step": 5
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique ρ",
+        "unit": "kg/m³",
+        "value": 890,
+        "min": 820,
+        "max": 950,
+        "step": 10
+      },
+      {
+        "key": "nuS",
+        "label": "ν été",
+        "unit": "10⁻⁶ m²/s",
+        "value": 40,
+        "min": 10,
+        "max": 80,
+        "step": 5
+      },
+      {
+        "key": "nuW",
+        "label": "ν hiver",
+        "unit": "10⁻⁶ m²/s",
+        "value": 80,
+        "min": 20,
+        "max": 160,
+        "step": 5
+      },
+      {
+        "key": "eta",
+        "label": "Rendement η",
+        "unit": "—",
+        "value": 0.75,
+        "min": 0.6,
+        "max": 0.85,
+        "step": 0.05
+      }
+    ],
+    "questions": [
+      {
+        "key": "ReS",
+        "label": "Reynolds été Re",
+        "unit": "—"
+      },
+      {
+        "key": "hfS",
+        "label": "Perte été h_f",
+        "unit": "m"
+      },
+      {
+        "key": "PS",
+        "label": "Puissance été P_abs",
+        "unit": "W"
+      },
+      {
+        "key": "ReW",
+        "label": "Reynolds hiver Re",
+        "unit": "—"
+      },
+      {
+        "key": "hfW",
+        "label": "Perte hiver h_f",
+        "unit": "m"
+      },
+      {
+        "key": "PW",
+        "label": "Puissance hiver P_abs",
+        "unit": "W"
+      }
+    ]
+  },
+  {
+    "id": "EXAM_WALL_01",
+    "chapter": "exam",
+    "solver": "retainingWall",
+    "title": "Examen — mur-poids et renversement",
+    "difficulty": 2,
+    "statement": "Un mur-poids vertical retient une hauteur d’eau H. Par mètre linéaire : calculer la poussée et son point d’application, le poids du mur rectangulaire, puis le coefficient de sécurité au renversement par rapport à l’arête aval.",
+    "variables": [
+      {
+        "key": "H",
+        "label": "Hauteur d’eau H",
+        "unit": "m",
+        "value": 4,
+        "min": 2.5,
+        "max": 8,
+        "step": 0.5
+      },
+      {
+        "key": "t",
+        "label": "Épaisseur du mur t",
+        "unit": "m",
+        "value": 2.4,
+        "min": 1.5,
+        "max": 4,
+        "step": 0.2
+      },
+      {
+        "key": "Hwall",
+        "label": "Hauteur du mur",
+        "unit": "m",
+        "value": 4.8,
+        "min": 3,
+        "max": 8,
+        "step": 0.2
+      },
+      {
+        "key": "rhoC",
+        "label": "Masse volumique béton",
+        "unit": "kg/m³",
+        "value": 2400,
+        "min": 2200,
+        "max": 2500,
+        "step": 50
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique eau",
+        "unit": "kg/m³",
+        "value": 1000,
+        "min": 990,
+        "max": 1025,
+        "step": 5
+      }
+    ],
+    "questions": [
+      {
+        "key": "F",
+        "label": "Poussée F",
+        "unit": "N/m"
+      },
+      {
+        "key": "yp",
+        "label": "Point d’application (du pied)",
+        "unit": "m"
+      },
+      {
+        "key": "W",
+        "label": "Poids du mur W",
+        "unit": "N/m"
+      },
+      {
+        "key": "FS",
+        "label": "Coefficient FS au renversement",
+        "unit": "—"
+      }
+    ]
+  },
+  {
+    "id": "EXAM_NOZZLE_02",
+    "chapter": "exam",
+    "solver": "waterCannon",
+    "title": "Examen — tuyère, recul et plaque",
+    "difficulty": 3,
+    "statement": "Une conduite horizontale se termine par une tuyère débouchant à l’air libre. Fluide parfait. Calculer la vitesse et le débit du jet, la force axiale sur la tuyère (recul), puis la force sur une plaque fixe perpendiculaire.",
+    "variables": [
+      {
+        "key": "D1",
+        "label": "Diamètre amont D₁",
+        "unit": "mm",
+        "value": 150,
+        "min": 80,
+        "max": 250,
+        "step": 10
+      },
+      {
+        "key": "d",
+        "label": "Diamètre de sortie d",
+        "unit": "mm",
+        "value": 60,
+        "min": 30,
+        "max": 100,
+        "step": 5
+      },
+      {
+        "key": "p1",
+        "label": "Pression relative p₁",
+        "unit": "bar",
+        "value": 2.5,
+        "min": 1,
+        "max": 6,
+        "step": 0.5
+      },
+      {
+        "key": "rho",
+        "label": "Masse volumique ρ",
+        "unit": "kg/m³",
+        "value": 1000,
+        "min": 990,
+        "max": 1010,
+        "step": 5
+      }
+    ],
+    "questions": [
+      {
+        "key": "V2",
+        "label": "Vitesse de sortie V₂",
+        "unit": "m/s"
+      },
+      {
+        "key": "Q",
+        "label": "Débit Q",
+        "unit": "m³/s"
+      },
+      {
+        "key": "Frecoil",
+        "label": "Effort sur la tuyère",
+        "unit": "N"
+      },
+      {
+        "key": "Fplate",
+        "label": "Force sur la plaque",
+        "unit": "N"
+      }
+    ]
+  },
+  {
+    "id": "EXAM_GRAVITY_03",
+    "chapter": "exam",
+    "solver": "gravityValve",
+    "title": "Examen — conduite gravitaire et vanne",
+    "difficulty": 3,
+    "statement": "Deux réservoirs dénivelés de H sont reliés par une conduite rugueuse. Calculer la vitesse et le débit (itérations Colebrook). La vanne est ensuite réglée pour réduire le débit de moitié : quel coefficient K doit-elle présenter ?",
+    "variables": [
+      {
+        "key": "D",
+        "label": "Diamètre D",
+        "unit": "mm",
+        "value": 200,
+        "min": 125,
+        "max": 350,
+        "step": 25
+      },
+      {
+        "key": "L",
+        "label": "Longueur L",
+        "unit": "m",
+        "value": 800,
+        "min": 300,
+        "max": 2000,
+        "step": 50
+      },
+      {
+        "key": "H",
+        "label": "Dénivelée H",
+        "unit": "m",
+        "value": 18,
+        "min": 8,
+        "max": 35,
+        "step": 1
+      },
+      {
+        "key": "eps",
+        "label": "Rugosité ε",
+        "unit": "mm",
+        "value": 0.1,
+        "min": 0.05,
+        "max": 0.4,
+        "step": 0.05
+      },
+      {
+        "key": "Kother",
+        "label": "ΣK hors vanne",
+        "unit": "—",
+        "value": 2.1,
+        "min": 1,
+        "max": 4,
+        "step": 0.1
+      },
+      {
+        "key": "Kv0",
+        "label": "K vanne actuelle",
+        "unit": "—",
+        "value": 0.2,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "key": "nu",
+        "label": "Viscosité cinématique ν",
+        "unit": "10⁻⁶ m²/s",
+        "value": 1,
+        "min": 0.8,
+        "max": 1.3,
+        "step": 0.1
+      }
+    ],
+    "questions": [
+      {
+        "key": "V",
+        "label": "Vitesse actuelle V",
+        "unit": "m/s"
+      },
+      {
+        "key": "Q",
+        "label": "Débit actuel Q",
+        "unit": "L/s"
+      },
+      {
+        "key": "Kvalve",
+        "label": "K vanne à demi-débit",
+        "unit": "—"
+      }
+    ]
+  }
+]
