@@ -5,11 +5,39 @@ const steps = (values, solutionSteps) => ({ values, steps: solutionSteps });
 const n = (x, digits = 4) => Number(x).toLocaleString("fr-FR", { maximumSignificantDigits: digits });
 const circle = D => Math.PI * D ** 2 / 4;
 
+function colebrookSolve(Re, epsRel, f0 = 0.02) {
+  if (Re < 2000) return { f: 64 / Math.max(Re, 1e-9), history: [] };
+  const history = [];
+  let f = f0;
+  for (let i = 1; i <= 15; i++) {
+    const arg = epsRel / 3.7 + 2.51 / (Re * Math.sqrt(Math.max(f, 1e-12)));
+    const next = 1 / (-2 * Math.log10(arg)) ** 2;
+    history.push({ i, f, arg, next });
+    if (i >= 2 && Math.abs(next - f) < 1e-7) {
+      f = next;
+      break;
+    }
+    f = next;
+  }
+  return { f, history };
+}
+
 function darcyFriction(Re, epsRel) {
-  if (Re < 2000) return 64 / Math.max(Re, 1e-9);
-  let f = 0.02;
-  for (let i = 0; i < 20; i++) f = 1 / (-2 * Math.log10(epsRel / 3.7 + 2.51 / (Re * Math.sqrt(f)))) ** 2;
-  return f;
+  return colebrookSolve(Re, epsRel).f;
+}
+
+function colebrookIterationText(history) {
+  const nf = x => Number(x).toLocaleString("fr-FR", { maximumSignificantDigits: 6 });
+  const lines = [
+    "Formule implicite : 1/√λ = −2 log₁₀[ ε/(3,7D) + 2,51/(Re√λ) ].",
+    `Initialisation : λ₀ = ${nf(history[0].f)} (ordre de grandeur turbulent).`
+  ];
+  for (const row of history) {
+    lines.push(`Itération ${row.i} : λ = ${nf(row.f)} → terme = ${nf(row.arg)} → λ' = ${nf(row.next)}`);
+  }
+  const last = history[history.length - 1];
+  lines.push(`Convergence en ${history.length} itération${history.length > 1 ? "s" : ""} (|λ' − λ| < 10⁻⁷) → λ = ${nf(last.next)}.`);
+  return lines.join("\n");
 }
 
 export const solvers = {
@@ -321,25 +349,28 @@ export const solvers = {
   colebrook(d) {
     const D = d.D / 1000, Q = d.Q / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
     const area = Math.PI * D ** 2 / 4, V = Q / area, Re = V * D / nu;
-    let f = Re < 2000 ? 64 / Re : 0.02;
-    if (Re >= 2000) for (let i = 0; i < 20; i++) f = 1 / (-2 * Math.log10(eps / (3.7 * D) + 2.51 / (Re * Math.sqrt(f)))) ** 2;
+    const { f, history } = colebrookSolve(Re, eps / D);
     const hf = f * (d.L / D) * V ** 2 / (2 * G);
     const regime = Re < 2000 ? "laminaire" : Re < 4000 ? "transition (résultat indicatif)" : "turbulent";
+    const colebrookStep = Re < 2000
+      ? ["Loi laminaire", `λ = 64/Re = ${n(f)}`]
+      : ["Itérations de Colebrook–White", colebrookIterationText(history)];
     return steps({ V, Re, f, hf }, [
       ["Conversions et vitesse", `D = ${n(D)} m ; Q = ${n(Q)} m³/s ; V = Q/S = ${n(V)} m/s`],
       ["Nombre de Reynolds", `Re = VD/ν = ${n(Re)} : régime ${regime}`],
-      [Re < 2000 ? "Loi laminaire" : "Colebrook-White / Moody", Re < 2000 ? `λ = 64/Re = ${n(f)}` : `1/√λ = −2 log₁₀[ε/(3,7D) + 2,51/(Re√λ)] ⟹ λ = ${n(f)} (même lecture sur le diagramme de Moody)`],
+      colebrookStep,
       ["Darcy-Weisbach", `h_f = λ(L/D)V²/(2g) = ${n(hf)} m`]
     ]);
   },
   moodyRead(d) {
-    const Re = d.Re, epsRel = d.epsRel, f = darcyFriction(Re, epsRel);
+    const Re = d.Re, epsRel = d.epsRel, { f, history } = colebrookSolve(Re, epsRel);
     const fInf = epsRel > 0 ? 1 / (-2 * Math.log10(epsRel / 3.7)) ** 2 : 0;
     const rough = epsRel > 0 && Re > 200 / (epsRel * Math.sqrt(f));
     const zone = Re < 2000 ? "laminaire" : Re < 4000 ? "transition" : rough ? "turbulent rugueux" : "turbulent de transition";
     return steps({ f, fInf, epsRel }, [
       ["Lecture du Moody", "Entrer par Re en abscisse (échelle log), suivre la courbe ε/D, lire λ en ordonnée (échelle log)."],
       ["Rugosité relative", `ε/D = ${n(epsRel)}`],
+      history.length ? ["Itérations de Colebrook–White", colebrookIterationText(history)] : ["Loi laminaire", `λ = 64/Re = ${n(f)}`],
       ["Facteur lu / Colebrook", `λ = ${n(f)} — zone ${zone}`],
       ["Limite rugueuse", epsRel > 0 ? `À droite de la ligne tiretée, λ → λ∞ = [−2 log₁₀(ε/3,7D)]⁻² = ${n(fInf)}` : "Conduite hydrauliquement lisse : λ continue de baisser quand Re augmente."]
     ]);
@@ -442,15 +473,28 @@ export const solvers = {
   gravityPipe(d) {
     const D = d.D / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
     let V = Math.sqrt(2 * G * d.H / (0.02 * d.L / D + d.Ksum)), f = 0.02, Re = 0;
+    const outer = [];
     for (let i = 0; i < 16; i++) {
       Re = V * D / nu;
-      f = darcyFriction(Re, eps / D);
-      V = Math.sqrt(2 * G * d.H / (f * d.L / D + d.Ksum));
+      const solved = colebrookSolve(Re, eps / D, f);
+      f = solved.f;
+      const nextV = Math.sqrt(2 * G * d.H / (f * d.L / D + d.Ksum));
+      outer.push({ i: i + 1, V, Re, f, nextV });
+      if (i >= 2 && Math.abs(nextV - V) < 1e-6) {
+        V = nextV;
+        break;
+      }
+      V = nextV;
     }
     const Q = circle(D) * V * 1000, hf = f * (d.L / D) * V ** 2 / (2 * G);
+    const nf = x => Number(x).toLocaleString("fr-FR", { maximumSignificantDigits: 5 });
+    const outerText = [
+      "H est connue, Q (donc V et λ) est inconnue : on itère V ↔ Colebrook.",
+      ...outer.map(row => `Itération ${row.i} : V = ${nf(row.V)} m/s → Re = ${nf(row.Re)} → λ = ${nf(row.f)} → V' = ${nf(row.nextV)} m/s`)
+    ].join("\n");
     return steps({ V, f, Q, hf }, [
       ["Bernoulli entre surfaces libres", `H = (λL/D + ΣK) V²/(2g)`],
-      ["Itération Colebrook", `λ = ${n(f)} ; Re = ${n(Re)}`],
+      ["Itérations V + Colebrook", outerText],
       ["Vitesse", `V = ${n(V)} m/s`],
       ["Débit", `Q = AV = ${n(Q)} L/s`]
     ]);

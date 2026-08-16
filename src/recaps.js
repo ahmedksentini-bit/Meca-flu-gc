@@ -314,7 +314,7 @@ const recaps = {
     lead: "Dans un fluide réel, la charge diminue le long de la conduite. On passe par le Reynolds (régime), le coefficient λ lu sur le diagramme de Moody (ou calculé par Colebrook), puis Darcy–Weisbach.",
     points: [
       "Re = V D / ν. Laminaire si Re < 2000 ; turbulent au-delà de 4000.",
-      "Le diagramme de Moody est le graphe de Colebrook : λ = λ(Re, ε/D).",
+      "Le diagramme de Moody est le graphe de Colebrook : λ = λ(Re, ε/D). En calcul, on itère depuis λ₀ = 0,02.",
       "h_f = λ (L/D) V² / (2g). Laminaire : λ = 64/Re."
     ],
     watch: "ε et D doivent être dans la même unité pour ε/D. ν de l’eau à 20 °C ≈ 10⁻⁶ m²/s."

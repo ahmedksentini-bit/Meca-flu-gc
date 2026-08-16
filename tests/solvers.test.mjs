@@ -14,7 +14,9 @@ assert.equal(wall.yp, 2);
 const jet = solvers.jetPlate({ d:50,V:20,rho:1000 }).values;
 assert.ok(isClose(jet.force, 785.398, 0.001));
 
-const losses = solvers.colebrook({ D:200,L:300,Q:45,eps:0.15,nu:1 }).values;
+const lossesFull = solvers.colebrook({ D:200,L:300,Q:45,eps:0.15,nu:1 });
+const losses = lossesFull.values;
+assert.ok(lossesFull.steps.some(s => String(s[0]).includes("Itérations") && String(s[1]).includes("Itération 1")));
 assert.ok(losses.Re > 200000 && losses.Re < 400000);
 assert.ok(losses.f > 0.015 && losses.f < 0.025);
 assert.ok(losses.hf > 2 && losses.hf < 8);
