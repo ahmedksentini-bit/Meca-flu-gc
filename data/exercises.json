@@ -4,11 +4,12 @@
     {"id":"properties","number":1,"title":"Propriétés des fluides","description":"Masse volumique, densité et viscosité."},
     {"id":"hydrostatics","number":2,"title":"Hydrostatique","description":"Pressions et manomètres différentiels."},
     {"id":"forces","number":3,"title":"Poussées hydrostatiques","description":"Résultante et centre de poussée."},
-    {"id":"bernoulli","number":4,"title":"Bernoulli et Venturi","description":"Continuité, énergie et débitmétrie."},
-    {"id":"momentum","number":5,"title":"Quantité de mouvement","description":"Efforts produits par les jets."},
-    {"id":"losses","number":6,"title":"Fluides réels","description":"Darcy-Weisbach, Reynolds et Colebrook."},
-    {"id":"similarity","number":7,"title":"Analyse dimensionnelle et similitude","description":"Nombres sans dimension et modèles réduits."},
-    {"id":"freeSurface","number":8,"title":"Écoulements à surface libre","description":"Canaux, Froude et Manning-Strickler."}
+    {"id":"kinematics","number":4,"title":"Cinématique des fluides","description":"Débits, continuité et accélération convective."},
+    {"id":"bernoulli","number":5,"title":"Bernoulli et Venturi","description":"Continuité, énergie et débitmétrie."},
+    {"id":"momentum","number":6,"title":"Quantité de mouvement","description":"Efforts produits par les jets."},
+    {"id":"losses","number":7,"title":"Fluides réels","description":"Darcy-Weisbach, Reynolds et Colebrook."},
+    {"id":"similarity","number":8,"title":"Analyse dimensionnelle et similitude","description":"Nombres sans dimension et modèles réduits."},
+    {"id":"freeSurface","number":9,"title":"Écoulements à surface libre","description":"Canaux, Froude et Manning-Strickler."}
   ],
   "exercises":[
     {"id":"PROP_VISC_01","chapter":"properties","solver":"viscosity","title":"Viscosité dynamique et cinématique","difficulty":1,"statement":"Une plaque glisse à la vitesse U sur un film de fluide newtonien d’épaisseur e. La force tangentielle F est mesurée sur la surface A. Déterminer la contrainte, la viscosité dynamique puis la viscosité cinématique.","variables":[{"key":"F","label":"Force F","unit":"N","value":12,"min":6,"max":24,"step":1},{"key":"A","label":"Surface A","unit":"m²","value":0.8,"min":0.4,"max":1.2,"step":0.1},{"key":"U","label":"Vitesse U","unit":"m/s","value":0.5,"min":0.2,"max":0.9,"step":0.1},{"key":"e","label":"Épaisseur e","unit":"mm","value":4,"min":2,"max":8,"step":1},{"key":"rho","label":"Masse volumique ρ","unit":"kg/m³","value":900,"min":820,"max":1050,"step":10}],"questions":[{"key":"tau","label":"Contrainte tangentielle τ","unit":"Pa"},{"key":"mu","label":"Viscosité dynamique μ","unit":"Pa·s"},{"key":"nu","label":"Viscosité cinématique ν","unit":"m²/s"}]},

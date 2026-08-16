@@ -96,16 +96,115 @@ export const solvers = {
       ["Débit prototype", `Qₚ = QₘλQ = ${n(Qp)} m³/s`]
     ]);
   },
-  pipeContinuity(d){const D=d.D/1000,Q=d.Q/1000,A=Math.PI*D**2/4,V=Q/A,Dtarget=Math.sqrt(4*Q/(Math.PI*d.targetV));return steps({A,V,Dtarget},[["Section",`A=πD²/4=${n(A)} m²`],["Vitesse moyenne",`V=Q/A=${n(V)} m/s`],["Diamètre cible",`D=√(4Q/πV)=${n(Dtarget)} m`]]);},
-  networkNode(d){const totalIn=d.Q1+d.Q2,unknown=totalIn-d.Q3,residual=totalIn-d.Q3-unknown;return steps({totalIn,unknown,residual},[["Convention de signe","Les débits entrants sont positifs, les sortants négatifs."],["Continuité au nœud",`ΣQ=0 ⟹ Q₄=Q₁+Q₂−Q₃=${n(unknown)} L/s`],["Vérification",`Résidu du bilan=${n(residual)} L/s`]]);},
-  convectiveAcceleration(d){const gradient=(d.V2-d.V1)/d.L,Vmid=(d.V1+d.V2)/2,acceleration=Vmid*gradient;return steps({gradient,Vmid,acceleration},[["Gradient uniforme",`dV/dx=(V₂−V₁)/L=${n(gradient)} s⁻¹`],["Vitesse à mi-parcours",`Vₘ=(V₁+V₂)/2=${n(Vmid)} m/s`],["Accélération convective",`a=V·dV/dx=${n(acceleration)} m/s²`]]);},
-  tankFilling(d){const time=d.hours*3600,Q=d.volume/time,A=Q/d.maxV,D=Math.sqrt(4*A/Math.PI);return steps({Q,D},[["Débit requis",`Q=𝒱/t=${n(Q)} m³/s`],["Section minimale",`A=Q/Vmax=${n(A)} m²`],["Diamètre minimal",`D=√(4A/π)=${n(D)} m`]]);},
-  distributedFlow(d){const loss=d.Qin-d.Qout,rate=loss/d.L,Qmid=d.Qin-rate*d.L/2;return steps({loss,rate,Qmid},[["Bilan global",`Qprélevé=Qentrée−Qsortie=${n(loss)} L/s`],["Prélèvement linéique",`q=Qprélevé/L=${n(rate)} L/(s·m)`],["Débit à mi-longueur",`Q(L/2)=Qentrée−qL/2=${n(Qmid)} L/s`]]);},
-  bernoulliSections(d){const D1=d.D1/1000,D2=d.D2/1000,Q=d.Q/1000,A1=Math.PI*D1**2/4,A2=Math.PI*D2**2/4,V1=Q/A1,V2=Q/A2,p2=d.p1*1000+d.rho*G*(d.z1-d.z2)+.5*d.rho*(V1**2-V2**2);return steps({V1,V2,p2},[["Continuité",`V₁=Q/A₁=${n(V1)} m/s ; V₂=${n(V2)} m/s`],["Bernoulli",`p₂=p₁+ρg(z₁−z₂)+ρ(V₁²−V₂²)/2`],["Pression",`p₂=${n(p2)} Pa`]]);},
-  drainTime(d){const tankA=Math.PI*d.tankD**2/4,orificeA=Math.PI*(d.orificeD/1000)**2/4,t=2*tankA*(Math.sqrt(d.h1)-Math.sqrt(d.h2))/(d.Cd*orificeA*Math.sqrt(2*G));return steps({tankA,orificeA,t},[["Sections",`A=${n(tankA)} m² ; a=${n(orificeA)} m²`],["Bilan non permanent","−A dh/dt=Cᵈa√(2gh)"],["Intégration",`t=2A(√h₁−√h₂)/(Cᵈa√(2g))=${n(t)} s`]]);},
-  pitot(d){const h=d.h/1000,V=Math.sqrt(2*G*h),dynamic=d.rho*G*h;return steps({dynamic,V},[["Hauteur dynamique",`Δp=ρgh=${n(dynamic)} Pa`],["Bernoulli entre écoulement et stagnation",`V=√(2Δp/ρ)=√(2gh)=${n(V)} m/s`]]);},
-  siphon(d){const D=d.D/1000,V=Math.sqrt(2*G*d.drop),Q=Math.PI*D**2/4*V,pHigh=-d.rho*G*(d.rise+d.drop);return steps({V,Q,pHigh},[["Surface vers sortie",`V=√(2gΔz)=${n(V)} m/s`],["Débit",`Q=πD²V/4=${n(Q)} m³/s`],["Surface vers point haut",`pH/ρg+V²/2g+zH=0 ⟹ pH=${n(pHigh)} Pa`]]);},
-  hydraulicPower(d){const Q=d.Q/1000,H=d.head+d.losses,waterPower=d.rho*G*Q*H,inputPower=waterPower/d.efficiency;return steps({H,waterPower,inputPower},[["Hauteur manométrique",`HMT=Hg+hpertes=${n(H)} m`],["Puissance hydraulique",`Pₕ=ρgQH=${n(waterPower)} W`],["Puissance absorbée",`Pabs=Pₕ/η=${n(inputPower)} W`]]);},
+  pipeContinuity(d) {
+    const D = d.D / 1000, Q = d.Q / 1000, A = Math.PI * D ** 2 / 4, V = Q / A;
+    const Dtarget = Math.sqrt(4 * Q / (Math.PI * d.targetV));
+    return steps({ A, V, Dtarget }, [
+      ["Section", `A = πD²/4 = ${n(A)} m²`],
+      ["Vitesse moyenne", `V = Q/A = ${n(V)} m/s`],
+      ["Diamètre cible", `D = √(4Q/πV) = ${n(Dtarget)} m`]
+    ]);
+  },
+  twoSectionContinuity(d) {
+    const D1 = d.D1 / 1000, D2 = d.D2 / 1000, Q = d.Q / 1000;
+    const A1 = Math.PI * D1 ** 2 / 4, A2 = Math.PI * D2 ** 2 / 4;
+    const V1 = Q / A1, V2 = Q / A2;
+    return steps({ A1, V1, A2, V2 }, [
+      ["Sections", `A₁ = πD₁²/4 = ${n(A1)} m² ; A₂ = ${n(A2)} m²`],
+      ["Vitesse amont", `V₁ = Q/A₁ = ${n(V1)} m/s`],
+      ["Vitesse aval", `V₂ = Q/A₂ = ${n(V2)} m/s`],
+      ["Contrôle", `A₁V₁ = A₂V₂ = ${n(Q)} m³/s`]
+    ]);
+  },
+  networkNode(d) {
+    const A1 = Math.PI * (d.D1 / 1000) ** 2 / 4, A2 = Math.PI * (d.D2 / 1000) ** 2 / 4;
+    const A3 = Math.PI * (d.D3 / 1000) ** 2 / 4;
+    const Q1 = A1 * d.V1 * 1000, Q2 = A2 * d.V2 * 1000, Q3 = Q1 + Q2 - d.Qbranch;
+    const V3 = (Q3 / 1000) / A3;
+    return steps({ Q1, Q2, Q3, V3 }, [
+      ["Débits entrants", `Q₁ = A₁V₁ = ${n(Q1)} L/s ; Q₂ = A₂V₂ = ${n(Q2)} L/s`],
+      ["Loi des nœuds", `ΣQ = 0 ⟹ Q₃ = Q₁ + Q₂ − Qᵦ = ${n(Q3)} L/s`],
+      ["Vitesse aval", `V₃ = Q₃/A₃ = ${n(V3)} m/s`]
+    ]);
+  },
+  convectiveAcceleration(d) {
+    const gradient = (d.V2 - d.V1) / d.L, Vmid = (d.V1 + d.V2) / 2, acceleration = Vmid * gradient;
+    return steps({ gradient, Vmid, acceleration }, [
+      ["Gradient uniforme", `dV/dx = (V₂ − V₁)/L = ${n(gradient)} s⁻¹`],
+      ["Vitesse à mi-parcours", `Vₘ = (V₁ + V₂)/2 = ${n(Vmid)} m/s`],
+      ["Accélération convective", `a = V·dV/dx = ${n(acceleration)} m/s²`]
+    ]);
+  },
+  reservoirRise(d) {
+    const area = Math.PI * d.D ** 2 / 4, dQ = (d.Qin - d.Qout) / 1000, riseRate = dQ / area, time = d.deltaH / riseRate;
+    return steps({ dQ, riseRate, time }, [
+      ["Bilan de volume", `A dh/dt = Qₑ − Qₛ ; A = πD²/4 = ${n(area)} m²`],
+      ["Débit net", `Qₑ − Qₛ = ${n(dQ)} m³/s`],
+      ["Vitesse de montée", `dh/dt = (Qₑ − Qₛ)/A = ${n(riseRate)} m/s`],
+      ["Temps de montée", `t = Δh/(dh/dt) = ${n(time)} s`]
+    ]);
+  },
+  tankFilling(d) {
+    const time = d.hours * 3600, Q = d.volume / time, A = Q / d.maxV, D = Math.sqrt(4 * A / Math.PI);
+    return steps({ Q, D }, [
+      ["Débit requis", `Q = 𝒱/t = ${n(Q)} m³/s`],
+      ["Section minimale", `A = Q/Vmax = ${n(A)} m²`],
+      ["Diamètre minimal", `D = √(4A/π) = ${n(D)} m`]
+    ]);
+  },
+  distributedFlow(d) {
+    const loss = d.Qin - d.Qout, rate = loss / d.L, Qmid = d.Qin - rate * d.L / 2;
+    return steps({ loss, rate, Qmid }, [
+      ["Bilan global", `Qprélevé = Qentrée − Qsortie = ${n(loss)} L/s`],
+      ["Prélèvement linéique", `q = Qprélevé/L = ${n(rate)} L/(s·m)`],
+      ["Débit à mi-longueur", `Q(L/2) = Qentrée − qL/2 = ${n(Qmid)} L/s`]
+    ]);
+  },
+  bernoulliSections(d) {
+    const D1 = d.D1 / 1000, D2 = d.D2 / 1000, Q = d.Q / 1000;
+    const A1 = Math.PI * D1 ** 2 / 4, A2 = Math.PI * D2 ** 2 / 4, V1 = Q / A1, V2 = Q / A2;
+    const p2 = d.p1 * 1000 + d.rho * G * (d.z1 - d.z2) + 0.5 * d.rho * (V1 ** 2 - V2 ** 2);
+    return steps({ V1, V2, p2 }, [
+      ["Continuité", `V₁ = Q/A₁ = ${n(V1)} m/s ; V₂ = ${n(V2)} m/s`],
+      ["Bernoulli", `p₂ = p₁ + ρg(z₁ − z₂) + ρ(V₁² − V₂²)/2`],
+      ["Pression", `p₂ = ${n(p2)} Pa`]
+    ]);
+  },
+  drainTime(d) {
+    const tankA = Math.PI * d.tankD ** 2 / 4, orificeA = Math.PI * (d.orificeD / 1000) ** 2 / 4;
+    const t = 2 * tankA * (Math.sqrt(d.h1) - Math.sqrt(d.h2)) / (d.Cd * orificeA * Math.sqrt(2 * G));
+    return steps({ tankA, orificeA, t }, [
+      ["Sections", `A = ${n(tankA)} m² ; a = ${n(orificeA)} m²`],
+      ["Bilan non permanent", "−A dh/dt = Cᵈ a √(2gh)"],
+      ["Intégration", `t = 2A(√h₁ − √h₂)/(Cᵈ a √(2g)) = ${n(t)} s`]
+    ]);
+  },
+  pitot(d) {
+    const h = d.h / 1000;
+    const dynamic = d.rhoM ? (d.rhoM - d.rho) * G * h : d.rho * G * h;
+    const V = Math.sqrt(2 * dynamic / d.rho);
+    return steps({ dynamic, V }, [
+      ["Manomètre", d.rhoM ? `Δp = (ρₘ − ρ)gΔh = ${n(dynamic)} Pa` : `Δp = ρgh = ${n(dynamic)} Pa`],
+      ["Point d’arrêt", `V = √(2Δp/ρ) = ${n(V)} m/s`]
+    ]);
+  },
+  siphon(d) {
+    const D = d.D / 1000, V = Math.sqrt(2 * G * d.drop), Q = Math.PI * D ** 2 / 4 * V;
+    const pHigh = (d.patm || 101.3) * 1000 - d.rho * G * (d.rise + V ** 2 / (2 * G));
+    return steps({ V, Q, pHigh }, [
+      ["Surface vers sortie", `V = √(2gΔz) = ${n(V)} m/s`],
+      ["Débit", `Q = πD²V/4 = ${n(Q)} m³/s`],
+      ["Surface vers point haut", `p_C = pₐₜₘ − ρg(z_C + V²/2g) = ${n(pHigh)} Pa`]
+    ]);
+  },
+  hydraulicPower(d) {
+    const Q = d.Q / 1000, H = d.head + d.losses, waterPower = d.rho * G * Q * H, inputPower = waterPower / d.efficiency;
+    return steps({ H, waterPower, inputPower }, [
+      ["Hauteur manométrique", `HMT = H_g + h_pertes = ${n(H)} m`],
+      ["Puissance hydraulique", `Pₕ = ρgQH = ${n(waterPower)} W`],
+      ["Puissance absorbée", `P_abs = Pₕ/η = ${n(inputPower)} W`]
+    ]);
+  },
   manningChannel(d) {
     const slope = d.S / 1000, area = d.b * d.y, perimeter = d.b + 2 * d.y;
     const R = area / perimeter, V = d.Ks * R ** (2/3) * Math.sqrt(slope);

@@ -1,1 +1,232 @@
-[{"id":"KIN_PIPE_01","chapter":"bernoulli","solver":"pipeContinuity","title":"Vitesse moyenne et continuité","difficulty":1,"statement":"Une conduite circulaire transporte un débit donné. Calculer la section, la vitesse moyenne et le diamètre donnant une vitesse cible.","variables":[{"key":"D","label":"Diamètre","unit":"mm","value":250,"min":100,"max":400,"step":10},{"key":"Q","label":"Débit","unit":"L/s","value":68,"min":20,"max":120,"step":5},{"key":"targetV","label":"Vitesse cible","unit":"m/s","value":1,"min":0.7,"max":2,"step":0.1}],"questions":[{"key":"A","label":"Section A","unit":"m²"},{"key":"V","label":"Vitesse V","unit":"m/s"},{"key":"Dtarget","label":"Diamètre cible","unit":"m"}]},{"id":"BERN_PITOT_05","chapter":"bernoulli","solver":"pitot","title":"Mesure par tube de Pitot","difficulty":1,"statement":"Un tube de Pitot mesure une hauteur dynamique. Déterminer la pression dynamique et la vitesse locale.","variables":[{"key":"h","label":"Hauteur dynamique","unit":"mm","value":95,"min":30,"max":250,"step":5},{"key":"rho","label":"Masse volumique","unit":"kg/m³","value":1000,"min":990,"max":1010,"step":5}],"questions":[{"key":"dynamic","label":"Pression dynamique","unit":"Pa"},{"key":"V","label":"Vitesse locale","unit":"m/s"}]}]
+[
+  {
+    "id": "KIN_PIPE_01",
+    "chapter": "kinematics",
+    "solver": "pipeContinuity",
+    "title": "Vitesse moyenne et diamètre cible",
+    "difficulty": 1,
+    "statement": "Une conduite circulaire transporte un débit donné. Calculer la section, la vitesse moyenne, puis le diamètre qui donnerait une vitesse cible plus raisonnable pour un réseau d’eau potable.",
+    "variables": [
+      {"key": "D", "label": "Diamètre actuel D", "unit": "mm", "value": 100, "min": 80, "max": 400, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 80, "min": 20, "max": 120, "step": 5},
+      {"key": "targetV", "label": "Vitesse cible", "unit": "m/s", "value": 1.2, "min": 0.7, "max": 2, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "A", "label": "Section A", "unit": "m²"},
+      {"key": "V", "label": "Vitesse actuelle V", "unit": "m/s"},
+      {"key": "Dtarget", "label": "Diamètre cible", "unit": "m"}
+    ]
+  },
+  {
+    "id": "KIN_TWO_02",
+    "chapter": "kinematics",
+    "solver": "twoSectionContinuity",
+    "title": "Continuité entre deux tronçons",
+    "difficulty": 1,
+    "statement": "De l’eau circule en régime permanent dans une conduite dont le diamètre passe de D₁ à D₂. Calculer les sections et les vitesses moyennes dans les deux tronçons. Vérifier que Q = A₁V₁ = A₂V₂.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "mm", "value": 200, "min": 150, "max": 400, "step": 10},
+      {"key": "D2", "label": "Diamètre D₂", "unit": "mm", "value": 100, "min": 60, "max": 200, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 80, "min": 20, "max": 150, "step": 5}
+    ],
+    "questions": [
+      {"key": "A1", "label": "Section A₁", "unit": "m²"},
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "A2", "label": "Section A₂", "unit": "m²"},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "KIN_NODE_03",
+    "chapter": "kinematics",
+    "solver": "networkNode",
+    "title": "Nœud de réseau de distribution",
+    "difficulty": 2,
+    "statement": "À un nœud arrivent deux conduites connues par leur diamètre et leur vitesse. Le nœud alimente une conduite 3 et un branchement qui soutire Qᵦ. Appliquer la loi des nœuds, puis calculer le débit et la vitesse dans la conduite 3.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "mm", "value": 200, "min": 100, "max": 300, "step": 10},
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s", "value": 1.2, "min": 0.5, "max": 2.5, "step": 0.1},
+      {"key": "D2", "label": "Diamètre D₂", "unit": "mm", "value": 150, "min": 80, "max": 250, "step": 10},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s", "value": 0.8, "min": 0.4, "max": 2, "step": 0.1},
+      {"key": "Qbranch", "label": "Soutirage Qᵦ", "unit": "L/s", "value": 12, "min": 0, "max": 30, "step": 2},
+      {"key": "D3", "label": "Diamètre D₃", "unit": "mm", "value": 250, "min": 150, "max": 400, "step": 10}
+    ],
+    "questions": [
+      {"key": "Q1", "label": "Débit entrant Q₁", "unit": "L/s"},
+      {"key": "Q2", "label": "Débit entrant Q₂", "unit": "L/s"},
+      {"key": "Q3", "label": "Débit Q₃", "unit": "L/s"},
+      {"key": "V3", "label": "Vitesse V₃", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "KIN_ACCEL_04",
+    "chapter": "kinematics",
+    "solver": "convectiveAcceleration",
+    "title": "Accélération convective dans un convergent",
+    "difficulty": 2,
+    "statement": "Dans un convergent de longueur L, la vitesse unidimensionnelle croît linéairement de V₁ à V₂ en régime permanent. Calculer le gradient, la vitesse à mi-parcours et l’accélération convective au milieu. Même en régime permanent, une particule accélère.",
+    "variables": [
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 0.8, "min": 0.4, "max": 2, "step": 0.1},
+      {"key": "V1", "label": "Vitesse entrée V₁", "unit": "m/s", "value": 1.5, "min": 0.5, "max": 3, "step": 0.1},
+      {"key": "V2", "label": "Vitesse sortie V₂", "unit": "m/s", "value": 8, "min": 3, "max": 12, "step": 0.5}
+    ],
+    "questions": [
+      {"key": "gradient", "label": "Gradient dV/dx", "unit": "s⁻¹"},
+      {"key": "Vmid", "label": "Vitesse à mi-parcours", "unit": "m/s"},
+      {"key": "acceleration", "label": "Accélération au milieu", "unit": "m/s²"}
+    ]
+  },
+  {
+    "id": "KIN_RISE_05",
+    "chapter": "kinematics",
+    "solver": "reservoirRise",
+    "title": "Remplissage d’un réservoir cylindrique",
+    "difficulty": 2,
+    "statement": "Un réservoir cylindrique est alimenté par un débit constant Qₑ et vidangé par un débit Qₛ. Le fluide est incompressible. Déterminer le débit net, la vitesse de montée du plan d’eau, puis le temps nécessaire pour élever le niveau de Δh.",
+    "variables": [
+      {"key": "D", "label": "Diamètre du réservoir", "unit": "m", "value": 8, "min": 3, "max": 15, "step": 0.5},
+      {"key": "Qin", "label": "Débit entrant Qₑ", "unit": "L/s", "value": 120, "min": 40, "max": 250, "step": 10},
+      {"key": "Qout", "label": "Débit sortant Qₛ", "unit": "L/s", "value": 45, "min": 0, "max": 120, "step": 5},
+      {"key": "deltaH", "label": "Montée Δh", "unit": "m", "value": 1.5, "min": 0.5, "max": 4, "step": 0.25}
+    ],
+    "questions": [
+      {"key": "dQ", "label": "Débit net Qₑ − Qₛ", "unit": "m³/s"},
+      {"key": "riseRate", "label": "Vitesse de montée", "unit": "m/s"},
+      {"key": "time", "label": "Temps pour Δh", "unit": "s"}
+    ]
+  },
+  {
+    "id": "KIN_FILL_06",
+    "chapter": "kinematics",
+    "solver": "tankFilling",
+    "title": "Dimensionner une conduite de remplissage",
+    "difficulty": 2,
+    "statement": "On doit remplir un volume 𝒱 en un temps donné, sans dépasser une vitesse maximale dans la conduite d’amenée. Déterminer le débit requis puis le diamètre minimal.",
+    "variables": [
+      {"key": "volume", "label": "Volume à remplir", "unit": "m³", "value": 120, "min": 40, "max": 400, "step": 10},
+      {"key": "hours", "label": "Durée", "unit": "h", "value": 4, "min": 1, "max": 12, "step": 0.5},
+      {"key": "maxV", "label": "Vitesse maximale", "unit": "m/s", "value": 1.5, "min": 0.8, "max": 2.5, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "Q", "label": "Débit requis Q", "unit": "m³/s"},
+      {"key": "D", "label": "Diamètre minimal D", "unit": "m"}
+    ]
+  },
+  {
+    "id": "KIN_DIST_07",
+    "chapter": "kinematics",
+    "solver": "distributedFlow",
+    "title": "Conduite à débit réparti — irrigation",
+    "difficulty": 2,
+    "statement": "Une rampe d’irrigation horizontale distribue de l’eau le long de sa longueur. Le débit décroît de Qₑ à Qₛ. Déterminer le volume prélevé, le débit linéique uniforme, puis le débit restant à mi-longueur.",
+    "variables": [
+      {"key": "Qin", "label": "Débit entrée Qₑ", "unit": "L/s", "value": 30, "min": 10, "max": 80, "step": 2},
+      {"key": "Qout", "label": "Débit sortie Qₛ", "unit": "L/s", "value": 0, "min": 0, "max": 20, "step": 2},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 60, "min": 20, "max": 200, "step": 10}
+    ],
+    "questions": [
+      {"key": "loss", "label": "Débit prélevé", "unit": "L/s"},
+      {"key": "rate", "label": "Débit linéique q", "unit": "L/(s·m)"},
+      {"key": "Qmid", "label": "Débit à L/2", "unit": "L/s"}
+    ]
+  },
+  {
+    "id": "BERN_SECTIONS_03",
+    "chapter": "bernoulli",
+    "solver": "bernoulliSections",
+    "title": "Conduite avec changement de section et de niveau",
+    "difficulty": 2,
+    "statement": "De l’eau s’écoule en régime permanent dans une conduite qui s’élève, la section diminuant de D₁ à D₂. Fluide parfait. Calculer les vitesses puis la pression au point 2 par Bernoulli.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "mm", "value": 300, "min": 200, "max": 500, "step": 20},
+      {"key": "D2", "label": "Diamètre D₂", "unit": "mm", "value": 200, "min": 100, "max": 300, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 80, "min": 30, "max": 200, "step": 10},
+      {"key": "p1", "label": "Pression p₁", "unit": "kPa", "value": 150, "min": 80, "max": 300, "step": 10},
+      {"key": "z1", "label": "Cote z₁", "unit": "m", "value": 0, "min": 0, "max": 5, "step": 0.5},
+      {"key": "z2", "label": "Cote z₂", "unit": "m", "value": 2.5, "min": 0, "max": 8, "step": 0.5},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1025, "step": 5}
+    ],
+    "questions": [
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s"},
+      {"key": "p2", "label": "Pression p₂", "unit": "Pa"}
+    ]
+  },
+  {
+    "id": "BERN_PITOT_05",
+    "chapter": "bernoulli",
+    "solver": "pitot",
+    "title": "Tube de Pitot au mercure",
+    "difficulty": 1,
+    "statement": "Un tube de Pitot statique placé dans l’axe d’une conduite d’eau est relié à un manomètre différentiel au mercure. Déterminer la pression dynamique puis la vitesse locale au point de mesure.",
+    "variables": [
+      {"key": "h", "label": "Dénivellation Hg", "unit": "mm", "value": 25, "min": 10, "max": 120, "step": 5},
+      {"key": "rho", "label": "Masse volumique fluide", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1025, "step": 5},
+      {"key": "rhoM", "label": "Masse volumique Hg", "unit": "kg/m³", "value": 13600, "min": 13400, "max": 13600, "step": 50}
+    ],
+    "questions": [
+      {"key": "dynamic", "label": "Pression dynamique Δp", "unit": "Pa"},
+      {"key": "V", "label": "Vitesse locale V", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "BERN_DRAIN_06",
+    "chapter": "bernoulli",
+    "solver": "drainTime",
+    "title": "Temps de vidange d’un réservoir cylindrique",
+    "difficulty": 3,
+    "statement": "Un réservoir cylindrique se vide par un orifice en mince paroi. Le régime est quasi permanent. Déterminer le temps nécessaire pour abaisser le niveau de h₁ à h₂ au-dessus de l’orifice.",
+    "variables": [
+      {"key": "tankD", "label": "Diamètre réservoir", "unit": "m", "value": 3, "min": 1.5, "max": 8, "step": 0.5},
+      {"key": "orificeD", "label": "Diamètre orifice", "unit": "mm", "value": 50, "min": 20, "max": 120, "step": 5},
+      {"key": "h1", "label": "Charge initiale h₁", "unit": "m", "value": 4, "min": 2, "max": 8, "step": 0.5},
+      {"key": "h2", "label": "Charge finale h₂", "unit": "m", "value": 1, "min": 0.2, "max": 3, "step": 0.2},
+      {"key": "Cd", "label": "Coefficient Cᵈ", "unit": "—", "value": 0.62, "min": 0.58, "max": 0.8, "step": 0.02}
+    ],
+    "questions": [
+      {"key": "tankA", "label": "Section du réservoir A", "unit": "m²"},
+      {"key": "orificeA", "label": "Section de l’orifice a", "unit": "m²"},
+      {"key": "t", "label": "Temps de vidange t", "unit": "s"}
+    ]
+  },
+  {
+    "id": "BERN_SIPHON_07",
+    "chapter": "bernoulli",
+    "solver": "siphon",
+    "title": "Siphon et risque de cavitation",
+    "difficulty": 3,
+    "statement": "Un siphon de diamètre constant amorce la vidange d’un réservoir. Le point haut est à une hauteur z_C au-dessus de la surface libre ; la sortie débouche à l’air libre sous une dénivellation Δz. Fluide parfait, réservoir de grande section. Calculer la vitesse, le débit et la pression absolue au point haut.",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 80, "min": 40, "max": 200, "step": 10},
+      {"key": "rise", "label": "Hauteur du point haut z_C", "unit": "m", "value": 1.5, "min": 0.5, "max": 6, "step": 0.25},
+      {"key": "drop", "label": "Dénivellation de sortie Δz", "unit": "m", "value": 3, "min": 1, "max": 8, "step": 0.5},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1025, "step": 5},
+      {"key": "patm", "label": "Pression atmosphérique", "unit": "kPa", "value": 101.3, "min": 90, "max": 103, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "pHigh", "label": "Pression absolue au point haut", "unit": "Pa"}
+    ]
+  },
+  {
+    "id": "BERN_PUMP_08",
+    "chapter": "bernoulli",
+    "solver": "hydraulicPower",
+    "title": "Pompage entre deux réservoirs",
+    "difficulty": 2,
+    "statement": "Une pompe aspire l’eau d’un puits et la refoule dans un réservoir dont la surface libre est plus haute. Les deux surfaces sont à l’air libre et de grande section. Fluide parfait, plus d’éventuelles pertes déjà estimées. Calculer la hauteur manométrique, la puissance hydraulique et la puissance absorbée.",
+    "variables": [
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 50, "min": 10, "max": 150, "step": 5},
+      {"key": "head", "label": "Hauteur géométrique H_g", "unit": "m", "value": 35, "min": 8, "max": 80, "step": 5},
+      {"key": "losses", "label": "Pertes de charge", "unit": "m", "value": 0, "min": 0, "max": 20, "step": 1},
+      {"key": "efficiency", "label": "Rendement η", "unit": "—", "value": 0.7, "min": 0.5, "max": 0.85, "step": 0.05},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1025, "step": 5}
+    ],
+    "questions": [
+      {"key": "H", "label": "Hauteur manométrique HMT", "unit": "m"},
+      {"key": "waterPower", "label": "Puissance hydraulique Pₕ", "unit": "W"},
+      {"key": "inputPower", "label": "Puissance absorbée P_abs", "unit": "W"}
+    ]
+  }
+]
