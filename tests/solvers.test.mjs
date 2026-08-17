@@ -25,11 +25,22 @@ const oil = solvers.density({ volume:6.5,W:55 }).values;
 assert.ok(isClose(oil.rho, 862.65, 0.001));
 assert.ok(isClose(oil.relative, oil.rho / 1000, 1e-12));
 
+const tank = solvers.density({ D: 1.2, h: 0.9, mass: 915 }).values;
+assert.ok(isClose(tank.volume, 1.018, 0.002));
+assert.ok(isClose(tank.rho, 899, 1));
+assert.ok(isClose(tank.relative, 0.9, 0.01));
+
+const plate = solvers.viscosityForce({ A: 0.5, U: 0.4, e: 0.8, mu: 0.15 }).values;
+assert.ok(isClose(plate.tau, 75, 1e-9));
+assert.ok(isClose(plate.F, 37.5, 1e-9));
+assert.ok(isClose(plate.P, 15, 1e-9));
+
 const diver = solvers.pressureDepth({ h:28,rho:1025,patm:101.3 }).values;
 assert.ok(isClose(diver.relative, 281547, 1e-12));
 assert.ok(isClose(diver.absolute, 382847, 1e-12));
 
 assert.ok(isClose(solvers.compressibility({volume:1,p1:1,p2:100,K:2.2}).values.ratio, 0.45, 0.001));
+assert.ok(isClose(solvers.compressibility({volume:1,p1:1,p2:100,K:2.2,rho0:1000}).values.rhoFinal, 1004.5, 0.2));
 assert.ok(solvers.layeredPressure({hOil:2,rhoOil:850,hWater:3,rhoWater:1000}).values.bottomP > 45000);
 assert.ok(solvers.submergedGate({b:2,H:1.8,y0:1.2,rho:1000}).values.yp > 2.1);
 assert.ok(solvers.torricelli({d:40,h:6,Cd:0.62}).values.Q > 0.008);
@@ -187,6 +198,61 @@ assert.ok(moody.fInf > 0.015 && moody.fInf < 0.025);
 const venturiK = solvers.venturi({ D1: 250, D2: 125, dpK: 20, rho: 1000 }).values;
 assert.ok(venturiK.Q > 0.05 && venturiK.Q < 0.2);
 assert.ok(isClose(venturiK.V2, venturiK.V1 * 4, 1e-12));
+
+const visc = solvers.coaxialViscometer({ ri: 60, ro: 62, L: 200, rpm: 90, torque: 0.9 }).values;
+assert.ok(isClose(visc.mu, 0.7, 0.02));
+
+const cap = solvers.capillary({ d: 0.5, sigma: 0.073, theta: 0, rho: 1000, hMax: 3 }).values;
+assert.ok(isClose(cap.h, 0.0595, 0.001));
+assert.ok(isClose(cap.dMin, 9.9, 0.2));
+
+const drop = solvers.laplace({ radius: 100, sigma: 0.073, factor: 2 }).values;
+assert.ok(isClose(drop.dp, 1460, 5));
+
+const bottle = solvers.idealGas({ temp: 25, pressure: 200, R: 287, volumeL: 50, pAtm: 1.013 }).values;
+assert.ok(isClose(bottle.rho, 233.7, 0.2));
+assert.ok(isClose(bottle.mass, 11.7, 0.05));
+assert.ok(isClose(bottle.V2, 9.87, 0.02));
+
+const layers = solvers.layeredPressure({ hOil: 2, rhoOil: 850, hWater: 3, rhoWater: 1000 }).values;
+assert.ok(isClose(layers.interfaceP, 16677, 1));
+assert.ok(isClose(layers.bottomP, 46107, 1));
+assert.ok(isClose(layers.head, 4.7, 0.01));
+assert.ok(isClose(layers.pBar, 0.461, 0.002));
+
+const mano = solvers.manometer({ h: 0.2, zConnect: 0.6, dzAB: 0.3, rho: 1000, rhoM: 13600 }).values;
+assert.ok(isClose(mano.dp, 27664, 2));
+
+const press = solvers.hydraulicPress({ dSmall: 40, dBig: 320, load: 60000, bigTravel: 10 }).values;
+assert.ok(isClose(press.smallForce, 937.5, 1e-9));
+assert.ok(isClose(press.smallTravel, 640, 1e-9));
+
+const gate = solvers.submergedGate({ b: 2.5, H: 1.8, y0: 1.2, rho: 1000 }).values;
+assert.ok(isClose(gate.yc, 2.1, 1e-12));
+assert.ok(isClose(gate.force, 92704, 2));
+assert.ok(isClose(gate.yp, 2.229, 0.002));
+
+const mur = solvers.planeForce({ b: 1, H: 3.5, rho: 1000 }).values;
+assert.ok(isClose(mur.force, 60086, 2));
+assert.ok(isClose(mur.zC, 3.5 / 3, 1e-12));
+assert.ok(isClose(mur.Mrev, 70100, 5));
+
+const disc = solvers.inclinedCircularGate({ D: 1.2, alpha: 60, hG: 2.4, rho: 1000 }).values;
+assert.ok(isClose(disc.force, 26628, 5));
+assert.ok(isClose(disc.dy, 0.0325, 0.001));
+
+const qtr = solvers.quarterCylinder({ R: 2, b: 3, rho: 1000 }).values;
+assert.ok(isClose(qtr.FH, 58860, 2));
+assert.ok(isClose(qtr.FV, 25261, 20));
+assert.ok(isClose(qtr.beta, 23.2, 0.2));
+
+const arch = solvers.archimedesCaisson({ volBlock: 0.8, rhoB: 2400, L: 6, B: 4, Hbox: 3, W: 500, rho: 1025 }).values;
+assert.ok(isClose(arch.T, 10987, 2));
+assert.ok(isClose(arch.Te, 2.07, 0.01));
+
+const caisson = solvers.bargeStability({ L: 6, B: 4, draft: 2.07, zG: 1.4, rho: 1025 }).values;
+assert.ok(isClose(caisson.GM, 0.28, 0.02));
+assert.ok(caisson.GM > 0);
 
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));

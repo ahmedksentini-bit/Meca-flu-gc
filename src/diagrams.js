@@ -141,13 +141,20 @@ const figures = {
       const y = 168 - i * 18, len = 18 + i * 28;
       return `${line(70, y, 70 + len, y, "#0369a1", 2, 'marker-end="url(#arb)"')}`;
     }).join("");
+    const forceOrMu = Number.isFinite(d.F) ? `F = ${num(d.F)} N` : `μ = ${num(d.mu)} Pa·s`;
     return {
       caption: "Écoulement de Couette : le fluide adhère aux deux plaques. Le profil de vitesse est linéaire, donc τ = μU/e.",
-      svg: svg("Couette plan", `${hatch(40, 36, 360, 16)}${water("M40 52h360v120H40z")}${hatch(40, 172, 360, 16)}${arrows}${line(70, 168, 182, 96, "#0369a1", 1.4, 'stroke-dasharray="4 3"')}${line(80, 28, 250, 28, "#b91c1c", 2.2, 'marker-end="url(#arr)"')}${t(255, 24, `U = ${num(d.U)} m/s`, 'fill="#b91c1c"')}${t(255, 44, `F = ${num(d.F)} N`, 'fill="#b91c1c"')}${dimV(420, 52, 172, `e = ${num(d.e)} mm`)}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `A = ${num(d.A)} m²`)}`)
+      svg: svg("Couette plan", `${hatch(40, 36, 360, 16)}${water("M40 52h360v120H40z")}${hatch(40, 172, 360, 16)}${arrows}${line(70, 168, 182, 96, "#0369a1", 1.4, 'stroke-dasharray="4 3"')}${line(80, 28, 250, 28, "#b91c1c", 2.2, 'marker-end="url(#arr)"')}${t(255, 24, `U = ${num(d.U)} m/s`, 'fill="#b91c1c"')}${t(255, 44, forceOrMu, 'fill="#b91c1c"')}${dimV(420, 52, 172, `e = ${num(d.e)} mm`)}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `A = ${num(d.A)} m²`)}`)
     };
   },
 
   density(d) {
+    if (Number.isFinite(d.D) && Number.isFinite(d.h)) {
+      return {
+        caption: "Réservoir cylindrique : 𝒱 = πD²h/4, puis ρ = m/𝒱, γ = ρg et d = ρ/ρeau.",
+        svg: svg("Réservoir cylindrique d’huile", `${hatch(150, 200, 220, 18)}${oil("M168 58h184v142H168z")}${line(168, 58, 352, 58, "#b45309", 3)}${dimV(140, 58, 200, `h = ${num(d.h)} m`, -1)}${dimH(218, 168, 352, `D = ${num(d.D)} m`)}${t(200, 48, `huile · m = ${num(d.mass)} kg`)}${t(175, 188, "réservoir")}`)
+      };
+    }
     return {
       caption: "Le poids W est une force verticale. On en déduit m = W/g, puis ρ = m/𝒱.",
       svg: svg("Réservoir d’huile", `${hatch(150, 200, 220, 18)}${oil("M168 58h184v142H168z")}${line(168, 58, 352, 58, "#b45309", 3)}${t(200, 48, `huile · 𝒱 = ${num(d.volume)} m³`)}${line(260, 88, 260, 168, "#b91c1c", 2.2, 'marker-end="url(#arr)"')}${t(272, 132, `W = ${num(d.W)} kN`, 'fill="#b91c1c"')}${t(175, 188, "réservoir")}`)
@@ -184,9 +191,14 @@ const figures = {
   },
 
   idealGas(d) {
+    const extra = Number.isFinite(d.volumeL)
+      ? `${t(330, 180, `𝒱 = ${num(d.volumeL)} L`)}`
+      : "";
     return {
-      caption: "Gaz parfait : la masse volumique se déduit de p et T absolues, ρ = p/(RT). Pas besoin de « voir » les molécules.",
-      svg: svg("Récipient de gaz", `<rect x="90" y="50" width="200" height="130" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="3.5"/><circle cx="290" cy="70" r="18" fill="#fff" stroke="#b91c1c" stroke-width="2"/>${t(282, 75, "p", 'fill="#b91c1c"')}<rect x="168" y="36" width="44" height="18" fill="#fff" stroke="#0369a1" stroke-width="2"/>${t(176, 50, "T")}${t(330, 90, `T = ${num(d.temp)} °C`)}${t(330, 120, `p = ${num(d.pressure)} bar`)}${t(330, 150, `R = ${num(d.R)} J/(kg·K)`)}${t(120, 210, "air — équation d’état")}`)
+      caption: Number.isFinite(d.volumeL)
+        ? "Bouteille d’air comprimé : ρ = p/(RT), m = ρ𝒱, puis 𝒱₂ = 𝒱₁ p₁/p₂ à T constante."
+        : "Gaz parfait : la masse volumique se déduit de p et T absolues, ρ = p/(RT). Pas besoin de « voir » les molécules.",
+      svg: svg("Récipient de gaz", `<rect x="90" y="50" width="200" height="130" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="3.5"/><circle cx="290" cy="70" r="18" fill="#fff" stroke="#b91c1c" stroke-width="2"/>${t(282, 75, "p", 'fill="#b91c1c"')}<rect x="168" y="36" width="44" height="18" fill="#fff" stroke="#0369a1" stroke-width="2"/>${t(176, 50, "T")}${t(330, 90, `T = ${num(d.temp)} °C`)}${t(330, 120, `p = ${num(d.pressure)} bar`)}${t(330, 150, `R = ${num(d.R)} J/(kg·K)`)}${extra}${t(120, 210, "air — équation d’état")}`)
     };
   },
 
@@ -207,6 +219,12 @@ const figures = {
   },
 
   manometer(d) {
+    if (Number.isFinite(d.zConnect)) {
+      return {
+        caption: "Les axes A et B ne sont pas à la même cote. On chemine : descente dans l’eau, montée dans le mercure, remontée vers B.",
+        svg: svg("Manomètre différentiel décalé", `<path d="M90 36v24h70" fill="none" stroke="#64748b" stroke-width="10"/><path d="M430 20v40h-70" fill="none" stroke="#64748b" stroke-width="10"/><path d="M160 60v80q0 28 28 28h184q28 0 28-28V60" fill="none" stroke="#475569" stroke-width="16"/><path d="M168 128v20q0 16 18 16h184q18 0 18-16V92" fill="none" stroke="#d97706" stroke-width="10"/>${dimV(40, 36, 60, `A`)}${dimV(500, 20, 60, `B +${num(d.dzAB)} m`)}${dimV(455, 92, 148, `Δh = ${num(d.h)} m`)}${t(48, 28, "p_A")}${t(400, 16, "p_B")}${t(240, 188, "mercure")}${t(150, 230, `raccord A : ${num(d.zConnect)} m`)}`)
+      };
+    }
     return {
       caption: "Manomètre en U à la même cote : p₁ − p₂ = (ρₘ − ρ)gΔh. Le mercure est plus bas du côté de la plus forte pression.",
       svg: svg("Manomètre différentiel", `<path d="M70 40v20h80" fill="none" stroke="#64748b" stroke-width="10"/><path d="M410 40v20h-80" fill="none" stroke="#64748b" stroke-width="10"/><path d="M150 60v70q0 28 28 28h204q28 0 28-28V60" fill="none" stroke="#475569" stroke-width="16"/><path d="M158 118v16q0 18 20 18h204q20 0 20-18V86" fill="none" stroke="#d97706" stroke-width="10"/>${dimV(430, 86, 134, `Δh = ${num(d.h)} mm`)}${t(40, 32, "prise 1 · p₁")}${t(400, 32, "prise 2 · p₂")}${t(240, 175, "mercure")}${t(200, 220, "eau")}`)
@@ -236,8 +254,8 @@ const figures = {
 
   planeForce(d) {
     return {
-      caption: "Vanne affleurante : le triangle des pressions a son centre de gravité à H/2 et son centre de poussée à 2H/3.",
-      svg: svg("Poussée sur paroi plane", `${water("M70 40h250v160H70z")}${hatch(320, 28, 22, 184)}${line(70, 40, 320, 40, "#0369a1", 3)}<path d="M320 40L200 200H320z" fill="#2563eb55" stroke="#1d4ed8" stroke-width="1.5"/>${dimV(250, 40, 120, "ȳ = H/2", -1)}${dimV(400, 40, 147, "yₚ = 2H/3")}${line(210, 147, 318, 147, "#b91c1c", 2.4, 'marker-end="url(#arr)"')}${t(188, 143, "F", 'fill="#b91c1c"')}${dimV(350, 40, 200, `H = ${num(d.H)} m`)}${t(80, 32, "surface libre")}${t(80, 230, `largeur b = ${num(d.b)} m (hors plan)`)}`)
+      caption: "Mur affleurant : diagramme triangulaire. La poussée F = ½ ρg H² b s’applique à H/3 du pied.",
+      svg: svg("Mur de réservoir", `${water("M70 40h250v160H70z")}${hatch(320, 28, 22, 184)}${line(70, 40, 320, 40, "#0369a1", 3)}<path d="M320 40L200 200H320z" fill="#2563eb55" stroke="#1d4ed8" stroke-width="1.5"/>${dimV(400, 40, 200, `H = ${num(d.H)} m`)}${line(210, 147, 318, 147, "#b91c1c", 2.4, 'marker-end="url(#arr)"')}${t(188, 143, "F", 'fill="#b91c1c"')}${t(80, 32, "surface libre")}${t(80, 230, `b = ${num(d.b)} m · M = F H/3 au pied`)}`)
     };
   },
 
@@ -252,6 +270,24 @@ const figures = {
     return {
       caption: "Disque vertical immergé : F = ρgAȳ passe par le centre de poussée, légèrement sous le centre géométrique.",
       svg: svg("Vanne circulaire", `${water("M40 36h300v180H40z")}${hatch(340, 28, 22, 196)}${line(40, 36, 340, 36, "#0369a1", 3)}<circle cx="250" cy="148" r="40" fill="#64748b" stroke="#0f172a" stroke-width="3"/>${dimV(370, 36, 148, `ȳ = ${num(d.yc)} m`)}${t(400, 175, `D = ${num(d.D)} m`)}${t(50, 28, "surface libre")}${t(232, 152, "G", 'fill="#fff"')}`)
+    };
+  },
+  inclinedCircularGate(d) {
+    return {
+      caption: "Paroi inclinée : F = ρg A h_G. L’écart y_C − y_G se mesure le long de la paroi, avec y_G = h_G / sin α.",
+      svg: svg("Vanne circulaire inclinée", `${water("M40 36h280v180H40z")}${line(40, 36, 320, 36, "#0369a1", 3)}<path d="M200 36L360 210" stroke="#334155" stroke-width="18"/> <circle cx="300" cy="140" r="36" fill="#64748b" stroke="#0f172a" stroke-width="3"/>${dimV(120, 36, 140, `h_G = ${num(d.hG)} m`)}${t(380, 90, `α = ${num(d.alpha)}°`)}${t(380, 120, `D = ${num(d.D)} m`)}${t(50, 28, "surface libre")}`)
+    };
+  },
+  quarterCylinder(d) {
+    return {
+      caption: "F_H = poussée sur la projection verticale ; F_V = poids du volume d’eau au-dessus de la vanne (carré − quart de cercle).",
+      svg: svg("Vanne quart de cylindre", `${water("M80 40h200v140H80z")}<path d="M280 40A140 140 0 0 1 140 180H80V40z" fill="#7dd3fc" stroke="#0369a1" stroke-width="3"/>${hatch(80, 180, 200, 18)}${t(300, 70, `R = ${num(d.R)} m`)}${t(300, 100, `b = ${num(d.b)} m`)}${t(300, 140, "F_H →")}${t(160, 30, "F_V ↓")}${t(90, 230, "eau du côté concave · surface libre en haut")}`)
+    };
+  },
+  archimedesCaisson(d) {
+    return {
+      caption: "Archimède : le bloc immergé a un poids apparent (ρ_b − ρ)g𝒱. Le caisson flotte si F_A,max > W, avec Tₑ = W/(ρgLB).",
+      svg: svg("Bloc immergé et caisson", `${water("M40 70h220v140H40z")}<rect x="110" y="110" width="70" height="50" fill="#94a3b8" stroke="#334155" stroke-width="2"/>${t(100, 100, "bloc")}${water("M300 130h220v80H300z")}<rect x="330" y="90" width="160" height="120" fill="#cbd5e1" stroke="#334155" stroke-width="3"/>${line(300, 148, 520, 148, "#0369a1", 2)}${t(340, 80, `L×B×H = ${num(d.L)}×${num(d.B)}×${num(d.Hbox)} m`)}${t(48, 58, "eau douce")}${t(310, 230, "eau de mer")}`)
     };
   },
 

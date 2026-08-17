@@ -1,9 +1,9 @@
 const recaps = {
   density: {
     title: "Masse volumique, poids volumique, densité",
-    lead: "Trois grandeurs décrivent « combien de matière » contient un volume, mais elles ne sont pas interchangeables. On part toujours du poids, qui est une force.",
+    lead: "Trois grandeurs décrivent « combien de matière » contient un volume, mais elles ne sont pas interchangeables. On part du volume (souvent un cylindre) et de la masse, ou du poids.",
     points: [
-      "Le poids W = mg s’exprime en newtons (1 kN = 1000 N).",
+      "Cylindre : 𝒱 = πD²h/4. Sinon le volume est donné.",
       "Masse volumique ρ = m/𝒱 (kg/m³) ; poids volumique γ = ρg (N/m³ ou kN/m³).",
       "La densité d = ρ/ρeau est un rapport sans dimension. Pour l’eau, ρeau = 1000 kg/m³."
     ],
@@ -45,9 +45,10 @@ const recaps = {
     points: [
       "La composante verticale de la tension, πd σ cosθ, équilibre le poids ρg (πd²/4) h.",
       "Loi de Jurin : h = 4σ cosθ / (ρ g d).",
-      "θ < 90° (eau/verre) : montée. θ > 90° (mercure) : dépression capillaire."
+      "θ < 90° (eau/verre) : montée. θ > 90° (mercure) : dépression capillaire.",
+      "Un piézomètre trop fin fausse la lecture : D_min = 4σ/(ρg h_max)."
     ],
-    watch: "h diminue si d augmente. Convertir d en mètres et σ en N/m."
+    watch: "h diminue si d augmente. Convertir d en mètres et σ en N/m. Le cas 0,5 mm du polycopié n’est pas le 0,05 mm du TD sol."
   },
   laplace: {
     title: "Loi de Laplace",
@@ -65,9 +66,9 @@ const recaps = {
     points: [
       "Température en kelvin : T(K) = T(°C) + 273,15.",
       "Pression absolue en pascals (1 bar = 10⁵ Pa).",
-      "À 20 °C et 1 bar, on attend ρair ≈ 1,2 kg/m³."
+      "m = ρ𝒱. À T constante, 𝒱₂ = 𝒱₁ p₁/p₂."
     ],
-    watch: "Ne jamais laisser T en °C dans p = ρRT."
+    watch: "Ne jamais laisser T en °C dans p = ρRT. 𝒱 de la bouteille est souvent en litres : 50 L = 0,050 m³."
   },
   pressureDepth: {
     title: "Relation fondamentale de l’hydrostatique",
@@ -110,14 +111,14 @@ const recaps = {
     watch: "Le rapport des forces est le carré du rapport des diamètres, pas le rapport simple."
   },
   planeForce: {
-    title: "Poussée sur une paroi plane",
-    lead: "La pression hydrostatique varie linéairement avec la profondeur. La résultante vaut la pression au centre de gravité, multipliée par l’aire ; elle s’applique au centre de poussée, plus bas.",
+    title: "Mur de réservoir — diagramme des pressions",
+    lead: "Sur une paroi verticale affleurante, le diagramme des pressions est un triangle. La poussée est l’aire de ce triangle, appliquée à H/3 du pied.",
     points: [
-      "F = ρ g A ȳ, avec ȳ profondeur du centre géométrique.",
-      "Pour un rectangle affleurant : ȳ = H/2 et yₚ = 2H/3.",
-      "Décalage : yₚ = ȳ + Iᴳ/(A ȳ), avec Iᴳ = b H³/12."
+      "p_max = ρgH au pied ; F = ½ ρg H² b.",
+      "Point d’application : z_C = H/3 depuis le pied (yₚ = 2H/3 sous la surface).",
+      "Moment de renversement au pied : M = F × H/3."
     ],
-    watch: "F n’est pas ρgAH (pression au fond × aire). On utilise la profondeur du centre."
+    watch: "F n’est pas ρgAH (pression au fond × aire). Le mur du polycopié a H = 3,50 m et b = 1 m."
   },
   submergedGate: {
     title: "Vanne plane immergée",
@@ -140,14 +141,44 @@ const recaps = {
     watch: "Ne pas utiliser les formules du rectangle (bH³/12) pour un disque."
   },
   bargeStability: {
-    title: "Flottabilité et stabilité",
+    title: "Stabilité d’un caisson flottant",
     lead: "À l’équilibre, le poids égale la poussée d’Archimède. La stabilité au roulis se lit sur la hauteur métacentrique GM.",
     points: [
-      "Volume déplacé ∇ = L B Tₑ ; m = ρ ∇.",
-      "Centre de carène d’un ponton rectangulaire : KB = Tₑ/2.",
-      "BM = I/∇ avec I = L B³/12, puis GM = KB + BM − KG. Stable si GM > 0."
+      "Volume déplacé ∇ = L B Tₑ ; centre de carène KB = Tₑ/2.",
+      "Au roulis, I = L B³/12 (B = largeur). BM = I/∇.",
+      "GM = KB + BM − KG. Stable si GM > 0."
     ],
-    watch: "I est l’inertie de la flottaison (plan d’eau), pas celle du volume. B est la largeur, pas la longueur."
+    watch: "I est l’inertie de la flottaison, pas celle du volume. Pour le caisson 6×4 m, B = 4 m va au cube."
+  },
+  inclinedCircularGate: {
+    title: "Vanne circulaire inclinée",
+    lead: "La poussée ne dépend que de la profondeur du centre. L’écart centre de poussée se mesure le long de la paroi.",
+    points: [
+      "F = ρ g A h_G, A = πD²/4.",
+      "y_G = h_G / sin α le long de la paroi.",
+      "y_C − y_G = Iᴳ/(y_G A) avec Iᴳ = πD⁴/64."
+    ],
+    watch: "Ne pas remplacer h_G par y_G dans F = ρgAȳ : ȳ est une profondeur verticale."
+  },
+  quarterCylinder: {
+    title: "Paroi courbe — quart de cylindre",
+    lead: "Sur une paroi courbe, on sépare horizontale (projection verticale) et verticale (poids du fluide au-dessus de la face).",
+    points: [
+      "F_H = ½ ρg R² b, appliquée à 2R/3 sous la surface.",
+      "F_V = ρg R²(1 − π/4)b vers le bas (carré moins quart de cercle).",
+      "F = √(F_H² + F_V²) ; tan β = F_V/F_H. La résultante passe par l’axe."
+    ],
+    watch: "Le volume n’est pas le quart de cylindre plein : l’eau est au-dessus de la vanne, côté concave."
+  },
+  archimedesCaisson: {
+    title: "Archimède : poids apparent et flottaison",
+    lead: "Un corps immergé perd le poids du fluide déplacé. Un caisson flotte si la poussée à immersion totale dépasse son poids.",
+    points: [
+      "Tension du câble T = (ρ_béton − ρ_eau) g 𝒱.",
+      "F_A,max = ρ_mer g L B H. Flotte si F_A,max > W.",
+      "Tirant Tₑ = W /(ρ g L B) ; franc-bord = H − Tₑ."
+    ],
+    watch: "W est un poids (kN), pas une masse. L’eau du bloc (douce) n’est pas celle du caisson (mer)."
   },
   pipeContinuity: {
     title: "Débit et vitesse moyenne",
@@ -631,10 +662,10 @@ const recaps = {
     watch: "On n’a pas Kᵥ(Q/2) = 4 Kᵥ(Q) : λ change, et K_autres reste."
   },
   viscosityForce: {
-    title: "Couette : de μ vers F",
-    lead: "Même modèle que l’exercice de viscosité, mais ici μ est donnée et l’on cherche la force à exercer.",
-    points: ["τ = μ U/e.", "F = τ A.", "e en mètres."],
-    watch: "Inverser la donnée : ne pas recalculer μ à partir d’une force inconnue."
+    title: "Loi de Newton : plaque mobile",
+    lead: "μ est donnée. Le profil linéaire dans le film fixe le gradient U/e, donc τ, puis la force de traction et la puissance dissipée.",
+    points: ["τ = μ U/e.", "F = τ A.", "P = F U (chaleur dans le film).", "e en mètres."],
+    watch: "Ne pas recalculer μ : c’est une donnée. Convertir e en mètres avant U/e."
   },
   bearingLoss: {
     title: "Palier lisse",

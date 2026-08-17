@@ -42,16 +42,27 @@ function colebrookIterationText(history) {
 
 export const solvers = {
   density(d) {
-    const mass = d.W * 1000 / G;
-    const rho = mass / d.volume;
-    const gamma = d.W / d.volume;
+    const fromGeom = Number.isFinite(d.D) && Number.isFinite(d.h) && !Number.isFinite(d.volume);
+    const volume = Number.isFinite(d.volume) ? d.volume : Math.PI * (d.D ** 2) / 4 * d.h;
+    const mass = Number.isFinite(d.mass) ? d.mass : d.W * 1000 / G;
+    const WkN = Number.isFinite(d.W) ? d.W : mass * G / 1000;
+    const rho = mass / volume;
+    const gamma = WkN / volume;
     const relative = rho / 1000;
-    return steps({ mass, rho, gamma, relative }, [
-      ["Poids et masse", `m = W/g = ${n(mass)} kg`],
-      ["Masse volumique", `ρ = m/𝒱 = ${n(rho)} kg/m³`],
-      ["Poids volumique", `γ = W/𝒱 = ${n(gamma)} kN/m³`],
-      ["Densité", `d = ρ/ρeau = ${n(relative)}`]
-    ]);
+    const solution = fromGeom
+      ? [
+          ["Volume d’huile", `𝒱 = πD²/4 · h = π×${n(d.D)}²/4 × ${n(d.h)} = ${n(volume)} m³`],
+          ["Masse volumique", `ρ = m/𝒱 = ${n(mass)}/${n(volume)} = ${n(rho)} kg/m³`],
+          ["Poids volumique", `γ = ρg = ${n(rho)} × 9,81 = ${n(gamma * 1000)} N/m³ ≈ ${n(gamma)} kN/m³`],
+          ["Densité", `d = ρ/ρeau = ${n(rho)}/1000 = ${n(relative)}`]
+        ]
+      : [
+          ["Poids et masse", `m = W/g = ${n(mass)} kg`],
+          ["Masse volumique", `ρ = m/𝒱 = ${n(rho)} kg/m³`],
+          ["Poids volumique", `γ = W/𝒱 = ${n(gamma)} kN/m³`],
+          ["Densité", `d = ρ/ρeau = ${n(relative)}`]
+        ];
+    return steps({ volume, mass, rho, gamma, relative }, solution);
   },
   pressureDepth(d) {
     const relative = d.rho * G * d.h;
@@ -66,21 +77,26 @@ export const solvers = {
     const ratio = dp / (d.K * 1e9);
     const deltaV = d.volume * ratio;
     const finalVolume = d.volume - deltaV;
-    return steps({ dp, ratio: ratio * 100, deltaV, finalVolume }, [
+    const rho0 = d.rho0 ?? 1000;
+    const rhoFinal = rho0 * d.volume / finalVolume;
+    return steps({ dp, ratio: ratio * 100, deltaV, finalVolume, rhoFinal }, [
       ["Variation de pression", `Δp = (${n(d.p2)} − ${n(d.p1)}) bar = ${n(dp)} Pa`],
       ["Module d’élasticité", `K = −Δp/(Δ𝒱/𝒱) ⟹ diminution relative = Δp/K = ${n(ratio * 100)} %`],
       ["Variation de volume", `|Δ𝒱| = 𝒱Δp/K = ${n(deltaV)} m³`],
-      ["Volume final", `𝒱₂ = 𝒱₁ − |Δ𝒱| = ${n(finalVolume)} m³`]
+      ["Volume final", `𝒱₂ = 𝒱₁ − |Δ𝒱| = ${n(finalVolume)} m³`],
+      ["Masse volumique finale", `ρ = m/𝒱₂ = ${n(rho0)} × 𝒱₁/𝒱₂ = ${n(rhoFinal)} kg/m³`]
     ]);
   },
   layeredPressure(d) {
     const interfaceP = d.rhoOil * G * d.hOil;
     const bottomP = interfaceP + d.rhoWater * G * d.hWater;
     const head = bottomP / (d.rhoWater * G);
-    return steps({ interfaceP, bottomP, head }, [
+    const pBar = bottomP / 1e5;
+    return steps({ interfaceP, bottomP, head, pBar }, [
       ["Interface huile–eau", `pᵢ = ρhuile·g·hhuile = ${n(interfaceP)} Pa`],
       ["Fond du réservoir", `p_f = ρhuile·g·hhuile + ρeau·g·heau = ${n(bottomP)} Pa`],
-      ["Hauteur d’eau", `H = p_f/(ρeau g) = ${n(head)} mCE`]
+      ["Hauteur d’eau", `H = p_f/(ρeau g) = ${n(head)} mCE`],
+      ["En bar", `p_f = ${n(pBar)} bar`]
     ]);
   },
   submergedGate(d) {
@@ -262,7 +278,17 @@ export const solvers = {
   },
   capillary(d) {
     const diameter=d.d/1000, theta=d.theta*Math.PI/180, h=4*d.sigma*Math.cos(theta)/(d.rho*G*diameter);
-    return steps({h},[["Équilibre vertical","La composante verticale de la tension superficielle équilibre le poids de la colonne."],["Loi de Jurin",`h=4σcosθ/(ρgd)=${n(h)} m`]]);
+    const values = { h };
+    const solution = [
+      ["Équilibre vertical","La composante verticale de la tension superficielle équilibre le poids de la colonne."],
+      ["Loi de Jurin",`h=4σcosθ/(ρgd)=${n(h)} m`]
+    ];
+    if (Number.isFinite(d.hMax)) {
+      const dMin = 4 * d.sigma * Math.cos(theta) / (d.rho * G * (d.hMax / 1000)) * 1000;
+      values.dMin = dMin;
+      solution.push(["Diamètre minimal du piézomètre", `h ≤ ${n(d.hMax)} mm ⟹ D ≥ 4σ/(ρgh) = ${n(dMin)} mm`]);
+    }
+    return steps(values, solution);
   },
   laplace(d) {
     const radius=d.radius/1e6, dp=d.factor*d.sigma/radius;
@@ -270,7 +296,24 @@ export const solvers = {
   },
   idealGas(d) {
     const T=d.temp+273.15, p=d.pressure*1e5, rho=p/(d.R*T);
-    return steps({T,p,rho},[["Température absolue",`T=${d.temp}+273,15=${n(T)} K`],["Pression absolue",`p=${n(p)} Pa`],["Gaz parfait",`ρ=p/(RT)=${n(rho)} kg/m³`]]);
+    const values = { T, p, rho };
+    const solution = [
+      ["Température absolue",`T=${d.temp}+273,15=${n(T)} K`],
+      ["Pression absolue",`p=${n(p)} Pa`],
+      ["Gaz parfait",`ρ=p/(RT)=${n(rho)} kg/m³`]
+    ];
+    if (Number.isFinite(d.volumeL)) {
+      const volume = d.volumeL / 1000;
+      const mass = rho * volume;
+      values.mass = mass;
+      solution.push(["Masse d’air", `m = ρ𝒱 = ${n(rho)} × ${n(volume)} = ${n(mass)} kg`]);
+      if (Number.isFinite(d.pAtm)) {
+        const V2 = volume * d.pressure / d.pAtm;
+        values.V2 = V2;
+        solution.push(["Volume à pₐₜₘ", `𝒱₂ = 𝒱₁ p₁/p₂ = ${n(volume)} × ${n(d.pressure)}/${n(d.pAtm)} = ${n(V2)} m³`]);
+      }
+    }
+    return steps(values, solution);
   },
   viscosity(d) {
     const e = d.e / 1000;
@@ -297,6 +340,16 @@ export const solvers = {
     return steps({volume,mass,zB,BM,GM},[["Volume déplacé",`∇=LBTe=${n(volume)} m³`],["Équilibre de flottaison",`m=ρ∇=${n(mass)} kg`],["Centre de carène",`zB=Te/2=${n(zB)} m`],["Rayon métacentrique",`BM=I/∇=${n(BM)} m`],["Hauteur métacentrique",`GM=zB+BM−zG=${n(GM)} m : ${GM>0?"stable":"instable"}`]]);
   },
   manometer(d) {
+    if (Number.isFinite(d.zConnect) && Number.isFinite(d.dzAB)) {
+      const dh = d.h, hAM = d.zConnect, hNB = hAM - dh + d.dzAB;
+      const dp = d.rho * G * (-hAM + hNB) + d.rhoM * G * dh;
+      const head = dp / (d.rho * G);
+      return steps({ dp, head }, [
+        ["Cheminement A → B", `Descente eau ${n(hAM)} m jusqu’au mercure, montée Hg ${n(dh)} m, puis montée eau ${n(hNB)} m jusqu’à B.`],
+        ["Bilan hydrostatique", `p_A − p_B = ρg(−h_AM + h_NB) + ρ_Hg g Δh = ${n(dp)} Pa`],
+        ["Hauteur d’eau équivalente", `(p_A − p_B)/(ρg) = ${n(head)} mCE`]
+      ]);
+    }
     const h = d.h / 1000;
     const dp = (d.rhoM - d.rho) * G * h;
     const head = dp / (d.rho * G);
@@ -312,11 +365,13 @@ export const solvers = {
     const force = d.rho * G * area * yc;
     const ig = d.b * d.H ** 3 / 12;
     const yp = yc + ig / (area * yc);
-    return steps({ yc, force, yp }, [
-      ["Géométrie", `A = bH = ${n(area)} m² et ȳ = H/2 = ${n(yc)} m`],
-      ["Résultante", `F = ρgAȳ = ${n(force)} N`],
-      ["Moment quadratique", `Iᴳ = bH³/12 = ${n(ig)} m⁴`],
-      ["Centre de poussée", `yₚ = ȳ + Iᴳ/(Aȳ) = ${n(yp)} m = 2H/3`]
+    const zC = d.H / 3;
+    const Mrev = force * zC;
+    return steps({ yc, force, yp, zC, Mrev }, [
+      ["Diagramme des pressions", `p_max = ρgH = ${n(d.rho * G * d.H)} Pa ; triangle de hauteur H.`],
+      ["Poussée", `F = ½ ρg H² b = ${n(force)} N`],
+      ["Point d’application", `z_C = H/3 = ${n(zC)} m depuis le pied (yₚ = 2H/3 = ${n(yp)} m sous la surface)`],
+      ["Moment au pied", `M = F × H/3 = ${n(Mrev)} N·m`]
     ]);
   },
   venturi(d) {
@@ -712,11 +767,12 @@ export const solvers = {
     ]);
   },
   viscosityForce(d) {
-    const e = d.e / 1000, tau = d.mu * d.U / e, F = tau * d.A;
-    return steps({ tau, F }, [
-      ["Gradient", `U/e = ${n(d.U / e)} s⁻¹`],
+    const e = d.e / 1000, tau = d.mu * d.U / e, F = tau * d.A, P = F * d.U;
+    return steps({ tau, F, P }, [
+      ["Gradient", `du/dy = U/e = ${n(d.U / e)} s⁻¹`],
       ["Loi de Newton", `τ = μU/e = ${n(tau)} Pa`],
-      ["Force", `F = τA = ${n(F)} N`]
+      ["Force de traction", `F = τA = ${n(F)} N`],
+      ["Puissance dissipée", `P = FU = ${n(P)} W`]
     ]);
   },
   bearingLoss(d) {
@@ -868,6 +924,43 @@ export const solvers = {
       ["Dimensions", "M L² T⁻³ = (M L⁻³)ᵃ (T⁻¹)ᵇ Lᶜ"],
       ["Identification", "a = 1 ; −3a + c = 2 ; −b = −3"],
       ["Forme", `P = ρ n³ D⁵ f(…) ; a = 1, b = 3, c = 5`]
+    ]);
+  },
+  inclinedCircularGate(d) {
+    const area = Math.PI * d.D ** 2 / 4, ig = Math.PI * d.D ** 4 / 64;
+    const force = d.rho * G * area * d.hG;
+    const yG = d.hG / Math.sin(d.alpha * Math.PI / 180);
+    const dy = ig / (yG * area);
+    return steps({ area, force, yG, dy }, [
+      ["Aire", `A = πD²/4 = ${n(area)} m²`],
+      ["Poussée", `F = ρg A h_G = ${n(force)} N`],
+      ["Abscisse sur la paroi", `y_G = h_G / sin α = ${n(yG)} m`],
+      ["Écart centre de poussée", `y_C − y_G = Iᴳ/(y_G A) = ${n(dy)} m`]
+    ]);
+  },
+  quarterCylinder(d) {
+    const FH = 0.5 * d.rho * G * d.R ** 2 * d.b;
+    const volume = d.R ** 2 * (1 - Math.PI / 4) * d.b;
+    const FV = d.rho * G * volume;
+    const F = Math.hypot(FH, FV);
+    const beta = Math.atan2(FV, FH) * 180 / Math.PI;
+    return steps({ FH, FV, F, beta }, [
+      ["Composante horizontale", `F_H = ½ ρg R² b = ${n(FH)} N (projection verticale R×b)`],
+      ["Volume au-dessus de la vanne", `𝒱 = R²(1 − π/4)b = ${n(volume)} m³`],
+      ["Composante verticale", `F_V = ρg𝒱 = ${n(FV)} N vers le bas`],
+      ["Résultante", `F = √(F_H² + F_V²) = ${n(F)} N ; β = arctan(F_V/F_H) = ${n(beta)}°`]
+    ]);
+  },
+  archimedesCaisson(d) {
+    const P = d.rhoB * G * d.volBlock, FA = 1000 * G * d.volBlock, T = P - FA;
+    const FAmax = d.rho * G * d.L * d.B * d.Hbox;
+    const Te = d.W * 1000 / (d.rho * G * d.L * d.B);
+    const freeboard = d.Hbox - Te;
+    return steps({ T, FAmax, Te, freeboard }, [
+      ["Bloc immergé", `T = (ρ_béton − ρ_eau) g 𝒱 = ${n(T)} N`],
+      ["Poussée maximale du caisson", `F_A,max = ρ g L B H = ${n(FAmax)} N`],
+      ["Tirant d’eau", `Tₑ = W /(ρ g L B) = ${n(Te)} m`],
+      ["Franc-bord", `H − Tₑ = ${n(freeboard)} m`]
     ]);
   }
 };
