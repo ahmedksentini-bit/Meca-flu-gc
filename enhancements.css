@@ -12,11 +12,12 @@
 @media(max-width:560px){.diagram-head{flex-wrap:wrap}}
 body.diagram-fs-open{overflow:hidden}
 .diagram[hidden]{display:none!important}
+.diagram-fs{position:fixed;inset:0;z-index:35;display:flex;flex-direction:column;width:100vw;height:100vh;height:100dvh;background:#d9edf7}
 .diagram-fs[hidden]{display:none!important}
 .diagram-fs-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:10px 16px;background:#0c4a6eed;color:#fff;backdrop-filter:blur(10px)}
 .diagram-fs-bar strong{font-size:16px}
 .diagram-fs-bar .ghost{background:#ffffff18;border-color:#ffffff44;color:#fff}
-.diagram-fs-stage{position:relative;flex:1;min-height:0;cursor:grab;touch-action:none}
+.diagram-fs-stage{position:relative;flex:1 1 auto;min-height:0;height:100%;cursor:grab;touch-action:none;background:#d9edf7}
 .diagram-fs-stage:active{cursor:grabbing}
 .diagram-fs-stage canvas{position:absolute;inset:0;z-index:0;display:block;width:100%!important;height:100%!important}
 .diagram-fs-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}

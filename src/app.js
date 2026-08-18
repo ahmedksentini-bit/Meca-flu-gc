@@ -12,7 +12,6 @@ function hideWebGLOverlay() {
   document.body.classList.remove("diagram-fs-open");
   const overlay = document.querySelector("#diagramWebGL");
   if (overlay) overlay.hidden = true;
-  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
 function clearWebGLScene() {
   diagrams3d?.clearScene?.();
@@ -425,12 +424,13 @@ async function showWebGLDiagram(figure) {
   if (note) note.textContent = `${figure.caption} Vue 3D plein écran.`;
   if (overlay) overlay.hidden = false;
   document.body.classList.add("diagram-fs-open");
-  overlay?.requestFullscreen?.().catch(() => {});
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   try {
     const mod = await loadDiagrams3d();
     if (token !== state.webglToken || !state.exercise) return;
     const ok = mod.render3DDiagram(stage || "diagramWebGLStage", state.exercise.solver, state.data);
     if (!ok) throw new Error("WebGL indisponible");
+    window.dispatchEvent(new Event("resize"));
   } catch {
     if (token !== state.webglToken) return;
     toast("Vue 3D indisponible sur cet appareil.");

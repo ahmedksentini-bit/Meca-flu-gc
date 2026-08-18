@@ -123,6 +123,7 @@ export class SceneManager3D {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    this.renderer.setClearColor(0xd9edf7, 1);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -176,6 +177,7 @@ export class SceneManager3D {
     this._resize = () => this.resize();
     this.ro = new ResizeObserver(this._resize);
     this.ro.observe(this.container);
+    window.addEventListener("resize", this._resize);
     this.resize();
 
     this._onVis = () => {
@@ -200,8 +202,9 @@ export class SceneManager3D {
   }
 
   resize() {
-    const w = Math.max(this.container.clientWidth, 1);
-    const h = Math.max(this.container.clientHeight, 1);
+    const rect = this.container.getBoundingClientRect();
+    const w = Math.max(Math.floor(rect.width), this.container.clientWidth, window.innerWidth, 320);
+    const h = Math.max(Math.floor(rect.height), this.container.clientHeight, Math.floor(window.innerHeight * 0.72), 240);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
@@ -231,6 +234,7 @@ export class SceneManager3D {
     this.raf = 0;
     document.removeEventListener("visibilitychange", this._onVis);
     this.ro.disconnect();
+    window.removeEventListener("resize", this._resize);
     this.controls.dispose();
     this.overlay.clear();
     disposeGpu(this.scene);
