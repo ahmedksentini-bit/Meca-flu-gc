@@ -8,12 +8,22 @@
 .diagram-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:#fff;flex-shrink:0}
 .diagram-switch button{padding:7px 12px;border:0;border-radius:9px;background:none;color:var(--muted);font-weight:800;cursor:pointer}
 .diagram-switch button.active{background:var(--blue);color:#fff}
-.diagram-webgl{min-height:320px;height:320px;padding:0;overflow:hidden;touch-action:none;cursor:grab}
-.diagram-webgl:active{cursor:grabbing}
-.diagram[hidden],.diagram-webgl[hidden]{display:none!important}
-.diagram-webgl canvas{display:block;width:100%!important;height:100%!important}
 .diagram-hint{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:700}
-@media(max-width:560px){.diagram-head{flex-wrap:wrap}.diagram-webgl{height:260px;min-height:260px}}
+@media(max-width:560px){.diagram-head{flex-wrap:wrap}}
+body.diagram-fs-open{overflow:hidden}
+.diagram[hidden]{display:none!important}
+.diagram-fs[hidden]{display:none!important}
+.diagram-fs-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:10px 16px;background:#0c4a6eed;color:#fff;backdrop-filter:blur(10px)}
+.diagram-fs-bar strong{font-size:16px}
+.diagram-fs-bar .ghost{background:#ffffff18;border-color:#ffffff44;color:#fff}
+.diagram-fs-stage{position:relative;flex:1;min-height:0;cursor:grab;touch-action:none}
+.diagram-fs-stage:active{cursor:grabbing}
+.diagram-fs-stage canvas{position:absolute;inset:0;z-index:0;display:block;width:100%!important;height:100%!important}
+.diagram-fs-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.diagram-fs-label{position:absolute;transform:translate(-50%,-120%);padding:6px 10px;border-radius:10px;background:#fffffff2;color:#0f172a;font-weight:800;font-size:13px;white-space:nowrap;box-shadow:0 8px 20px #0f172a24}
+.diagram-fs-label.is-force{color:#9f1239}
+.diagram-fs-label.is-water{color:#075985}
+.diagram-fs-hint{margin:0;padding:8px 16px 12px;background:#0c4a6eed;color:#e0f2fe;font-size:12px;font-weight:700}
 .moody-overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:#0f172a99}
 .moody-dialog{width:min(1100px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:16px 18px 18px;border-radius:18px;background:#fff;box-shadow:0 24px 60px #0f172a33}
 .moody-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}.moody-head h2{margin:0;font-size:20px}

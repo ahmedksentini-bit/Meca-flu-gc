@@ -2,15 +2,26 @@ import { solve, isClose } from "./solvers.js";
 import { drawFigure, moodyChart, moodyPoint } from "./diagrams.js";
 import { courseRecap } from "./recaps.js";
 import { warmups } from "./warmups.js";
+import { hasWebGLView } from "./diagrams3d-families.js";
 
 const app = document.querySelector("#app");
-const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramView: "svg", webglToken: 0 };
-const WEBGL_SOLVERS = new Set(["hydraulicPower", "hydraulicJump", "damBreakRitter"]);
+const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramMode: "2D", webglToken: 0 };
 let diagrams3d = null;
 const loadDiagrams3d = () => diagrams3d ? Promise.resolve(diagrams3d) : import("./diagrams3d.js").then(mod => { diagrams3d = mod; return mod; });
+function hideWebGLOverlay() {
+  document.body.classList.remove("diagram-fs-open");
+  const overlay = document.querySelector("#diagramWebGL");
+  if (overlay) overlay.hidden = true;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+function clearWebGLScene() {
+  diagrams3d?.clearScene?.();
+}
 function disposeWebGLView() {
   state.webglToken++;
+  clearWebGLScene();
   diagrams3d?.disposeWebGL();
+  hideWebGLOverlay();
 }
 const modes = { learn: "Apprentissage", train: "Entraînement", exam: "Examen" };
 const pedagogy = {
@@ -164,6 +175,7 @@ function exerciseRef(exercise) {
 
 function home() {
   closeMoodyReader();
+  state.diagramMode = "2D";
   disposeWebGLView();
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
@@ -173,6 +185,7 @@ function home() {
 }
 
 function chapterPage(chapterId) {
+  state.diagramMode = "2D";
   disposeWebGLView();
   const chapter = state.catalog.chapters.find(c => c.id === chapterId);
   const exercises = exercisesForChapter(chapterId);
@@ -183,7 +196,10 @@ function chapterPage(chapterId) {
 
 function openExercise(exercise, mode = state.mode) {
   closeMoodyReader();
-  stopTimer(); state.exercise = exercise; state.mode = mode; state.attempts = {}; state.warmup = {};
+  stopTimer();
+  state.diagramMode = "2D";
+  disposeWebGLView();
+  state.exercise = exercise; state.mode = mode; state.attempts = {}; state.warmup = {};
   state.data = Object.fromEntries(exercise.variables.map(v => [v.key, mode === "learn" ? v.value : randomValue(v)]));
   renderExercise();
   if (mode === "exam") startTimer();
@@ -197,8 +213,10 @@ function renderExercise() {
   const ref = exerciseRef(e);
   const refLabel = ref === "App." ? "Application" : ref === "Ex" ? "Examen" : `n° ${ref}`;
   const recapHtml = state.mode === "exam" ? "" : `<article class="card recap-card"><p class="recap-kicker">Rappel de cours</p><h2>${esc(recap.title)}</h2><h3 class="recap-section">Le problème</h3><p class="recap-lead">${esc(recap.problem)}</p><h3 class="recap-section">La physique</h3><p class="recap-lead">${esc(recap.lead)}</p><h3 class="recap-section">Les équations</h3><ul class="recap-points">${recap.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul><p class="recap-watch"><strong>Piège fréquent.</strong> ${esc(recap.watch)}</p></article>`;
-  const webglSwitch = WEBGL_SOLVERS.has(e.solver) ? `<div class="diagram-switch" role="group" aria-label="Type de schéma"><button type="button" class="${state.diagramView!=="webgl"?"active":""}" data-diagram-view="svg">Schéma</button><button type="button" class="${state.diagramView==="webgl"?"active":""}" data-diagram-view="webgl">3D</button></div>` : "";
-  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · ${esc(refLabel)} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><div class="diagram-head"><h2>Schéma de l’exercice</h2>${webglSwitch}</div><div class="diagram" id="diagram"></div><div class="diagram diagram-webgl" id="diagramWebGL" hidden></div><p class="diagram-hint" id="diagramHint" hidden>Glisser pour tourner · molette pour zoomer</p><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
+  const can3d = hasWebGLView(e.solver);
+  if (!can3d) state.diagramMode = "2D";
+  const webglSwitch = can3d ? `<div class="diagram-switch" role="group" aria-label="Affichage du schéma"><button type="button" class="${state.diagramMode!=="3D"?"active":""}" data-diagram-mode="2D" aria-pressed="${state.diagramMode!=="3D"}">2D</button><button type="button" class="${state.diagramMode==="3D"?"active":""}" data-diagram-mode="3D" aria-pressed="${state.diagramMode==="3D"}">3D</button></div>` : "";
+  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · ${esc(refLabel)} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><div class="diagram-head"><h2>Schéma de l’exercice</h2>${webglSwitch}</div><div class="diagram" id="diagram"></div><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
   const formulas=equationSheets[e.solver]||["Consulter les hypothèses et établir le bilan fondamental."];
   const rightCol = app.querySelector(".workspace > div:nth-child(2)");
   const items = state.mode === "learn" ? warmups[e.id] : null;
@@ -288,10 +306,8 @@ function bindExerciseEvents() {
   document.querySelector("#submitAll").addEventListener("click", submitAll);
   document.querySelector("#showCorrection")?.addEventListener("click", showCorrection);
   document.querySelector("#randomize")?.addEventListener("click", () => openExercise(state.exercise, state.mode));
-  document.querySelectorAll("[data-diagram-view]").forEach(button => button.addEventListener("click", () => {
-    state.diagramView = button.dataset.diagramView;
-    document.querySelectorAll("[data-diagram-view]").forEach(item => item.classList.toggle("active", item === button));
-    refreshDiagram();
+  document.querySelectorAll("[data-diagram-mode]").forEach(button => button.addEventListener("click", () => {
+    setDiagramMode(button.dataset.diagramMode);
   }));
   document.querySelector(".warmup-card")?.addEventListener("click", event => {
     const b = event.target.closest("[data-warmup]");
@@ -361,14 +377,26 @@ function openMoodyReader() {
   paint();
 }
 
+function syncDiagramToggle() {
+  document.querySelectorAll("[data-diagram-mode]").forEach(button => {
+    const on = button.dataset.diagramMode === state.diagramMode;
+    button.classList.toggle("active", on);
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function setDiagramMode(mode) {
+  const next = mode === "3D" && hasWebGLView(state.exercise?.solver) ? "3D" : "2D";
+  if (next === "2D") clearWebGLScene();
+  state.diagramMode = next;
+  syncDiagramToggle();
+  refreshDiagram();
+}
+
 function showSvgDiagram(figure) {
   disposeWebGLView();
   const box = document.querySelector("#diagram");
-  const webglBox = document.querySelector("#diagramWebGL");
-  const hint = document.querySelector("#diagramHint");
   const note = document.querySelector("#diagramNote");
-  if (webglBox) webglBox.hidden = true;
-  if (hint) hint.hidden = true;
   if (box) {
     box.hidden = false;
     box.innerHTML = figure.svg;
@@ -386,45 +414,52 @@ function showSvgDiagram(figure) {
 }
 
 async function showWebGLDiagram(figure) {
-  const box = document.querySelector("#diagram");
-  const webglBox = document.querySelector("#diagramWebGL");
-  const hint = document.querySelector("#diagramHint");
+  const overlay = document.querySelector("#diagramWebGL");
+  const stage = document.querySelector("#diagramWebGLStage");
+  const title = document.querySelector("#diagram3dTitle");
+  const svg = document.querySelector("#diagram");
   const note = document.querySelector("#diagramNote");
   const token = ++state.webglToken;
-  if (box) {
-    box.hidden = true;
-    box.onclick = null;
-    box.classList.remove("diagram-zoomable");
-  }
-  if (webglBox) webglBox.hidden = false;
-  if (hint) hint.hidden = false;
-  if (note) note.textContent = `${figure.caption} Vue 3D interactive.`;
+  if (svg) svg.hidden = true;
+  if (title) title.textContent = state.exercise?.title || "Vue 3D";
+  if (note) note.textContent = `${figure.caption} Vue 3D plein écran.`;
+  if (overlay) overlay.hidden = false;
+  document.body.classList.add("diagram-fs-open");
+  overlay?.requestFullscreen?.().catch(() => {});
   try {
     const mod = await loadDiagrams3d();
     if (token !== state.webglToken || !state.exercise) return;
-    const ok = mod.mountOrUpdate("diagramWebGL", state.exercise.solver, state.data);
+    const ok = mod.render3DDiagram(stage || "diagramWebGLStage", state.exercise.solver, state.data);
     if (!ok) throw new Error("WebGL indisponible");
   } catch {
     if (token !== state.webglToken) return;
     toast("Vue 3D indisponible sur cet appareil.");
-    state.diagramView = "svg";
-    document.querySelectorAll("[data-diagram-view]").forEach(item => item.classList.toggle("active", item.dataset.diagramView === "svg"));
-    showSvgDiagram(figure);
+    setDiagramMode("2D");
   }
 }
 
 function refreshDiagram() {
   if (!state.exercise) return;
   const figure = drawFigure(state.exercise.solver, state.data);
-  const use3d = WEBGL_SOLVERS.has(state.exercise.solver) && state.diagramView === "webgl";
+  const use3d = hasWebGLView(state.exercise.solver) && state.diagramMode === "3D";
+  if (!use3d && state.diagramMode === "3D") state.diagramMode = "2D";
   if (use3d) showWebGLDiagram(figure);
   else showSvgDiagram(figure);
+}
+
+function closeWebGLView() {
+  setDiagramMode("2D");
 }
 
 function startTimer() { state.seconds = 0; state.timer = setInterval(() => { state.seconds++; const clock = document.querySelector("#clock"); if (clock) clock.textContent = `Temps ${formatTime(state.seconds)}`; }, 1000); }
 function stopTimer() { clearInterval(state.timer); state.timer = null; }
 
-document.addEventListener("keydown", event => { if (event.key === "Escape") closeMoodyReader(); });
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape") return;
+  closeMoodyReader();
+  if (state.diagramMode === "3D") closeWebGLView();
+});
+document.querySelector("#diagram3dClose")?.addEventListener("click", closeWebGLView);
 window.addEventListener("pagehide", disposeWebGLView);
 document.querySelector("#homeButton").addEventListener("click", home);
 window.addEventListener("hashchange", () => {
