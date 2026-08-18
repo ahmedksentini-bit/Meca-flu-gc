@@ -962,6 +962,135 @@ export const solvers = {
       ["Tirant d’eau", `Tₑ = W /(ρ g L B) = ${n(Te)} m`],
       ["Franc-bord", `H − Tₑ = ${n(freeboard)} m`]
     ]);
+  },
+  twoFluidsShear(d) {
+    const e = d.e / 1000, tauA = d.muA * d.U / e, tauB = d.muB * d.U / e;
+    const FA = tauA * d.A, FB = tauB * d.A, nuA = d.muA / d.rhoA, nuB = d.muB / d.rhoB, ratio = FB / FA;
+    return steps({ tauA, FA, tauB, FB, ratio }, [
+      ["Film et gradient", `e = ${n(e)} m ; U/e = ${n(d.U / e)} s⁻¹ (même géométrie pour les deux fluides)`],
+      ["Fluide A", `τ_A = μ_A U/e = ${n(tauA)} Pa ; F_A = τ_A A = ${n(FA)} N ; ν_A = μ_A/ρ_A = ${n(nuA)} m²/s`],
+      ["Fluide B", `τ_B = μ_B U/e = ${n(tauB)} Pa ; F_B = τ_B A = ${n(FB)} N ; ν_B = μ_B/ρ_B = ${n(nuB)} m²/s`],
+      ["Rapport des efforts", `F_B/F_A = μ_B/μ_A = ${n(ratio)} (la masse volumique n’entre pas dans le Couette newtonien)`]
+    ]);
+  },
+  viscosityTemp(d) {
+    const e = d.e / 1000;
+    const mu = d.mu1 + (d.mu2 - d.mu1) * (d.T - d.T1) / (d.T2 - d.T1);
+    const tau = mu * d.U / e, F = tau * d.A, ratio = mu / d.mu1;
+    return steps({ mu, tau, F, ratio }, [
+      ["Interpolation entre les deux points du tableau", `μ(T) = μ₁ + (μ₂−μ₁)(T−T₁)/(T₂−T₁) = ${n(mu)} Pa·s`],
+      ["Contrainte", `τ = μ U/e = ${n(tau)} Pa`],
+      ["Force de traction", `F = τA = ${n(F)} N`],
+      ["Effet de la température", `μ/μ(T₁) = ${n(ratio)} : un fluide plus chaud est en général moins visqueux, donc F diminue`]
+    ]);
+  },
+  dualSideGate(d) {
+    const area = d.b * d.a, yc1 = d.y1 - d.a / 2, yc2 = d.y2 - d.a / 2;
+    const ig = d.b * d.a ** 3 / 12;
+    const F1 = d.rho * G * area * yc1, F2 = d.rho * G * area * yc2, Fnet = F1 - F2;
+    const yp1 = yc1 + ig / (area * yc1), z1 = d.y1 - yp1;
+    const yp2 = yc2 + ig / (area * yc2), z2 = d.y2 - yp2;
+    const zNet = Fnet === 0 ? d.a / 2 : (F1 * z1 - F2 * z2) / Fnet;
+    return steps({ F1, F2, Fnet, zNet }, [
+      ["Centres de gravité", `ȳ₁ = y₁ − a/2 = ${n(yc1)} m ; ȳ₂ = y₂ − a/2 = ${n(yc2)} m (vanne entièrement mouillée des deux côtés)`],
+      ["Poussée amont", `F₁ = ρg A ȳ₁ = ${n(F1)} N`],
+      ["Poussée aval", `F₂ = ρg A ȳ₂ = ${n(F2)} N`],
+      ["Effort net (vers l’aval)", `F = F₁ − F₂ = ρg A (y₁ − y₂) = ${n(Fnet)} N`],
+      ["Point d’application du net, depuis le seuil", `z = (F₁ z₁ − F₂ z₂)/F = ${n(zNet)} m`]
+    ]);
+  },
+  lockDoor(d) {
+    const F1 = 0.5 * d.rho * G * d.H ** 2 * d.b, F2 = 0.5 * d.rho * G * d.h ** 2 * d.b;
+    const Fnet = F1 - F2, Mbot = F1 * (d.H / 3) - F2 * (d.h / 3);
+    return steps({ F1, F2, Fnet, Mbot }, [
+      ["Poussée amont (triangle)", `F₁ = ½ ρg H² b = ${n(F1)} N, à H/3 du radier`],
+      ["Poussée aval (triangle)", `F₂ = ½ ρg h² b = ${n(F2)} N, à h/3 du radier`],
+      ["Effort net vers l’aval", `F = F₁ − F₂ = ${n(Fnet)} N`],
+      ["Moment au palier bas (ouverture)", `M = F₁·H/3 − F₂·h/3 = ${n(Mbot)} N·m`]
+    ]);
+  },
+  piezometricLine(d) {
+    const D = d.D / 1000, Q = d.Q / 1000, V = Q / circle(D), Re = V * D / (d.nu * 1e-6);
+    const f = darcyFriction(Re, d.eps / 1000 / D), hv = V ** 2 / (2 * G);
+    const hf = f * (d.L / D) * hv, hs = (d.Kentry + d.Kvalve + d.Kexit) * hv;
+    const HGLentry = d.H - d.Kentry * hv - hv;
+    const HGLmid = d.H - d.Kentry * hv - 0.5 * hf - d.Kvalve * hv - hv;
+    const HGLend = d.H - (d.Kentry + d.Kvalve + d.Kexit) * hv - hf - hv;
+    const EGLend = HGLend + hv;
+    return steps({ V, hf, hs, HGLentry, HGLend }, [
+      ["Vitesse et Reynolds", `V = Q/A = ${n(V)} m/s ; Re = ${n(Re)} ; λ = ${n(f)}`],
+      ["Pertes", `h_f = λ(L/D)V²/2g = ${n(hf)} m ; h_s = (K_e+K_v+K_s)V²/2g = ${n(hs)} m`],
+      ["Après l’entrée (x = 0⁺)", `HGL = H − K_e V²/2g − V²/2g = ${n(HGLentry)} m ; EGL = HGL + V²/2g`],
+      ["À mi-conduite (vanne)", `HGL = ${n(HGLmid)} m (moitié de h_f et K_v déjà consommés)`],
+      ["Avant le rejet", `HGL = H − ΣK V²/2g − h_f − V²/2g = ${n(HGLend)} m ; EGL = ${n(EGLend)} m`],
+      ["Lecture", HGLend > 0.2 ? "La ligne piézométrique reste au-dessus de l’axe : pas de mise en charge négative." : "HGL trop basse : ce débit n’est pas tenable avec la charge disponible, ou l’axe est en dépression."]
+    ]);
+  },
+  diameterEconomy(d) {
+    const Q = d.Q / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
+    const run = Dmm => {
+      const D = Dmm / 1000, V = Q / circle(D), Re = V * D / nu, f = darcyFriction(Re, eps / D);
+      const hf = f * (d.L / D) * V ** 2 / (2 * G), C = d.alpha * Dmm + d.beta * hf;
+      return { Dmm, V, hf, C };
+    };
+    const a = run(d.D1), b = run(d.D2), c = run(d.D3);
+    const best = [a, b, c].reduce((m, x) => x.C < m.C ? x : m);
+    return steps({ hf1: a.hf, hf2: b.hf, hf3: c.hf, Dbest: best.Dmm, Cmin: best.C }, [
+      ["DN " + a.Dmm, `V = ${n(a.V)} m/s ; h_f = ${n(a.hf)} m ; C = αD + β h_f = ${n(a.C)}`],
+      ["DN " + b.Dmm, `V = ${n(b.V)} m/s ; h_f = ${n(b.hf)} m ; C = ${n(b.C)}`],
+      ["DN " + c.Dmm, `V = ${n(c.V)} m/s ; h_f = ${n(c.hf)} m ; C = ${n(c.C)}`],
+      ["Choix", `On retient le DN ${best.Dmm} qui minimise C = ${n(best.C)} (compromis tube plus gros / moins de pertes)`]
+    ]);
+  },
+  pumpDutyPoint(d) {
+    const D = d.D / 1000, A = circle(D), eps = d.eps / 1000, nu = d.nu * 1e-6;
+    let Q = 0.04, f = 0.02, H = d.H0, r = 0;
+    for (let i = 0; i < 20; i++) {
+      const V = Q / A, Re = V * D / nu;
+      f = darcyFriction(Re, eps / D);
+      r = (f * d.L / D + d.Ksum) / (2 * G * A * A);
+      const den = d.k + r, nume = d.H0 - d.Hg;
+      Q = den > 0 && nume > 0 ? Math.sqrt(nume / den) : 0;
+      H = d.H0 - d.k * Q * Q;
+    }
+    const V = Q / A;
+    return steps({ Q: Q * 1000, H, V }, [
+      ["Courbe de pompe", `H_p = H₀ − k Q² avec Q en m³/s`],
+      ["Courbe de réseau", `H_n = H_g + (λL/D+ΣK) V²/(2g) = H_g + r Q², λ par Colebrook`],
+      ["Intersection itérée", `Q = ${n(Q)} m³/s = ${n(Q * 1000)} L/s ; H = ${n(H)} m ; λ = ${n(f)}`],
+      ["Vitesse en conduite", `V = Q/A = ${n(V)} m/s`]
+    ]);
+  },
+  thinWeir(d) {
+    const Q = d.Cd * d.L * Math.sqrt(2 * G) * d.h ** 1.5, q = Q / d.L;
+    return steps({ Q, q }, [
+      ["Charge sur le seuil", `h = ${n(d.h)} m au-dessus de la crête`],
+      ["Déversoir rectangulaire (mince paroi)", `Q = Cᵈ L √(2g) h^{3/2} = ${n(Q)} m³/s`],
+      ["Débit par mètre de seuil", `q = Q/L = ${n(q)} m²/s`]
+    ]);
+  },
+  hydraulicJump(d) {
+    const Fr1 = d.V1 / Math.sqrt(G * d.y1);
+    const y2 = 0.5 * d.y1 * (-1 + Math.sqrt(1 + 8 * Fr1 ** 2));
+    const dE = (y2 - d.y1) ** 3 / (4 * d.y1 * y2);
+    const Lr = 6 * y2;
+    return steps({ Fr1, y2, dE, Lr }, [
+      ["Froude amont", `Fr₁ = V₁/√(g y₁) = ${n(Fr1)} ${Fr1 > 1 ? "(torrentiel)" : "(pas de ressaut classique)"}`],
+      ["Conjugaison (ressaut rectangulaire)", `y₂/y₁ = ½(−1 + √(1+8 Fr₁²)) ⟹ y₂ = ${n(y2)} m`],
+      ["Perte de charge du ressaut", `ΔE = (y₂−y₁)³/(4 y₁ y₂) = ${n(dE)} m`],
+      ["Longueur approximative", `L_r ≈ 6 y₂ = ${n(Lr)} m`]
+    ]);
+  },
+  criticalRegime(d) {
+    const A = d.b * d.y, V = d.Q / A, Fr = V / Math.sqrt(G * d.y);
+    const yc = (d.Q ** 2 / (G * d.b ** 2)) ** (1 / 3);
+    const E = d.y + V ** 2 / (2 * G), Ec = 1.5 * yc;
+    return steps({ V, yc, Fr, E }, [
+      ["Vitesse moyenne", `V = Q/(b y) = ${n(V)} m/s`],
+      ["Profondeur critique (rectangle)", `y_c = (Q²/(g b²))^{1/3} = ${n(yc)} m`],
+      ["Nombre de Froude", `Fr = V/√(g y) = ${n(Fr)} : ${Fr < 1 ? "fluvial (y > y_c)" : Fr > 1 ? "torrentiel (y < y_c)" : "critique"}`],
+      ["Énergie spécifique", `E = y + V²/2g = ${n(E)} m ; au critique E_c = 3y_c/2 = ${n(Ec)} m`]
+    ]);
   }
 };
 

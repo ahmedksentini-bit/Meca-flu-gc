@@ -1352,5 +1352,281 @@ export const warmups = {
       correct: "slow",
       explain: "Re identique, ν identique ⇒ V L constant, donc V_p = V_m × (L_m/L_p) = 15/10 = 1,5 m/s. Le modèle va plus vite que le prototype, l’inverse de Froude. 15 m/s en vrai serait un autre Re."
     }
+  ],
+  COMP_FUEL_01: [
+    {
+      prompt: "Ce fioul de chantier, plus léger que l’eau, a une densité…",
+      choices: [
+        { id: "lt", label: "inférieure à 1" },
+        { id: "eq", label: "égale à 1" },
+        { id: "gt", label: "supérieure à 1" }
+      ],
+      correct: "lt",
+      explain: "La densité est ρ/ρeau. Un fioul qui surnagerait a ρ < 1000 kg/m³, donc d < 1. Le poids volumique γ = ρg est alors plus petit que 9,81 kN/m³."
+    }
+  ],
+  COMP_QUARRY_01: [
+    {
+      prompt: "À 15 m d’eau douce, la pression relative vaut environ…",
+      choices: [
+        { id: "15", label: "1,5 bar (règle 10 m ≈ 1 bar)" },
+        { id: "1", label: "1 bar, comme à la surface" },
+        { id: "15b", label: "15 bar" }
+      ],
+      correct: "15",
+      explain: "Relative = ρgh. 10 m d’eau ≈ 1 bar, donc 15 m ≈ 1,5 bar (1,5×10⁵ Pa). L’absolue ajoute encore l’atmosphère : ≈ 2,5 bar abs. Ce n’est pas 15 bar."
+    }
+  ],
+  COMP_SETTLER_01: [
+    {
+      prompt: "Au fond du décanteur, la pression, comparée à celle sous 1,5 m + 2,4 m d’eau seule…",
+      choices: [
+        { id: "less", label: "est plus faible : l’huile pèse moins que l’eau" },
+        { id: "more", label: "est plus forte, deux couches s’additionnant toujours plus" },
+        { id: "oil", label: "égale seulement ρ_huile g (1,5+2,4)" }
+      ],
+      correct: "less",
+      explain: "On additionne ρg h de chaque couche. L’huile (810 kg/m³) contribue moins que la même hauteur d’eau. Le fond « sent » 1,5 m d’huile + 2,4 m d’eau, pas 3,9 m d’eau."
+    }
+  ],
+  COMP_SLUICE_01: [
+    {
+      prompt: "Cette vanne est entièrement sous le plan d’eau. Le centre de poussée, par rapport au centre géométrique, est…",
+      choices: [
+        { id: "deeper", label: "un peu plus bas" },
+        { id: "at", label: "confondu avec le centre de la vanne" },
+        { id: "up", label: "plus haut, vers la surface" }
+      ],
+      correct: "deeper",
+      explain: "La pression croît avec la profondeur : y_p = ȳ + I_G/(Aȳ) > ȳ. Plus y₀ est grand, plus l’écart diminue, mais il ne s’annule pas."
+    }
+  ],
+  COMP_LOCK_01: [
+    {
+      prompt: "Sur cette paroi de sas, le diagramme des pressions est un triangle. La résultante passe…",
+      choices: [
+        { id: "h3", label: "à H/3 au-dessus du radier" },
+        { id: "h2", label: "à mi-hauteur" },
+        { id: "top", label: "au niveau du plan d’eau" }
+      ],
+      correct: "h3",
+      explain: "Triangle de pression : le centre de gravité est à H/3 du pied (2H/3 sous la surface). C’est ce bras qui entre dans le moment de renversement, pas H/2."
+    }
+  ],
+  COMP_PIPE_01: [
+    {
+      prompt: "À débit constant, si le diamètre actuel est trop petit pour la vitesse cible, il faut…",
+      choices: [
+        { id: "up", label: "un DN plus grand (V = Q/A)" },
+        { id: "down", label: "un DN plus petit pour « calmer » l’eau" },
+        { id: "q", label: "changer Q, le diamètre ne jouant pas" }
+      ],
+      correct: "up",
+      explain: "V = Q/A et A ∝ D². Pour baisser V sans changer Q, on augmente D. Un tube plus étroit irait encore plus vite, l’inverse d’une adduction de lotissement."
+    }
+  ],
+  COMP_REDUCER_01: [
+    {
+      prompt: "D₂ = D₁/2, régime permanent. Le débit dans le petit tube…",
+      choices: [
+        { id: "same", label: "est le même : Q = A₁V₁ = A₂V₂" },
+        { id: "half", label: "est divisé par 2" },
+        { id: "x4", label: "est divisé par 4" }
+      ],
+      correct: "same",
+      explain: "L’eau incompressible ne s’accumule pas dans le réducteur. L’aire chute d’un facteur 4, donc V₂ = 4V₁, mais Q ne change pas. C’est le contrôle à écrire en premier."
+    }
+  ],
+  COMP_VENTURI_01: [
+    {
+      prompt: "Au col du Venturi, la section diminue. La pression, comparée à l’entrée…",
+      choices: [
+        { id: "down", label: "baisse (V augmente, Bernoulli)" },
+        { id: "up", label: "monte, l’eau étant « coincée »" },
+        { id: "same", label: "reste égale, conduite horizontale" }
+      ],
+      correct: "down",
+      explain: "V₂ > V₁. Horizontalement, p/ρg + V²/2g se conserve : si V² augmente, p diminue. C’est cette dépression que le mercure mesure et qui donne Q."
+    }
+  ],
+  COMP_ORIFICE_01: [
+    {
+      prompt: "Si l’on double le diamètre de l’orifice, la charge restant 3,2 m, la vitesse de sortie…",
+      choices: [
+        { id: "same", label: "reste essentiellement la même (√(2gh))" },
+        { id: "x2", label: "double" },
+        { id: "x4", label: "est multipliée par 4" }
+      ],
+      correct: "same",
+      explain: "Torricelli : V = Cᵈ √(2gh) dépend de la charge, pas de d. Le débit, lui, suit l’aire : Q × 4. Un trou plus gros évacue plus, sans tirer plus vite."
+    }
+  ],
+  COMP_SIPHON_01: [
+    {
+      prompt: "Le débit de ce trop-plein est fixé par…",
+      choices: [
+        { id: "drop", label: "la dénivellation de sortie Δz, pas la bosse z_C" },
+        { id: "rise", label: "uniquement la hauteur du point haut" },
+        { id: "d", label: "le diamètre seul, V valant 1 m/s" }
+      ],
+      correct: "drop",
+      explain: "Surface libre → sortie à l’air : V = √(2gΔz) en parfait. La bosse fixe la dépression (cavitation), pas Q. Un siphon plus haut n’évacue pas davantage s’il débouche au même niveau."
+    }
+  ],
+  COMP_HOSE_01: [
+    {
+      prompt: "Si la vitesse du jet d’incendie double (même lance), la force sur le coffrage…",
+      choices: [
+        { id: "x4", label: "est multipliée par 4 (F = ρAV²)" },
+        { id: "x2", label: "est multipliée par 2" },
+        { id: "same", label: "ne change pas, le panneau arrêtant toujours le jet" }
+      ],
+      correct: "x4",
+      explain: "F = ρQV et Q = AV, donc F = ρAV². Doubler V double le débit et quadruple l’effort. Un jet plus rapide charge beaucoup plus le coffrage."
+    }
+  ],
+  COMP_CASTIRON_01: [
+    {
+      prompt: "À débit presque constant, si cette fonte est deux fois plus longue, h_f…",
+      choices: [
+        { id: "x2", label: "est à peu près doublée" },
+        { id: "x4", label: "est multipliée par 4" },
+        { id: "same", label: "ne dépend que de ε, pas de L" }
+      ],
+      correct: "x2",
+      explain: "Darcy : h_f = λ(L/D)V²/2g. λ varie peu si Re et ε/D sont inchangés. Donc h_f ∝ L. La rugosité de la fonte pèse sur λ, la longueur sur le facteur L/D."
+    }
+  ],
+  COMP_DITCH_01: [
+    {
+      prompt: "Si l’on raidi la pente du fossé (S plus grande) à y constant, la vitesse de Manning…",
+      choices: [
+        { id: "up", label: "augmente comme √S" },
+        { id: "down", label: "diminue : plus de frottement sur le fond" },
+        { id: "ks", label: "ne change pas : seul Kₛ compte" }
+      ],
+      correct: "up",
+      explain: "V = Kₛ R^{2/3} S^{1/2}. Doubler S multiplie V (et Q) par √2. Une pente plus forte, c’est plus de pesanteur dans le sens de l’écoulement, pas un frein."
+    }
+  ],
+  COMP_TWOFLUID_01: [
+    {
+      prompt: "Même palier, l’eau (μ beaucoup plus petite) comparée à l’huile : l’effort de traction…",
+      choices: [
+        { id: "mu", label: "est plus petit, dans le rapport des viscosités" },
+        { id: "rho", label: "est plus grand, l’eau étant plus dense" },
+        { id: "same", label: "est le même : U et e n’ont pas changé" }
+      ],
+      correct: "mu",
+      explain: "τ = μ U/e. ρ n’entre pas dans la loi de Newton. L’eau, très peu visqueuse, « accroche » beaucoup moins. ν = μ/ρ servirait à un Reynolds du film, pas à F."
+    }
+  ],
+  COMP_VISCTEMP_01: [
+    {
+      prompt: "On passe d’une huile froide à une huile plus chaude. L’effort de traction du film…",
+      choices: [
+        { id: "down", label: "diminue, μ baissant avec T" },
+        { id: "up", label: "augmente : l’huile « s’agite » plus" },
+        { id: "rho", label: "suit ρ, pas μ" }
+      ],
+      correct: "down",
+      explain: "Pour un liquide, μ diminue quand T augmente. τ = μ U/e suit μ. Interpoler entre deux points de tableau donne μ(T) de chantier, puis F."
+    }
+  ],
+  COMP_DUALGATE_01: [
+    {
+      prompt: "Si les deux plans d’eau sont au même niveau, l’effort net sur la vanne…",
+      choices: [
+        { id: "zero", label: "s’annule : les poussées se compensent" },
+        { id: "twice", label: "double, deux faces mouillées" },
+        { id: "up", label: "reste la poussée amont seule" }
+      ],
+      correct: "zero",
+      explain: "F = ρg A (y₁ − y₂). y₁ = y₂ ⇒ F = 0. Oublier l’aval, c’est dimensionner un treuil pour une vanne qui n’a presque rien à retenir."
+    }
+  ],
+  COMP_LOCKDOOR_01: [
+    {
+      prompt: "Sur cette porte d’écluse, les diagrammes de pression sont des triangles depuis le radier. La résultante amont s’applique…",
+      choices: [
+        { id: "h3", label: "à H/3 au-dessus du radier" },
+        { id: "h2", label: "à mi-hauteur H/2" },
+        { id: "yc", label: "à H/2 sous la surface, comme une vanne noyée" }
+      ],
+      correct: "h3",
+      explain: "Paroi affleurante : triangle de 0 en surface à ρgH au radier. Le centre de gravité du triangle est à H/3 du bas. Ce n’est pas une vanne entièrement immergée (ȳ = H/2)."
+    }
+  ],
+  COMP_HGL_01: [
+    {
+      prompt: "Le long d’une conduite de diamètre constant, la ligne de charge (EGL) se situe par rapport à la piézométrique (HGL)…",
+      choices: [
+        { id: "above", label: "V²/2g au-dessus, et les deux restent parallèles hors singularités" },
+        { id: "below", label: "en dessous, la pression « poussant » plus que la vitesse" },
+        { id: "cross", label: "elles se croisent à chaque coude" }
+      ],
+      correct: "above",
+      explain: "EGL = HGL + V²/2g. D constant ⇒ V constant ⇒ écart constant : droites parallèles, inclinées par Darcy. Un K fait un cran identique sur les deux."
+    }
+  ],
+  COMP_ECON_01: [
+    {
+      prompt: "À débit imposé, passer à un DN plus grand…",
+      choices: [
+        { id: "hf", label: "fait chuter fortement h_f, mais augmente le terme αD" },
+        { id: "morehf", label: "augmente h_f : plus de paroi à frotter" },
+        { id: "c", label: "laisse C inchangé, α et β se compensant toujours" }
+      ],
+      correct: "hf",
+      explain: "V ∝ 1/D² donc h_f ∝ 1/D⁵ environ. Le gros tube gagne sur β h_f et perd sur αD. C minimal n’est ni le plus petit ni le plus grand DN a priori."
+    }
+  ],
+  COMP_PUMPCURVE_01: [
+    {
+      prompt: "Le débit réel n’est ni Q = 0 ni le Q « catalogue » : c’est…",
+      choices: [
+        { id: "cut", label: "l’intersection de H_pompe(Q) et H_réseau(Q)" },
+        { id: "max", label: "le débit qui maximise H₀" },
+        { id: "geo", label: "celui de Torricelli sur H_g" }
+      ],
+      correct: "cut",
+      explain: "La pompe fournit moins de H quand Q croît ; le réseau en demande plus (pertes ~ Q²). Là où les deux courbes se coupent, H et Q sont compatibles. H_g seul ignorerait les pertes."
+    }
+  ],
+  COMP_WEIR_01: [
+    {
+      prompt: "Si la charge sur le seuil double, le débit…",
+      choices: [
+        { id: "28", label: "est multiplié par 2√2 ≈ 2,8 (Q ∝ h^{3/2})" },
+        { id: "x2", label: "double, comme un orifice" },
+        { id: "x4", label: "est multiplié par 4" }
+      ],
+      correct: "28",
+      explain: "La lame se calcule en intégrant √(2gz) sur la hauteur h : on trouve h^{3/2}. Ce n’est pas Torricelli d’un trou unique (∝ √h) ni une section qui double."
+    }
+  ],
+  COMP_JUMP_01: [
+    {
+      prompt: "Un ressaut classique n’existe que si l’amont est…",
+      choices: [
+        { id: "sup", label: "torrentiel : Fr₁ > 1" },
+        { id: "sub", label: "fluvial : Fr₁ < 1" },
+        { id: "any", label: "indifférent : y₂ suit toujours 2 y₁" }
+      ],
+      correct: "sup",
+      explain: "Le ressaut raccorde un torrentiel à un fluvial. Si Fr₁ < 1, la formule de conjugaison ne décrit pas un ressaut. y₂/y₁ n’est pas un facteur 2 universel : il dépend de Fr₁."
+    }
+  ],
+  COMP_FROUDE_01: [
+    {
+      prompt: "Dans ce canal, si y est plus grand que y_c, l’écoulement est…",
+      choices: [
+        { id: "sub", label: "fluvial : Fr < 1, commandé par l’aval" },
+        { id: "sup", label: "torrentiel : Fr > 1" },
+        { id: "crit", label: "toujours critique, Q étant fixé" }
+      ],
+      correct: "sub",
+      explain: "y_c minimise l’énergie spécifique à Q donné. Au-dessus, Fr < 1 : une perturbation remonte. Ce n’est pas le Q qui « impose » le critique, c’est le couple (Q, y, b)."
+    }
   ]
 };

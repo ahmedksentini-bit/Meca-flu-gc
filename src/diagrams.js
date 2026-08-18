@@ -661,6 +661,66 @@ const figures = {
       caption: "P = k ρᵃ nᵇ Dᶜ donne P = ρ n³ D⁵ f(…). n est en tours par seconde.",
       svg: svg("Hélice", `<circle cx="220" cy="125" r="70" fill="#e0f2fe" stroke="#0369a1" stroke-width="3"/><path d="M220 55q40 50 0 140q-40-50 0-140" fill="#7dd3fc" stroke="#0369a1"/><path d="M150 125q50-40 140 0q-50 40-140 0" fill="#bae6fd" stroke="#0369a1"/>${t(320, 80, "P = k ρᵃ nᵇ Dᶜ")}${t(320, 120, "a = 1 · b = 3 · c = 5")}${t(320, 160, "P ∝ ρ n³ D⁵")}${t(80, 220, "n en s⁻¹")}`)
     };
+  },
+  twoFluidsShear(d) {
+    return {
+      caption: "Même film, deux fluides : τ = μ U/e. Le rapport des efforts est celui des viscosités.",
+      svg: svg("Deux fluides en Couette", `${hatch(40, 70, 220, 18)}${hatch(40, 148, 220, 18)}<rect x="40" y="88" width="220" height="60" fill="#fde68a" stroke="#b45309"/>${t(60, 60, `A · U = ${num(d.U)} m/s`)}${t(60, 124, `e = ${num(d.e)} mm`)}${t(60, 200, `μ_A = ${num(d.muA)} Pa·s`)}${hatch(300, 70, 220, 18)}${hatch(300, 148, 220, 18)}<rect x="300" y="88" width="220" height="60" fill="#bae6fd" stroke="#0369a1"/>${t(320, 60, "même U, e, A")}${t(320, 124, `ρ_B = ${num(d.rhoB)} kg/m³`)}${t(320, 200, `μ_B = ${num(d.muB)} Pa·s`)}`)
+    };
+  },
+  viscosityTemp(d) {
+    return {
+      caption: "μ interpolée entre deux températures de tableau, puis Couette à la température de service.",
+      svg: svg("Viscosité et température", `${line(70, 200, 500, 200, "#334155")}${line(70, 200, 70, 40, "#334155")}${line(90, 70, 460, 170, "#b45309", 2.4)}${t(510, 204, "T")}${t(40, 36, "μ")}${t(200, 60, `(T₁, μ₁) = (${num(d.T1)} °C ; ${num(d.mu1)} Pa·s)`)}${t(200, 90, `(T₂, μ₂) = (${num(d.T2)} °C ; ${num(d.mu2)} Pa·s)`)}${t(200, 230, `service T = ${num(d.T)} °C`)}`)
+    };
+  },
+  dualSideGate(d) {
+    return {
+      caption: "Vanne noyée des deux côtés : F_net = ρgA(y₁ − y₂). Chaque ȳ se compte depuis sa surface libre.",
+      svg: svg("Vanne à deux plans d’eau", `${water("M40 40h160v160H40z")}${water("M300 90h160v110H300z")}<rect x="200" y="80" width="20" height="120" fill="#cbd5e1" stroke="#334155" stroke-width="2"/>${dimV(30, 40, 200, `y₁ = ${num(d.y1)} m`, -1)}${dimV(480, 90, 200, `y₂ = ${num(d.y2)} m`)}${dimV(232, 80, 200, `a = ${num(d.a)} m`)}${t(70, 30, "amont")}${t(340, 80, "aval")}`)
+    };
+  },
+  lockDoor(d) {
+    return {
+      caption: "Porte d’écluse affleurante : triangles de pression. Moment au palier bas M = F₁H/3 − F₂h/3.",
+      svg: svg("Porte d’écluse", `${water("M50 40h180v160H50z")}${water("M310 110h180v90H310z")}<rect x="230" y="40" width="18" height="160" fill="#94a3b8" stroke="#334155" stroke-width="2"/>${dimV(40, 40, 200, `H = ${num(d.H)} m`, -1)}${dimV(510, 110, 200, `h = ${num(d.h)} m`)}${t(90, 30, "bief amont")}${t(340, 100, "bief aval")}${t(200, 230, `b = ${num(d.b)} m`)}`)
+    };
+  },
+  piezometricLine(d) {
+    return {
+      caption: "EGL (énergie) au-dessus de HGL (piézométrique) de V²/2g. Les K font des crans ; Darcy incline les lignes.",
+      svg: svg("Lignes de charge", `${hatch(40, 190, 480, 16)}${line(50, 50, 500, 50, "#0369a1", 2.2)}${t(60, 42, `EGL · H = ${num(d.H)} m`)}${line(80, 72, 200, 100, "#ea580c", 2, 'stroke-dasharray="6 4"')}${line(200, 100, 360, 128, "#ea580c", 2, 'stroke-dasharray="6 4"')}${line(360, 128, 500, 150, "#ea580c", 2, 'stroke-dasharray="6 4"')}${t(220, 88, "HGL")}${t(70, 88, "entrée")}${t(250, 168, "vanne")}${t(430, 178, "sortie")}${t(60, 230, `L = ${num(d.L)} m · D = ${num(d.D)} mm`)}`)
+    };
+  },
+  diameterEconomy(d) {
+    return {
+      caption: "Trois DN, même Q : h_f chute vite quand D augmente. C = αD + β h_f départage.",
+      svg: svg("Trois diamètres", `<path d="M40 90h140v40H40z" fill="#e0f2fe" stroke="#0369a1" stroke-width="3"/><path d="M210 80h140v60H210z" fill="#e0f2fe" stroke="#0369a1" stroke-width="3"/><path d="M380 70h140v80H380z" fill="#e0f2fe" stroke="#0369a1" stroke-width="3"/>${t(70, 70, `DN ${num(d.D1)}`)}${t(240, 60, `DN ${num(d.D2)}`)}${t(410, 50, `DN ${num(d.D3)}`)}${t(50, 160, `Q = ${num(d.Q)} L/s`)}${t(50, 190, `L = ${num(d.L)} m`)}${t(50, 220, "C = α D + β h_f")}`)
+    };
+  },
+  pumpDutyPoint(d) {
+    return {
+      caption: "H_p diminue avec Q ; H_n augmente. L’intersection, itérée avec Colebrook, est le point de fonctionnement.",
+      svg: svg("Pompe et réseau", `${line(70, 210, 500, 210, "#334155")}${line(70, 210, 70, 40, "#334155")}${t(510, 214, "Q")}${t(40, 36, "H")}${line(80, 70, 460, 190, "#0369a1", 2.4)}${line(80, 170, 460, 80, "#ea580c", 2.4)}${t(300, 70, "réseau")}${t(120, 90, "pompe")}${t(200, 230, `H₀ = ${num(d.H0)} m · H_g = ${num(d.Hg)} m`)}`)
+    };
+  },
+  thinWeir(d) {
+    return {
+      caption: "Nappe au-dessus de la crête : Q = Cᵈ L √(2g) h^{3/2}. h se mesure en amont, au-dessus du seuil.",
+      svg: svg("Déversoir mince", `${hatch(240, 140, 80, 70)}${water("M40 80h200v130H40z")}${water("M320 150h180v60H320z")}${flow("M160 70h200")}${dimV(30, 80, 140, `h = ${num(d.h)} m`, -1)}${t(80, 60, "amont")}${t(360, 140, "aval")}${t(200, 230, `L = ${num(d.L)} m`)}`)
+    };
+  },
+  hydraulicJump(d) {
+    return {
+      caption: "Ressaut : passage torrentiel → fluvial. y₂ vient de Fr₁ ; ΔE est dissipée dans le rouleau.",
+      svg: svg("Ressaut hydraulique", `${hatch(40, 190, 480, 20)}${water("M40 150h200v40H40z")}${water("M240 80h240v110H240z")}${flow("M60 140h160")}${dimV(30, 150, 190, `y₁ = ${num(d.y1)} m`, -1)}${t(80, 130, `V₁ = ${num(d.V1)} m/s`)}${t(360, 70, "y₂")}${t(200, 230, "Fr₁ > 1")}`)
+    };
+  },
+  criticalRegime(d) {
+    return {
+      caption: "y_c = (Q²/(g b²))^{1/3}. y > y_c : fluvial ; y < y_c : torrentiel.",
+      svg: svg("Régime d’un canal", `${hatch(40, 190, 480, 20)}${water("M80 90h400v100H80z")}${dimV(60, 90, 190, `y = ${num(d.y)} m`, -1)}${dimH(220, 80, 480, `b = ${num(d.b)} m`)}${t(200, 70, `Q = ${num(d.Q)} m³/s`)}${t(200, 50, "y ≷ y_c ⇔ Fr ≶ 1")}`)
+    };
   }
 };
 

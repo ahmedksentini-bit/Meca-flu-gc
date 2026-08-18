@@ -1,0 +1,468 @@
+[
+  {
+    "id": "COMP_FUEL_01",
+    "chapter": "complements",
+    "solver": "density",
+    "title": "Citerne de fioul de chantier",
+    "difficulty": 1,
+    "statement": "Une citerne cylindrique verticale de diamètre D contient une hauteur h de fioul de masse m. Calculer le volume, la masse volumique, le poids volumique et la densité par rapport à l’eau.",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "m", "value": 1.6, "min": 0.8, "max": 2.4, "step": 0.1},
+      {"key": "h", "label": "Hauteur de fioul h", "unit": "m", "value": 1.25, "min": 0.5, "max": 2, "step": 0.05},
+      {"key": "mass", "label": "Masse m", "unit": "kg", "value": 1980, "min": 900, "max": 3200, "step": 20}
+    ],
+    "questions": [
+      {"key": "volume", "label": "Volume 𝒱", "unit": "m³"},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³"},
+      {"key": "gamma", "label": "Poids volumique γ", "unit": "kN/m³"},
+      {"key": "relative", "label": "Densité d", "unit": "—"}
+    ]
+  },
+  {
+    "id": "COMP_QUARRY_01",
+    "chapter": "complements",
+    "solver": "pressureDepth",
+    "title": "Pression au fond d’une carrière inondée",
+    "difficulty": 1,
+    "statement": "Un scaphandrier inspecte le pied d’un front de taille sous une hauteur h d’eau douce. Déterminer la pression relative puis la pression absolue.",
+    "variables": [
+      {"key": "h", "label": "Profondeur h", "unit": "m", "value": 15, "min": 6, "max": 30, "step": 1},
+      {"key": "rho", "label": "Masse volumique eau", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5},
+      {"key": "patm", "label": "Pression atmosphérique", "unit": "kPa", "value": 101.3, "min": 100, "max": 102, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "relative", "label": "Pression relative", "unit": "Pa"},
+      {"key": "absolute", "label": "Pression absolue", "unit": "Pa"}
+    ]
+  },
+  {
+    "id": "COMP_SETTLER_01",
+    "chapter": "complements",
+    "solver": "layeredPressure",
+    "title": "Décanteur huile sur eau",
+    "difficulty": 2,
+    "statement": "Un bac ouvert de station d’enrobés contient une couche d’huile de vidange surmontant de l’eau. Calculer la pression relative à l’interface et au fond, puis la hauteur équivalente en mètres de colonne d’eau.",
+    "variables": [
+      {"key": "hOil", "label": "Épaisseur huile", "unit": "m", "value": 1.5, "min": 0.6, "max": 2.5, "step": 0.1},
+      {"key": "rhoOil", "label": "Masse volumique huile", "unit": "kg/m³", "value": 810, "min": 760, "max": 900, "step": 10},
+      {"key": "hWater", "label": "Épaisseur eau", "unit": "m", "value": 2.4, "min": 1, "max": 4, "step": 0.2},
+      {"key": "rhoWater", "label": "Masse volumique eau", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "interfaceP", "label": "Pression à l’interface", "unit": "Pa"},
+      {"key": "bottomP", "label": "Pression au fond", "unit": "Pa"},
+      {"key": "head", "label": "Hauteur équivalente", "unit": "mCE"}
+    ]
+  },
+  {
+    "id": "COMP_SLUICE_01",
+    "chapter": "complements",
+    "solver": "submergedGate",
+    "title": "Vanne d’amenée d’un bassin d’orage",
+    "difficulty": 2,
+    "statement": "Une vanne rectangulaire verticale ferme l’entrée d’un bassin. Son arête haute est à y₀ sous le plan d’eau. Calculer la poussée et la profondeur du centre de poussée.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 3.2, "min": 1.5, "max": 5, "step": 0.2},
+      {"key": "H", "label": "Hauteur a", "unit": "m", "value": 2, "min": 1, "max": 3.2, "step": 0.2},
+      {"key": "y0", "label": "Profondeur arête haute y₀", "unit": "m", "value": 2.8, "min": 0.8, "max": 5, "step": 0.2},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "yc", "label": "Profondeur du centre ȳ", "unit": "m"},
+      {"key": "force", "label": "Poussée F", "unit": "N"},
+      {"key": "yp", "label": "Centre de poussée yₚ", "unit": "m"}
+    ]
+  },
+  {
+    "id": "COMP_LOCK_01",
+    "chapter": "complements",
+    "solver": "planeForce",
+    "title": "Paroi de sas d’écluse",
+    "difficulty": 2,
+    "statement": "La paroi aval d’un sas retient une hauteur H d’eau douce. Pour une largeur b : calculer la poussée, son point d’application depuis le radier, et le moment de renversement au pied.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 5, "min": 2, "max": 8, "step": 0.5},
+      {"key": "H", "label": "Hauteur d’eau H", "unit": "m", "value": 4.8, "min": 2, "max": 8, "step": 0.2},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1020, "step": 5}
+    ],
+    "questions": [
+      {"key": "force", "label": "Poussée F", "unit": "N"},
+      {"key": "zC", "label": "Point d’application depuis le pied", "unit": "m"},
+      {"key": "Mrev", "label": "Moment de renversement au pied", "unit": "N·m"}
+    ]
+  },
+  {
+    "id": "COMP_PIPE_01",
+    "chapter": "complements",
+    "solver": "pipeContinuity",
+    "title": "Adduction d’un lotissement",
+    "difficulty": 1,
+    "statement": "Une conduite d’adduction de diamètre D transporte un débit Q. Calculer la vitesse moyenne, puis le diamètre qui donnerait une vitesse cible plus calme pour un réseau de distribution.",
+    "variables": [
+      {"key": "D", "label": "Diamètre actuel D", "unit": "mm", "value": 160, "min": 80, "max": 350, "step": 10},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 35, "min": 12, "max": 90, "step": 1},
+      {"key": "targetV", "label": "Vitesse cible", "unit": "m/s", "value": 0.9, "min": 0.6, "max": 1.8, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "A", "label": "Section A", "unit": "m²"},
+      {"key": "V", "label": "Vitesse actuelle V", "unit": "m/s"},
+      {"key": "Dtarget", "label": "Diamètre cible", "unit": "m"}
+    ]
+  },
+  {
+    "id": "COMP_REDUCER_01",
+    "chapter": "complements",
+    "solver": "twoSectionContinuity",
+    "title": "Réducteur sur une conduite d’irrigation",
+    "difficulty": 1,
+    "statement": "Une rampe d’irrigation passe d’un diamètre D₁ à un diamètre D₂, à débit constant. Calculer les sections et les vitesses moyennes dans les deux tronçons.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "mm", "value": 250, "min": 160, "max": 400, "step": 10},
+      {"key": "D2", "label": "Diamètre D₂", "unit": "mm", "value": 125, "min": 70, "max": 200, "step": 5},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 55, "min": 20, "max": 120, "step": 5}
+    ],
+    "questions": [
+      {"key": "A1", "label": "Section A₁", "unit": "m²"},
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "A2", "label": "Section A₂", "unit": "m²"},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "COMP_VENTURI_01",
+    "chapter": "complements",
+    "solver": "venturi",
+    "title": "Venturi de station de pompage",
+    "difficulty": 2,
+    "statement": "Un Venturi horizontal est monté sur la refoulement d’une station. Un U au mercure relie l’entrée au col. Fluide parfait. Déterminer le débit et les vitesses.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "mm", "value": 180, "min": 140, "max": 280, "step": 10},
+      {"key": "D2", "label": "Diamètre D₂", "unit": "mm", "value": 90, "min": 60, "max": 140, "step": 5},
+      {"key": "h", "label": "Dénivellation Hg", "unit": "mm", "value": 65, "min": 30, "max": 160, "step": 5},
+      {"key": "rho", "label": "Masse volumique eau", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5},
+      {"key": "rhoM", "label": "Masse volumique Hg", "unit": "kg/m³", "value": 13600, "min": 13400, "max": 13600, "step": 50}
+    ],
+    "questions": [
+      {"key": "S1", "label": "Section S₁", "unit": "m²"},
+      {"key": "S2", "label": "Section S₂", "unit": "m²"},
+      {"key": "dp", "label": "Différence p₁ − p₂", "unit": "Pa"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "V2", "label": "Vitesse V₂", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "COMP_ORIFICE_01",
+    "chapter": "complements",
+    "solver": "torricelli",
+    "title": "Vidange d’un bassin d’orage par orifice",
+    "difficulty": 2,
+    "statement": "Un bassin de grande surface se vide par un orifice circulaire en mince paroi sous une charge h. Avec le coefficient de débit Cᵈ, calculer la vitesse réelle et le débit.",
+    "variables": [
+      {"key": "d", "label": "Diamètre orifice", "unit": "mm", "value": 50, "min": 25, "max": 90, "step": 5},
+      {"key": "h", "label": "Charge h", "unit": "m", "value": 3.2, "min": 1, "max": 8, "step": 0.2},
+      {"key": "Cd", "label": "Coefficient Cᵈ", "unit": "—", "value": 0.6, "min": 0.58, "max": 0.68, "step": 0.01}
+    ],
+    "questions": [
+      {"key": "area", "label": "Section S", "unit": "m²"},
+      {"key": "V", "label": "Vitesse réelle V", "unit": "m/s"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"}
+    ]
+  },
+  {
+    "id": "COMP_SIPHON_01",
+    "chapter": "complements",
+    "solver": "siphon",
+    "title": "Siphon de trop-plein d’un réservoir",
+    "difficulty": 3,
+    "statement": "Un siphon de diamètre constant amorce le trop-plein d’un château d’eau. Le point haut est à z_C au-dessus du plan d’eau ; la sortie débouche à l’air libre sous une dénivellation Δz. Fluide parfait. Calculer la vitesse, le débit et la pression absolue au point haut.",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 120, "min": 50, "max": 200, "step": 10},
+      {"key": "rise", "label": "Hauteur du point haut z_C", "unit": "m", "value": 2.4, "min": 0.8, "max": 5, "step": 0.2},
+      {"key": "drop", "label": "Dénivellation de sortie Δz", "unit": "m", "value": 5.5, "min": 2, "max": 9, "step": 0.5},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1025, "step": 5},
+      {"key": "patm", "label": "Pression atmosphérique", "unit": "kPa", "value": 101.3, "min": 90, "max": 103, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "pHigh", "label": "Pression absolue au point haut", "unit": "Pa"}
+    ]
+  },
+  {
+    "id": "COMP_HOSE_01",
+    "chapter": "complements",
+    "solver": "jetPlate",
+    "title": "Jet d’incendie sur un écran de coffrage",
+    "difficulty": 2,
+    "statement": "Un jet d’eau horizontal de diamètre d et de vitesse V frappe normalement un panneau de coffrage fixe, puis s’écoule tangentiellement. Déterminer le débit et l’effort sur le panneau.",
+    "variables": [
+      {"key": "d", "label": "Diamètre du jet d", "unit": "mm", "value": 35, "min": 20, "max": 70, "step": 5},
+      {"key": "V", "label": "Vitesse du jet V", "unit": "m/s", "value": 18, "min": 8, "max": 28, "step": 1},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5}
+    ],
+    "questions": [
+      {"key": "area", "label": "Section du jet S", "unit": "m²"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "force", "label": "Effort du jet F", "unit": "N"}
+    ]
+  },
+  {
+    "id": "COMP_CASTIRON_01",
+    "chapter": "complements",
+    "solver": "colebrook",
+    "title": "Refoulement en fonte rugueuse",
+    "difficulty": 3,
+    "statement": "De l’eau circule dans une ancienne conduite en fonte. Déterminer Reynolds, le facteur de Darcy par Colebrook–White, puis la perte de charge linéaire.",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 300, "min": 150, "max": 400, "step": 25},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 1200, "min": 400, "max": 2500, "step": 50},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 90, "min": 30, "max": 160, "step": 5},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.5, "min": 0.1, "max": 1.2, "step": 0.05},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse moyenne V", "unit": "m/s"},
+      {"key": "Re", "label": "Nombre de Reynolds Re", "unit": "—"},
+      {"key": "f", "label": "Facteur de Darcy f", "unit": "—"},
+      {"key": "hf", "label": "Perte de charge h_f", "unit": "m"}
+    ]
+  },
+  {
+    "id": "COMP_DITCH_01",
+    "chapter": "freeSurface",
+    "solver": "manningChannel",
+    "title": "Fossé de drainage en régime uniforme",
+    "difficulty": 3,
+    "statement": "Un fossé rectangulaire de largeur b écoule une hauteur y sous une pente S, revêtement assez rugueux (Kₛ). En régime uniforme, calculer le rayon hydraulique, la vitesse, le débit et le nombre de Froude.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 1.8, "min": 0.8, "max": 4, "step": 0.2},
+      {"key": "y", "label": "Tirant d’eau y", "unit": "m", "value": 0.65, "min": 0.3, "max": 1.6, "step": 0.05},
+      {"key": "S", "label": "Pente S", "unit": "‰", "value": 3, "min": 0.8, "max": 8, "step": 0.2},
+      {"key": "Ks", "label": "Strickler Kₛ", "unit": "m⅓/s", "value": 50, "min": 30, "max": 80, "step": 5}
+    ],
+    "questions": [
+      {"key": "R", "label": "Rayon hydraulique R", "unit": "m"},
+      {"key": "V", "label": "Vitesse moyenne V", "unit": "m/s"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "Fr", "label": "Nombre de Froude Fr", "unit": "—"}
+    ]
+  },
+  {
+    "id": "COMP_TWOFLUID_01",
+    "chapter": "properties",
+    "solver": "twoFluidsShear",
+    "title": "Huile et eau dans le même palier plan",
+    "difficulty": 1,
+    "statement": "Un palier plan (surface A, jeu e, vitesse U) est d’abord rempli d’un fluide A, puis du fluide B. Calculer contrainte et effort pour chaque fluide, puis le rapport des efforts. Les masses volumiques servent à former ν = μ/ρ.",
+    "variables": [
+      {"key": "A", "label": "Surface A", "unit": "m²", "value": 0.6, "min": 0.2, "max": 1.2, "step": 0.1},
+      {"key": "U", "label": "Vitesse U", "unit": "m/s", "value": 0.5, "min": 0.2, "max": 1.2, "step": 0.05},
+      {"key": "e", "label": "Épaisseur e", "unit": "mm", "value": 1.5, "min": 0.4, "max": 3, "step": 0.1},
+      {"key": "muA", "label": "Viscosité μ_A", "unit": "Pa·s", "value": 0.28, "min": 0.05, "max": 0.8, "step": 0.02},
+      {"key": "rhoA", "label": "Masse volumique ρ_A", "unit": "kg/m³", "value": 880, "min": 800, "max": 950, "step": 10},
+      {"key": "muB", "label": "Viscosité μ_B", "unit": "Pa·s", "value": 0.001, "min": 0.001, "max": 0.02, "step": 0.001},
+      {"key": "rhoB", "label": "Masse volumique ρ_B", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1020, "step": 5}
+    ],
+    "questions": [
+      {"key": "tauA", "label": "Contrainte fluide A τ_A", "unit": "Pa"},
+      {"key": "FA", "label": "Effort fluide A F_A", "unit": "N"},
+      {"key": "tauB", "label": "Contrainte fluide B τ_B", "unit": "Pa"},
+      {"key": "FB", "label": "Effort fluide B F_B", "unit": "N"},
+      {"key": "ratio", "label": "Rapport F_B / F_A", "unit": "—"}
+    ]
+  },
+  {
+    "id": "COMP_VISCTEMP_01",
+    "chapter": "properties",
+    "solver": "viscosityTemp",
+    "title": "Film d’huile à la température de service",
+    "difficulty": 2,
+    "statement": "Un tableau donne la viscosité d’une huile de coffrage à deux températures T₁ et T₂. Par interpolation linéaire, estimer μ à la température de chantier T, puis la contrainte et l’effort de traction du film (Couette : surface A, vitesse U, épaisseur e).",
+    "variables": [
+      {"key": "T1", "label": "Température T₁", "unit": "°C", "value": 10, "min": 0, "max": 20, "step": 2},
+      {"key": "mu1", "label": "Viscosité μ₁", "unit": "Pa·s", "value": 0.45, "min": 0.15, "max": 0.9, "step": 0.05},
+      {"key": "T2", "label": "Température T₂", "unit": "°C", "value": 40, "min": 30, "max": 70, "step": 5},
+      {"key": "mu2", "label": "Viscosité μ₂", "unit": "Pa·s", "value": 0.12, "min": 0.04, "max": 0.25, "step": 0.01},
+      {"key": "T", "label": "Température de service T", "unit": "°C", "value": 22, "min": 8, "max": 45, "step": 1},
+      {"key": "A", "label": "Surface A", "unit": "m²", "value": 0.4, "min": 0.2, "max": 1, "step": 0.05},
+      {"key": "U", "label": "Vitesse U", "unit": "m/s", "value": 0.35, "min": 0.1, "max": 0.8, "step": 0.05},
+      {"key": "e", "label": "Épaisseur e", "unit": "mm", "value": 1, "min": 0.3, "max": 2.5, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "mu", "label": "Viscosité μ(T)", "unit": "Pa·s"},
+      {"key": "tau", "label": "Contrainte τ", "unit": "Pa"},
+      {"key": "F", "label": "Force F", "unit": "N"}
+    ]
+  },
+  {
+    "id": "COMP_DUALGATE_01",
+    "chapter": "hydrostatics",
+    "solver": "dualSideGate",
+    "title": "Vanne de galerie avec bief aval",
+    "difficulty": 2,
+    "statement": "Une vanne rectangulaire verticale (largeur b, hauteur a) est entièrement mouillée : plan d’eau amont à y₁ au-dessus du seuil, plan d’eau aval à y₂. Calculer les deux poussées, l’effort net et la cote de son point d’application depuis le seuil. On prendra y₁ > a et y₂ > a.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 2.2, "min": 1, "max": 4, "step": 0.2},
+      {"key": "a", "label": "Hauteur de vanne a", "unit": "m", "value": 1.6, "min": 0.8, "max": 1.8, "step": 0.1},
+      {"key": "y1", "label": "Charge amont y₁", "unit": "m", "value": 4.2, "min": 3.2, "max": 7, "step": 0.2},
+      {"key": "y2", "label": "Charge aval y₂", "unit": "m", "value": 2.1, "min": 1.9, "max": 3, "step": 0.1},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1020, "step": 5}
+    ],
+    "questions": [
+      {"key": "F1", "label": "Poussée amont F₁", "unit": "N"},
+      {"key": "F2", "label": "Poussée aval F₂", "unit": "N"},
+      {"key": "Fnet", "label": "Effort net F", "unit": "N"},
+      {"key": "zNet", "label": "Point d’application depuis le seuil", "unit": "m"}
+    ]
+  },
+  {
+    "id": "COMP_LOCKDOOR_01",
+    "chapter": "hydrostatics",
+    "solver": "lockDoor",
+    "title": "Porte d’écluse à deux biefs",
+    "difficulty": 2,
+    "statement": "Une porte d’écluse plane verticale, largeur b, affleure le radier. Le bief amont est à H, le bief aval à h. Calculer les poussées, l’effort net vers l’aval et le moment d’ouverture au palier bas.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 3.5, "min": 2, "max": 8, "step": 0.5},
+      {"key": "H", "label": "Niveau amont H", "unit": "m", "value": 5.2, "min": 4, "max": 8, "step": 0.2},
+      {"key": "h", "label": "Niveau aval h", "unit": "m", "value": 1.8, "min": 0.4, "max": 3.2, "step": 0.2},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1025, "step": 5}
+    ],
+    "questions": [
+      {"key": "F1", "label": "Poussée amont F₁", "unit": "N"},
+      {"key": "F2", "label": "Poussée aval F₂", "unit": "N"},
+      {"key": "Fnet", "label": "Effort net F", "unit": "N"},
+      {"key": "Mbot", "label": "Moment au palier bas M", "unit": "N·m"}
+    ]
+  },
+  {
+    "id": "COMP_HGL_01",
+    "chapter": "losses",
+    "solver": "piezometricLine",
+    "title": "Lignes piézométrique et de charge d’une adduction",
+    "difficulty": 3,
+    "statement": "Un réservoir à surface libre (charge H au-dessus de l’axe, axe horizontal z = 0) alimente une conduite de diamètre D et de longueur L. Singularités : entrée, vanne à mi-parcours, sortie. Le débit Q est imposé. Tracer l’idée des lignes : calculer V, h_f, h_s, puis HGL juste après l’entrée et en bout de conduite.",
+    "variables": [
+      {"key": "H", "label": "Charge amont H", "unit": "m", "value": 28, "min": 12, "max": 50, "step": 1},
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 200, "min": 150, "max": 350, "step": 25},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 750, "min": 200, "max": 2000, "step": 50},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 38, "min": 15, "max": 80, "step": 1},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.2, "min": 0.05, "max": 0.8, "step": 0.05},
+      {"key": "Kentry", "label": "K entrée", "unit": "—", "value": 0.5, "min": 0.05, "max": 0.8, "step": 0.05},
+      {"key": "Kvalve", "label": "K vanne", "unit": "—", "value": 2.2, "min": 0.2, "max": 6, "step": 0.2},
+      {"key": "Kexit", "label": "K sortie", "unit": "—", "value": 1, "min": 1, "max": 1, "step": 1},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "hf", "label": "Perte linéaire h_f", "unit": "m"},
+      {"key": "hs", "label": "Pertes singulières h_s", "unit": "m"},
+      {"key": "HGLentry", "label": "HGL après l’entrée", "unit": "m"},
+      {"key": "HGLend", "label": "HGL en bout de conduite", "unit": "m"}
+    ]
+  },
+  {
+    "id": "COMP_ECON_01",
+    "chapter": "losses",
+    "solver": "diameterEconomy",
+    "title": "Choix de DN : tube contre pertes",
+    "difficulty": 3,
+    "statement": "Une adduction de longueur L doit porter un débit Q. Trois diamètres commerciaux sont en lice. Pour chacun : perte de charge linéaire (Colebrook). Un indicateur C = α D + β h_f (D en mm) départage le tube plus cher et les pertes plus faibles. Retenir le DN de C minimal.",
+    "variables": [
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 55, "min": 25, "max": 120, "step": 5},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 1600, "min": 600, "max": 3000, "step": 100},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.15, "min": 0.05, "max": 0.5, "step": 0.05},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.1},
+      {"key": "D1", "label": "DN A", "unit": "mm", "value": 200, "min": 150, "max": 250, "step": 25},
+      {"key": "D2", "label": "DN B", "unit": "mm", "value": 250, "min": 200, "max": 300, "step": 25},
+      {"key": "D3", "label": "DN C", "unit": "mm", "value": 300, "min": 250, "max": 400, "step": 25},
+      {"key": "alpha", "label": "Poids α (tube)", "unit": "—", "value": 4, "min": 1, "max": 12, "step": 0.5},
+      {"key": "beta", "label": "Poids β (pertes)", "unit": "—", "value": 80, "min": 20, "max": 200, "step": 10}
+    ],
+    "questions": [
+      {"key": "hf1", "label": "h_f du DN A", "unit": "m"},
+      {"key": "hf2", "label": "h_f du DN B", "unit": "m"},
+      {"key": "hf3", "label": "h_f du DN C", "unit": "m"},
+      {"key": "Dbest", "label": "DN retenu", "unit": "mm"},
+      {"key": "Cmin", "label": "Indicateur C minimal", "unit": "—"}
+    ]
+  },
+  {
+    "id": "COMP_PUMPCURVE_01",
+    "chapter": "pumping",
+    "solver": "pumpDutyPoint",
+    "title": "Point de fonctionnement pompe–réseau",
+    "difficulty": 3,
+    "statement": "Une pompe a pour courbe H_p = H₀ − k Q² (Q en m³/s). Elle refoule vers un réservoir (hauteur géométrique H_g) à travers une conduite (D, L, rugosité, ΣK). λ est recalculé par Colebrook. Déterminer le débit de fonctionnement, la HMT et la vitesse en conduite.",
+    "variables": [
+      {"key": "H0", "label": "HMT à vide H₀", "unit": "m", "value": 42, "min": 25, "max": 70, "step": 1},
+      {"key": "k", "label": "Coefficient k", "unit": "s²/m⁵", "value": 12000, "min": 4000, "max": 25000, "step": 500},
+      {"key": "Hg", "label": "Hauteur géométrique H_g", "unit": "m", "value": 18, "min": 8, "max": 30, "step": 1},
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 150, "min": 100, "max": 250, "step": 25},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 420, "min": 150, "max": 900, "step": 20},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.15, "min": 0.05, "max": 0.5, "step": 0.05},
+      {"key": "Ksum", "label": "Somme ΣK", "unit": "—", "value": 4.2, "min": 1.5, "max": 8, "step": 0.2},
+      {"key": "nu", "label": "Viscosité cinématique ν", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "Q", "label": "Débit de fonctionnement Q", "unit": "L/s"},
+      {"key": "H", "label": "HMT au point de fonctionnement", "unit": "m"},
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "COMP_WEIR_01",
+    "chapter": "freeSurface",
+    "solver": "thinWeir",
+    "title": "Seuil déversoir d’un bassin d’orage",
+    "difficulty": 2,
+    "statement": "Un seuil rectangulaire en mince paroi, de longueur L, évacue une nappe de charge h au-dessus de la crête. Avec le coefficient de débit Cᵈ (qui inclut la contraction), calculer le débit total et le débit par mètre de seuil.",
+    "variables": [
+      {"key": "L", "label": "Longueur du seuil L", "unit": "m", "value": 6, "min": 2, "max": 12, "step": 0.5},
+      {"key": "h", "label": "Charge h", "unit": "m", "value": 0.28, "min": 0.08, "max": 0.6, "step": 0.02},
+      {"key": "Cd", "label": "Coefficient Cᵈ", "unit": "—", "value": 0.42, "min": 0.35, "max": 0.5, "step": 0.01}
+    ],
+    "questions": [
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "q", "label": "Débit linéique q", "unit": "m²/s"}
+    ]
+  },
+  {
+    "id": "COMP_JUMP_01",
+    "chapter": "freeSurface",
+    "solver": "hydraulicJump",
+    "title": "Ressaut au pied d’un radier de déversoir",
+    "difficulty": 3,
+    "statement": "Au pied d’un ouvrage, l’eau arrive en régime torrentiel (profondeur y₁, vitesse V₁) dans un canal rectangulaire horizontal. Calculer Fr₁, la profondeur conjuguée y₂, la perte d’énergie du ressaut et une longueur d’ordre L_r ≈ 6 y₂.",
+    "variables": [
+      {"key": "y1", "label": "Profondeur amont y₁", "unit": "m", "value": 0.45, "min": 0.2, "max": 0.9, "step": 0.05},
+      {"key": "V1", "label": "Vitesse amont V₁", "unit": "m/s", "value": 7.5, "min": 4, "max": 12, "step": 0.5}
+    ],
+    "questions": [
+      {"key": "Fr1", "label": "Froude amont Fr₁", "unit": "—"},
+      {"key": "y2", "label": "Profondeur aval y₂", "unit": "m"},
+      {"key": "dE", "label": "Perte ΔE", "unit": "m"},
+      {"key": "Lr", "label": "Longueur L_r ≈ 6 y₂", "unit": "m"}
+    ]
+  },
+  {
+    "id": "COMP_FROUDE_01",
+    "chapter": "freeSurface",
+    "solver": "criticalRegime",
+    "title": "Fluvial ou torrentiel dans un canal de fuite",
+    "difficulty": 2,
+    "statement": "Un canal rectangulaire de largeur b écoule un débit Q sous une profondeur y. Calculer la vitesse, la profondeur critique, le nombre de Froude et l’énergie spécifique. Conclure sur le régime.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 2.8, "min": 1.2, "max": 5, "step": 0.2},
+      {"key": "y", "label": "Profondeur y", "unit": "m", "value": 1.15, "min": 0.4, "max": 2.2, "step": 0.05},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 4.6, "min": 1, "max": 10, "step": 0.2}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "yc", "label": "Profondeur critique y_c", "unit": "m"},
+      {"key": "Fr", "label": "Nombre de Froude Fr", "unit": "—"},
+      {"key": "E", "label": "Énergie spécifique E", "unit": "m"}
+    ]
+  }
+]

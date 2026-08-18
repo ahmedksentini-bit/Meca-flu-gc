@@ -798,6 +798,106 @@ const recaps = {
       "n est en tours par seconde (s⁻¹), pas en tr/min."
     ],
     watch: "Oublier de convertir n en s⁻¹ casse l’homogénéité. D⁵ croît très vite avec le diamètre."
+  },
+  twoFluidsShear: {
+    title: "Deux fluides, même film de Couette",
+    lead: "À géométrie et vitesse identiques, la force de cisaillement ne dépend que de μ. La masse volumique intervient si l’on parle de Reynolds, pas de τ.",
+    points: [
+      "τ = μ U/e pour chaque fluide newtonien.",
+      "F = τA : le rapport des efforts est μ_B/μ_A.",
+      "ν = μ/ρ sert à comparer les régimes, pas l’effort de traction."
+    ],
+    watch: "Un fioul plus dense n’« accroche » pas davantage s’il est moins visqueux."
+  },
+  viscosityTemp: {
+    title: "Viscosité et température",
+    lead: "Pour un liquide, μ diminue quand T augmente. Entre deux points de tableau, une interpolation linéaire suffit au niveau du cours.",
+    points: [
+      "μ(T) = μ₁ + (μ₂−μ₁)(T−T₁)/(T₂−T₁).",
+      "Le Couette utilise cette μ de service : τ = μ U/e.",
+      "Chauffer l’huile réduit l’effort de pompage ou de traction, au prix de la tenue du film."
+    ],
+    watch: "Ne pas interpoler hors de l’intervalle tabulé sans le dire. L’eau et l’air n’ont pas la même sensibilité à T."
+  },
+  dualSideGate: {
+    title: "Vanne mouillée des deux côtés",
+    lead: "Chaque face a sa poussée ρgAȳ. L’effort de manœuvre est la différence, proportionnelle à (y₁ − y₂), pas à y₁ seul.",
+    points: [
+      "ȳ se mesure depuis chaque surface libre jusqu’au centre de la vanne.",
+      "F_net = ρg A (y₁ − y₂) si la vanne est entièrement immergée des deux côtés.",
+      "Le point d’application du net se trouve par les moments."
+    ],
+    watch: "Oublier l’aval surestime largement F. Si y₂ = y₁, la vanne est en équilibre de translation."
+  },
+  lockDoor: {
+    title: "Porte d’écluse",
+    lead: "Chaque bief impose un triangle de pression. Le palier bas reprend le moment d’ouverture, le palier haut la réaction opposée.",
+    points: [
+      "F = ½ ρg H² b pour une paroi affleurante.",
+      "La résultante d’un triangle est à H/3 du radier.",
+      "M_bas = F₁ H/3 − F₂ h/3."
+    ],
+    watch: "Une porte d’écluse n’est pas une vanne noyée : les surfaces libres partent du radier. Ne pas utiliser ȳ = H/2."
+  },
+  piezometricLine: {
+    title: "Ligne piézométrique et ligne de charge",
+    lead: "EGL porte l’énergie totale ; HGL est EGL moins V²/2g. Chaque singularité fait un cran sur les deux lignes ; le frottement les incline.",
+    points: [
+      "HGL = p/ρg + z ; EGL = HGL + V²/2g.",
+      "Darcy incline les lignes de λ(V²/2g)/D par mètre.",
+      "Un K fait chuter EGL (et HGL) d’un cran K V²/2g."
+    ],
+    watch: "Sur une conduite de diamètre constant, EGL et HGL sont parallèles. HGL sous l’axe = dépression."
+  },
+  diameterEconomy: {
+    title: "Diamètre et coût réduit",
+    lead: "Un DN plus grand baisse h_f (environ en 1/D⁵ à Q fixé) mais coûte plus de tube. Un indicateur C = αD + β h_f rend le compromis lisible.",
+    points: [
+      "Pour chaque DN : V, Colebrook, h_f.",
+      "C = α D + β h_f (α, β choisis pour l’exercice).",
+      "On retient le DN de C minimal."
+    ],
+    watch: "Ce n’est pas un devis. α trop petit pousse vers le gros diamètre ; β trop petit vers le trop petit DN."
+  },
+  pumpDutyPoint: {
+    title: "Point de fonctionnement pompe–réseau",
+    lead: "La pompe fournit une H qui diminue avec Q ; le réseau en demande une qui augmente avec Q². L’intersection est le débit réel.",
+    points: [
+      "H_p = H₀ − k Q² (forme usuelle autour d’un point de calage).",
+      "H_n = H_g + (λL/D+ΣK) V²/2g.",
+      "λ dépend de Q : on itère Colebrook."
+    ],
+    watch: "H₀ est la HMT à Q = 0, pas la hauteur géométrique. Si H₀ < H_g, Q = 0."
+  },
+  thinWeir: {
+    title: "Déversoir en mince paroi",
+    lead: "La lame se comporte comme une infinité d’orifices superposés : le débit va comme h^{3/2}, pas comme h.",
+    points: [
+      "Q = Cᵈ L √(2g) h^{3/2}.",
+      "Cᵈ rassemble contraction et approche.",
+      "q = Q/L permet de comparer des seuils."
+    ],
+    watch: "La charge h se mesure au-dessus de la crête, assez en amont pour éviter le rabattement. Q ∝ h^{3/2}."
+  },
+  hydraulicJump: {
+    title: "Ressaut hydraulique",
+    lead: "Un écoulement torrentiel peut se raccorder à un régime fluvial par un ressaut : la profondeur saute, de l’énergie se dissipe.",
+    points: [
+      "Il faut Fr₁ > 1.",
+      "y₂/y₁ = ½ (−1 + √(1+8 Fr₁²)).",
+      "ΔE = (y₂−y₁)³/(4 y₁ y₂) est perdue."
+    ],
+    watch: "Le ressaut n’est pas un seuil : y₂ est dicté par Fr₁, pas par un ouvrage. L_r ≈ 6 y₂ est indicatif."
+  },
+  criticalRegime: {
+    title: "Régime fluvial, critique, torrentiel",
+    lead: "y_c est la profondeur qui, à Q donné, minimise l’énergie spécifique. Fr = 1 sur cette profondeur.",
+    points: [
+      "Rectangle : y_c = (Q²/(g b²))^{1/3}.",
+      "y > y_c ⇔ Fr < 1 : fluvial, commandé par l’aval.",
+      "y < y_c ⇔ Fr > 1 : torrentiel, commandé par l’amont."
+    ],
+    watch: "Fr se calcule avec la profondeur actuelle, pas avec y_c. Un canal peut être fluvial à un Q et torrentiel à un autre."
   }
 };
 

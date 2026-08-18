@@ -258,6 +258,39 @@ const caisson = solvers.bargeStability({ L: 6, B: 4, draft: 2.07, zG: 1.4, rho: 
 assert.ok(isClose(caisson.GM, 0.28, 0.02));
 assert.ok(caisson.GM > 0);
 
+const twoF = solvers.twoFluidsShear({ A: 0.6, U: 0.5, e: 1.5, muA: 0.28, rhoA: 880, muB: 0.001, rhoB: 1000 }).values;
+assert.ok(isClose(twoF.FA, 56, 0.01));
+assert.ok(isClose(twoF.ratio, 0.001 / 0.28, 1e-12));
+
+const muT = solvers.viscosityTemp({ T1: 10, mu1: 0.45, T2: 40, mu2: 0.12, T: 22, A: 0.4, U: 0.35, e: 1 }).values;
+assert.ok(isClose(muT.mu, 0.318, 1e-12));
+assert.ok(isClose(muT.F, 44.52, 0.01));
+
+const dual = solvers.dualSideGate({ b: 2.2, a: 1.6, y1: 4.2, y2: 2.1, rho: 1000 }).values;
+assert.ok(isClose(dual.Fnet, 72515.52, 0.5));
+
+const door = solvers.lockDoor({ b: 3.5, H: 5.2, h: 1.8, rho: 1000 }).values;
+assert.ok(isClose(door.F1, 464209, 2));
+
+const hgl = solvers.piezometricLine({ H: 28, D: 200, L: 750, Q: 38, eps: 0.2, Kentry: 0.5, Kvalve: 2.2, Kexit: 1, nu: 1 }).values;
+assert.ok(hgl.HGLend > 20 && hgl.HGLend < 28);
+
+const econ = solvers.diameterEconomy({ Q: 55, L: 1600, eps: 0.15, nu: 1, D1: 200, D2: 250, D3: 300, alpha: 4, beta: 80 }).values;
+assert.equal(econ.Dbest, 300);
+
+const duty = solvers.pumpDutyPoint({ H0: 42, k: 12000, Hg: 18, D: 150, L: 420, eps: 0.15, Ksum: 4.2, nu: 1 }).values;
+assert.ok(duty.Q > 25 && duty.Q < 40);
+assert.ok(duty.H > 18 && duty.H < 42);
+
+const weir = solvers.thinWeir({ L: 6, h: 0.28, Cd: 0.42 }).values;
+assert.ok(isClose(weir.Q, 1.6538, 0.002));
+
+const jump = solvers.hydraulicJump({ y1: 0.45, V1: 7.5 }).values;
+assert.ok(jump.Fr1 > 3 && jump.y2 > 0.45);
+
+const crit = solvers.criticalRegime({ b: 2.8, y: 1.15, Q: 4.6 }).values;
+assert.ok(crit.Fr < 1 && crit.yc < 1.15);
+
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));
 
@@ -269,7 +302,8 @@ function catalogIds() {
     "data/exercises-ch3-ch4.json",
     "data/exercises-ch5-ch8.json",
     "data/exercises-exam-td.json",
-    "data/exercises-td.json"
+    "data/exercises-td.json",
+    "data/exercises-complements.json"
   ];
   const ids = new Set();
   for (const rel of files) {
