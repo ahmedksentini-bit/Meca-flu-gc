@@ -993,6 +993,160 @@ const recaps = {
       "y < y_c ⇔ Fr > 1 : torrentiel, commandé par l’amont."
     ],
     watch: "Fr se calcule avec la profondeur actuelle, pas avec y_c. Un canal peut être fluvial à un Q et torrentiel à un autre."
+  },
+  unknownDensityColumn: {
+    title: "Colonne hydrostatique et masse volumique",
+    problem: "On connaît p_A (souvent une dépression) et p_F = 0, avec une hauteur h de liquide B entre les deux. Il faut ρ_B.",
+    lead: "Au repos, la pression varie comme ρgh. Si on descend de h dans B, p augmente de ρ_B g h.",
+    points: [
+      "p_F = p_A + ρ_B g h (descente A → F).",
+      "p_F = 0 ⇒ ρ_B = −p_A /(g h) lorsque p_A < 0.",
+      "Convertir MPa en Pa avant de diviser."
+    ],
+    watch: "Le signe : une pression relative négative en A, au-dessus de F, signifie que B « tire » A vers le bas — ρ_B reste positive."
+  },
+  threeFluidUTube: {
+    title: "Tube en U à trois fluides",
+    problem: "Huile, mercure et eau dans un U ouvert. Trois relations de longueurs, quatre inconnues Zᵢ : la quatrième vient de l’équilibre des pressions.",
+    lead: "Les deux surfaces libres sont à l’atmosphère. En cheminant d’une branche à l’autre, la somme ρgΔz s’annule.",
+    points: [
+      "Z₁ = Z₂ + (Z₁−Z₂), Z₄ = Z₃ + (Z₄−Z₃), Z₂+Z₃ donné.",
+      "ρ_huile Z₁ + ρ_Hg Z₂ = ρ_eau Z₄ + ρ_Hg Z₃.",
+      "On isole Z₂ puis on reconstitue les autres."
+    ],
+    watch: "Ne pas oublier le mercure des deux côtés. Un oubli de ρ_Hg Z₃ inverse complètement Z₂."
+  },
+  penstockNozzle: {
+    title: "Conduite forcée et tuyère",
+    problem: "Chute d’un barrage jusqu’à une tuyère. Fluide parfait : trouver p au départ de la conduite, V et ṁ.",
+    lead: "Bernoulli entre le plan d’eau (pₐₜₘ, V≈0) et chaque section. La tuyère, à l’air libre, fixe V₂ = √[2g(z_R−z₂)].",
+    points: [
+      "V₂ = √[2g Δz] à la sortie.",
+      "Q = s V₂, ṁ = ρQ, V₁ = Q/S.",
+      "p₁/ρg + V₁²/2g + z₁ = z_R."
+    ],
+    watch: "Ne pas prendre z₁ pour la chute de la tuyère : la vitesse de sortie voit tout le dénivelé jusqu’à z₂."
+  },
+  darcyMoodyRe: {
+    title: "Moody avec Re imposé",
+    problem: "On donne Re, D, ε et L, pas le débit. Il faut λ puis h_f.",
+    lead: "V = Re ν/D. λ vient de Colebrook (ε/D, Re), puis Darcy–Weisbach.",
+    points: [
+      "V = Re ν / D (ν de l’eau à 40 °C ≈ 0,66×10⁻⁶ m²/s).",
+      "ε/D puis Colebrook.",
+      "h_f = λ (L/D) V²/(2g)."
+    ],
+    watch: "D et ε doivent être dans la même unité pour ε/D. ν n’est pas celle de 20 °C."
+  },
+  gradualEnlargement: {
+    title: "Élargissement conique",
+    problem: "Un divergent d’angle θ, pas un élargissement brusque. K dépend de θ.",
+    lead: "Crane : K = 2,6 sin(θ/2) (1−(D₁/D₂)²)² si θ n’est pas trop grand. Borda n’est le plafond que pour un cône très ouvert.",
+    points: [
+      "V₁ = Q / (π D₁²/4).",
+      "K(θ, D₁/D₂).",
+      "h_s = K V₁²/(2g)."
+    ],
+    watch: "Ce n’est pas (V₁−V₂)²/2g tant que le cône est progressif."
+  },
+  seriesConePipe: {
+    title: "Conduite en série avec cônes",
+    problem: "Trois tronçons, deux cônes. Sommer h_f et h_s pour obtenir H_F.",
+    lead: "Même Q, deux vitesses. Darcy sur chaque longueur ; K de contraction / d’élargissement sur les cônes.",
+    points: [
+      "V₁ et V₂ par continuité.",
+      "h_f = λ (L/D) V²/2g sur AB, CD, EF.",
+      "H_F = H_A − Σh."
+    ],
+    watch: "La vitesse de référence de K n’est pas la même à la contraction et à l’élargissement."
+  },
+  hazenWilliams: {
+    title: "Formule de Hazen–Williams",
+    problem: "Réseau d’AEP : on a C, D, L et soit Q, soit la chute. Trouver l’autre.",
+    lead: "Formule empirique, pas Colebrook. En SI : h_f = 10,67 L Q^{1,852}/(C^{1,852} D^{4,87}).",
+    points: [
+      "D en mètres, Q en m³/s.",
+      "C_neuf ≈ 140 ; fonte usée C ≈ 100.",
+      "Inverser pour Q si h_f est donné."
+    ],
+    watch: "Ne pas mélanger avec Darcy : C n’est pas λ."
+  },
+  pipeABPressure: {
+    title: "Pression le long d’une conduite horizontale",
+    problem: "On connaît p_A, Q, D, L. Trouver Re, h_f et p_B.",
+    lead: "Horizontal : Δp/ρg = h_f. λ par Colebrook (lisse : ε=0).",
+    points: [
+      "Q m³/h → m³/s, V = Q/A, Re = VD/ν.",
+      "h_f = λ (L/D) V²/2g.",
+      "p_B = p_A − ρg h_f."
+    ],
+    watch: "Q est souvent en m³/h. ε = 0,5 mm sur 5 cm n’est plus lisse."
+  },
+  hazenParallelNetwork: {
+    title: "Parallèle puis nœud Hazen–Williams",
+    problem: "Deux conduites A→C en parallèle, puis CB et CD. Même ΔH sur le parallèle.",
+    lead: "On cherche h_AC tel que Q₁(h)+Q₂(h)=Q_A. Puis H_C = H_A − h_AC.",
+    points: [
+      "Q = f(h_f, C, D, L) par inversion de Hazen.",
+      "Si H_B > H_C, B alimente aussi C.",
+      "Q_CD = Q_A + Q_CB."
+    ],
+    watch: "Les deux parallèles n’ont pas le même D et L : les débits ne sont pas égaux."
+  },
+  seriesPipeHGL: {
+    title: "HGL et EGL d’une conduite en série",
+    problem: "30 cm puis 15 cm puis 30 cm, horizontale. Tracer les deux lignes.",
+    lead: "EGL = z + p/ρg + V²/2g. HGL = EGL − V²/2g. Les singularités font des crans.",
+    points: [
+      "V₁₅ = V₃₀ (D₃₀/D₁₅)².",
+      "h_f = λ(L/D)V²/2g sur chaque tronçon.",
+      "Contraction : K V₁₅²/2g ; élargissement : Borda (V₁₅−V₃₀)²/2g."
+    ],
+    watch: "H_piéz en A n’est pas l’EGL : il manque V²/2g."
+  },
+  canalThreeReaches: {
+    title: "Trois biefs : Manning, Chézy, y_c",
+    problem: "Même Q, trois géométries. Pente inconnue en A, tirant inconnu en B, régime en C.",
+    lead: "Uniforme : V = (1/n) R^{2/3} √S ou V = C √(R i). Le régime se lit sur Fr ou y ≷ y_c.",
+    points: [
+      "Trapèze : A = (b+zy)y, P = b+2y√(1+z²).",
+      "S = [n V / R^{2/3}]².",
+      "Rectangle : y_c = (Q²/(g b²))^{1/3}."
+    ],
+    watch: "Chézy C n’est pas Strickler Kₛ. Fr du trapèze utilise ȳ = A/T."
+  },
+  triangularTwoSlopes: {
+    title: "Triangle à deux pentes",
+    problem: "Section triangulaire, deux biefs assez longs pour y_n. L’un a i, l’autre a y.",
+    lead: "A = z y². y_c = (2Q²/(g z²))^{1/5}. Pente forte → torrentiel ; pente faible → fluvial.",
+    points: [
+      "Manning inverse pour y₁ ou pour S₂.",
+      "Fr = V / √(g ȳ) avec ȳ = y/2 si z=1.",
+      "L’allure raccorde les deux y_n."
+    ],
+    watch: "Ne pas traiter le triangle comme un rectangle de largeur nulle sans changer y_c."
+  },
+  specificEnergyStep: {
+    title: "Charge spécifique sur un seuil",
+    problem: "Le fond se lève de z. E diminue de z. On cherche y₂.",
+    lead: "E = y + q²/(2g y²). En fluvial, une marche fait baisser y (on se rapproche de y_c).",
+    points: [
+      "q = Q/b ; E₁ = y₁ + q²/(2g y₁²).",
+      "E₂ = E₁ − z.",
+      "Racine y > y_c en fluvial."
+    ],
+    watch: "y₂ n’est pas y₁ − z. Deux racines existent : on garde celle du même régime."
+  },
+  canalSlopeBreak: {
+    title: "Rupture de pente",
+    problem: "i diminue brutalement, puis la largeur change. Chaque bief assez long a son y_n.",
+    lead: "Manning donne y₁ et y₂. Si 1 est torrentiel et 2 fluvial, un ressaut s’intercale.",
+    points: [
+      "y_n par dichotomie, Q = A Kₛ R^{2/3} √i.",
+      "y_c = (Q²/(g b²))^{1/3}.",
+      "Comparer y_n et y_c pour le régime."
+    ],
+    watch: "Le ressaut n’est pas exactement à la rupture de pente : il se place où les conjuguées raccordent les deux y_n."
   }
 };
 

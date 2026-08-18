@@ -291,6 +291,45 @@ assert.ok(jump.Fr1 > 3 && jump.y2 > 0.45);
 const crit = solvers.criticalRegime({ b: 2.8, y: 1.15, Q: 4.6 }).values;
 assert.ok(crit.Fr < 1 && crit.yc < 1.15);
 
+const rhoB = solvers.unknownDensityColumn({ pA: -0.011, h: 1.06 }).values.rhoB;
+assert.ok(isClose(rhoB, 1057.4, 0.01));
+
+const utube = solvers.threeFluidUTube({ d12: 20, d43: 9, s23: 100, rhoOil: 800, rhoW: 1000, rhoHg: 13600 }).values;
+assert.ok(utube.Z2 > 0 && utube.Z3 > 0 && isClose(utube.Z2 + utube.Z3, 100, 0.02));
+
+const pen = solvers.penstockNozzle({ zR: 1700, z1: 1600, z2: 1300, S: 1, sNoz: 0.02, rho: 1000 }).values;
+assert.ok(pen.V2 > 80 && pen.V2 < 95);
+assert.ok(pen.mDot > 1500 && pen.p1 > 9e5);
+
+const moodyRe = solvers.darcyMoodyRe({ D: 75, L: 300, Re: 80000, eps: 0.15, nu: 0.658 }).values;
+assert.ok(moodyRe.hf > 2 && moodyRe.hf < 4);
+
+const cone = solvers.gradualEnlargement({ D1: 150, D2: 250, theta: 30, Q: 50 }).values;
+assert.ok(cone.hs > 0 && cone.K < 0.5);
+
+const serie = solvers.seriesPipeHGL({ D1: 30, D2: 15, L1: 60, L2: 30, L3: 30, f1: 0.02, f2: 0.015, f3: 0.02, V: 2.41, Hp: 60, K: 0.37 }).values;
+assert.ok(isClose(serie.V2, 9.64, 0.02));
+assert.ok(serie.HF < 60 && serie.hglF < serie.HF);
+
+const three = solvers.canalThreeReaches({ Q: 10, b: 6, z: 1, n: 0.015, yA: 1, C: 60, iB: 0.0002, yC: 0.5 }).values;
+assert.ok(isClose(three.yB, 1.84, 0.03));
+assert.ok(three.FrC > 1);
+
+const tri = solvers.triangularTwoSlopes({ Q: 3, n: 0.015, i1inv: 12, y2: 1, z: 1 }).values;
+assert.ok(tri.y1 > 0.5 && tri.y1 < 0.75);
+assert.ok(tri.Fr1 > 1);
+assert.ok(tri.S2 > 0 && tri.yc > tri.y1);
+
+const step = solvers.specificEnergyStep({ b: 10, y1: 6, Q: 300, z: 0.5 }).values;
+assert.ok(isClose(step.E1, 7.27, 0.03));
+assert.ok(isClose(step.y2, 4.8, 0.05));
+
+const brk = solvers.canalSlopeBreak({ Q: 6, n: 0.012, b1: 4, i1: 0.01, i2: 0.001, b3: 3, y3: 0.74 }).values;
+assert.ok(brk.Fr1 > 1 && brk.Fr2 < 1);
+
+const jump5 = solvers.hydraulicJump({ y1: 1.5, V1: 20 }).values;
+assert.ok(jump5.Fr1 > 5 && jump5.y2 > 8);
+
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));
 
@@ -303,7 +342,8 @@ function catalogIds() {
     "data/exercises-ch5-ch8.json",
     "data/exercises-exam-td.json",
     "data/exercises-td.json",
-    "data/exercises-complements.json"
+    "data/exercises-complements.json",
+    "data/exercises-hydrau-gen.json"
   ];
   const ids = new Set();
   for (const rel of files) {

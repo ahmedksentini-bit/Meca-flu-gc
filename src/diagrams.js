@@ -108,6 +108,43 @@ function drawPressureDiagram(x, y, height, pTop, pBottom, options = {}) {
   return `<path d="M${x} ${y}L${x + w1} ${y}L${x + w2} ${y2}H${x}z" fill="${fill}" stroke="${stroke}" stroke-width="1.4"/>`;
 }
 
+function iso(x, y, z, o = {}) {
+  const ox = o.ox ?? 58, oy = o.oy ?? 218, s = o.s ?? 20;
+  return [ox + (x + 0.56 * z) * s, oy - (y + 0.33 * z) * s];
+}
+function isoFace(pts, fill, stroke = "#334155", width = 1.25) {
+  if (!pts || pts.length < 3) return "";
+  return `<path d="M${pts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("L")}z" fill="${fill}" stroke="${stroke}" stroke-width="${width}"/>`;
+}
+function isoTank(cx, cy, rx, h, fill, options = {}) {
+  const ry = options.ry ?? Math.max(rx * 0.32, 8);
+  const body = options.body || "#94a3b8";
+  return `<ellipse cx="${cx}" cy="${cy + h}" rx="${rx}" ry="${ry}" fill="${body}" stroke="#334155" stroke-width="1.4"/>
+    <path d="M${cx - rx} ${cy}v${h}a${rx} ${ry} 0 0 0 ${2 * rx} 0v${-h}" fill="${fill}" stroke="#334155" stroke-width="1.4"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${fill}" stroke="#334155" stroke-width="1.6"/>`;
+}
+function isoChannel(d, opts = {}) {
+  const b = Math.max(+d.b || 3, 0.25);
+  const y = Math.max(+d.y || 1, 0.06);
+  const m = Math.max(+d.z || 0, 0);
+  const L = opts.L ?? 6.2;
+  const wall = opts.wall ?? Math.max(y * 1.28 + 0.7, y + 0.45);
+  const o = { ox: opts.ox ?? 42, oy: opts.oy ?? 222, s: opts.s ?? 18 };
+  const P = (x, yy, z) => iso(x, yy, z, o);
+  const zL = yy => -m * yy, zR = yy => b + m * yy;
+  const zLo = zL(wall) - 0.28, zRo = zR(wall) + 0.28;
+  const leftW = isoFace([P(0, 0, zLo), P(L, 0, zLo), P(L, wall, zLo), P(0, wall, zLo)], "#94a3b8");
+  const back = isoFace([P(L, 0, zLo), P(L, 0, zRo), P(L, wall, zRo), P(L, wall, zLo)], "#e2e8f0");
+  const bed = isoFace([P(0, 0, 0), P(L, 0, 0), P(L, 0, b), P(0, 0, b)], "#cbd5e1");
+  const rightW = isoFace([P(0, 0, zRo), P(L, 0, zRo), P(L, wall, zRo), P(0, wall, zRo)], "#64748b");
+  const wRight = isoFace([P(0, 0, b), P(L, 0, b), P(L, y, zR(y)), P(0, y, zR(y))], "rgba(0,119,190,0.22)", PALETTE.water);
+  const wFront = isoFace([P(0, 0, 0), P(0, 0, b), P(0, y, zR(y)), P(0, y, zL(y))], "rgba(0,119,190,0.32)", PALETTE.water);
+  const wTop = isoFace([P(0, y, zL(y)), P(L, y, zL(y)), P(L, y, zR(y)), P(0, y, zR(y))], PALETTE.waterFill, PALETTE.water, 1.6);
+  const a = P(0.45, y + 0.12, b / 2), c = P(L - 0.35, y + 0.12, b / 2);
+  const arr = line(a[0], a[1], c[0], c[1], PALETTE.water, 2.4, 'marker-end="url(#mkFlow)"');
+  return { body: `${back}${leftW}${bed}${rightW}${wRight}${wFront}${wTop}${arr}`, P, L, wall, o };
+}
+
 const Gfig = 9.81;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const headY = (head, hMax, yBed, hPx) => yBed - clamp(head / Math.max(hMax, 1e-6), -0.18, 1.15) * hPx;
@@ -251,14 +288,15 @@ const figures = {
 
   density(d) {
     if (Number.isFinite(d.D) && Number.isFinite(d.h)) {
+      const hPx = clamp((+d.h || 0.9) * 70, 70, 130);
       return {
-        caption: "Réservoir cylindrique : 𝒱 = πD²h/4, puis ρ = m/𝒱, γ = ρg et d = ρ/ρeau.",
-        svg: svg("Réservoir cylindrique d’huile", `${hatch(150, 200, 220, 18)}${oil("M168 58h184v142H168z")}${line(168, 58, 352, 58, "#b45309", 3)}${drawDimension(140, 58, 140, 200, `h = ${num(d.h)} m`)}${drawDimension(168, 218, 352, 218, `D = ${num(d.D)} m`, { side: -1 })}${t(200, 48, `huile · m = ${num(d.mass)} kg`)}${t(175, 188, "réservoir")}`)
+        caption: "Citerne cylindrique en volume : 𝒱 = πD²h/4, puis ρ = m/𝒱, γ = ρg et d = ρ/ρeau.",
+        svg: svg("Réservoir cylindrique d’huile", `${hatch(80, 210, 400, 16)}${isoTank(280, 210 - hPx, 78, hPx, "#fde68a", { body: "#d6d3d1" })}${drawDimension(175, 210 - hPx, 175, 210, `h = ${num(d.h)} m`)}${drawDimension(202, 226, 358, 226, `D = ${num(d.D)} m`, { side: -1 })}${t(200, 36, `huile · m = ${num(d.mass)} kg`)}`)
       };
     }
     return {
       caption: "Le poids W est une force verticale. On en déduit m = W/g, puis ρ = m/𝒱.",
-      svg: svg("Réservoir d’huile", `${hatch(150, 200, 220, 18)}${oil("M168 58h184v142H168z")}${line(168, 58, 352, 58, "#b45309", 3)}${t(200, 48, `huile · 𝒱 = ${num(d.volume)} m³`)}${drawVector(260, 88, 0, 80, "force", `W = ${num(d.W)} kN`)}${t(175, 188, "réservoir")}`)
+      svg: svg("Réservoir d’huile", `${hatch(80, 210, 400, 16)}${isoTank(280, 80, 78, 130, "#fde68a")}${t(200, 36, `huile · 𝒱 = ${num(d.volume)} m³`)}${drawVector(390, 100, 0, 70, "force", `W = ${num(d.W)} kN`)}`)
     };
   },
 
@@ -380,12 +418,13 @@ const figures = {
 
   planeForce(d) {
     const H = Math.max(+d.H || 4, 0.5);
-    const yFree = 40, bed = 200, sc = (bed - yFree) / H;
+    const ch = isoChannel({ b: Math.max(+d.b || 1, 0.8), y: H, z: 0 }, { L: 4.2, s: 22, ox: 36, oy: 228, wall: H * 1.08 });
+    const pBot = 90;
+    const yFree = 48, bed = 200, sc = (bed - yFree) / H;
     const yF = bed - (H / 3) * sc;
-    const pBot = 110;
     return {
-      caption: "Mur affleurant : triangle des pressions d’amplitude ρgH. F s’applique à H/3 du pied (2H/3 sous la surface), pas à H/2.",
-      svg: svg("Mur de réservoir", `${drawWaterSurface(70, yFree, 250, bed - yFree)}${hatch(320, yFree - 12, 22, bed - yFree + 24)}${drawPressureDiagram(320, yFree, bed - yFree, 0, pBot, { dir: -1 })}${drawDimension(400, yFree, 400, bed, `H = ${num(d.H)} m`)}${drawVector(200, yF, 112, 0, "force", "F · H/3")}${t(80, 230, `b = ${num(d.b)} m · yₚ = 2H/3`)}`)
+      caption: "Bassin prismatique : triangle des pressions d’amplitude ρgH. F s’applique à H/3 du pied (2H/3 sous la surface).",
+      svg: svg("Mur de réservoir", `${ch.body}${drawPressureDiagram(430, yFree, bed - yFree, 0, pBot)}${drawDimension(510, yFree, 510, bed, `H = ${num(d.H)} m`, { side: -1 })}${drawVector(400, yF, 28, 0, "force", "F · H/3")}${t(40, 36, `b = ${num(d.b)} m · yₚ = 2H/3`)}`)
     };
   },
 
@@ -647,12 +686,10 @@ const figures = {
   },
 
   manningChannel(d) {
-    const y = Math.max(+d.y || 1, 0.15);
-    const bed = 200, sc = 120 / Math.max(y, 0.4), yFree = bed - y * sc;
-    const pBot = 52;
+    const ch = isoChannel({ b: d.b, y: d.y, z: 0 }, { L: 6.4, s: 19, ox: 40, oy: 224 });
     return {
-      caption: "Section strictement rectangulaire : A = b y, P = b + 2y (la surface libre n’entre pas dans P). Triangle des pressions sur une paroi.",
-      svg: svg("Canal rectangulaire", `${hatch(90, bed, 380, 16)}<path d="M120 40v${bed - 40}h320V40" fill="none" stroke="#334155" stroke-width="8"/>${drawWaterSurface(124, yFree, 312, bed - yFree, { symbol: true })}${drawPressureDiagram(124, yFree, bed - yFree, 0, pBot)}${drawDimension(90, yFree, 90, bed, `y = ${num(d.y)} m`, { side: -1 })}${drawDimension(124, bed + 18, 436, bed + 18, `b = ${num(d.b)} m`, { side: 1 })}${t(250, yFree - 10, `S = ${num(d.S)} ‰ · Kₛ = ${num(d.Ks)}`)}`)
+      caption: "Prisme rectangulaire : A = b y, P = b + 2y (la surface libre n’entre pas dans P). Strickler sur la pente de fond.",
+      svg: svg("Canal rectangulaire", `${ch.body}${t(36, 36, `y = ${num(d.y)} m · b = ${num(d.b)} m`)}${t(36, 56, `S = ${num(d.S)} ‰ · Kₛ = ${num(d.Ks)}`)}${t(320, 36, "P = b + 2y  ·  pas la surface")}`)
     };
   },
 
@@ -817,15 +854,17 @@ const figures = {
     };
   },
   trapezoidalChannel(d) {
+    const ch = isoChannel({ b: d.b, y: d.y, z: d.z }, { L: 6.2, s: 16.5, ox: 70, oy: 224 });
     return {
-      caption: "Trapèze : A = (b+zy)y, P = b+2y√(1+z²). La surface libre n’entre pas dans P. Fr utilise ȳ = A/T.",
-      svg: svg("Canal trapézoïdal", `${hatch(60, 200, 440, 16)}<path d="M90 40l70 160h240L470 40" fill="none" stroke="#334155" stroke-width="7"/><path d="M175 110h210L440 200H120z" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="1.6"/>${drawDimension(160, 230, 400, 230, `b = ${num(d.b)} m`, { side: -1 })}${drawDimension(80, 110, 80, 200, `y = ${num(d.y)} m`)}${t(220, 90, `z = ${num(d.z)} · Kₛ = ${num(d.Ks)}`)}`)
+      caption: "Prisme trapézoïdal : A = (b+zy)y, P = b+2y√(1+z²). Fr utilise ȳ = A/T, pas y.",
+      svg: svg("Canal trapézoïdal", `${ch.body}${t(36, 36, `b = ${num(d.b)} m · y = ${num(d.y)} m · z = ${num(d.z)}`)}${t(36, 56, `Kₛ = ${num(d.Ks)} · S = ${num(d.S)} ‰`)}`)
     };
   },
   normalDepth(d) {
+    const ch = isoChannel({ b: d.b, y: 1.15, z: 0 }, { L: 6.4, s: 18, ox: 42, oy: 224 });
     return {
       caption: "yₙ est l’inconnue : on itère Q = A Kₛ R^(2/3)√S jusqu’à retrouver le débit imposé, puis on lit Fr.",
-      svg: svg("Profondeur normale", `${hatch(90, 200, 380, 16)}<path d="M120 40v160h320V40" fill="none" stroke="#334155" stroke-width="8"/>${drawWaterSurface(124, 100, 312, 100)}${t(200, 80, `Q = ${num(d.Q)} m³/s imposé`)}${t(200, 230, `b = ${num(d.b)} m · S = ${num(d.S)} ‰`)}`)
+      svg: svg("Profondeur normale", `${ch.body}${t(36, 36, `Q = ${num(d.Q)} m³/s imposé`)}${t(36, 56, `b = ${num(d.b)} m · S = ${num(d.S)} ‰ · Kₛ = ${num(d.Ks)}`)}`)
     };
   },
   waveCelerity(d) {
@@ -1098,46 +1137,35 @@ const figures = {
   },
   thinWeir(d) {
     const h = Math.max(+d.h || 0.2, 0.02);
-    const crest = 158, hPx = clamp((h / 0.6) * 78, 22, 92);
-    const yUp = crest - hPx, yDown = crest + 18;
+    const up = isoChannel({ b: Math.max(+d.L || 4, 2), y: Math.max(h + 0.6, 0.8), z: 0 }, { L: 2.6, s: 16, ox: 30, oy: 222, wall: 1.6 });
+    const down = isoChannel({ b: Math.max(+d.L || 4, 2), y: 0.35, z: 0 }, { L: 2.4, s: 16, ox: 280, oy: 222, wall: 1.6 });
     return {
       caption: "Nappe au-dessus de la crête : Q = Cᵈ L √(2g) h^{3/2}. h se mesure en amont, au-dessus du seuil — pas depuis le fond.",
-      svg: svg("Déversoir mince", `${hatch(236, crest, 88, 52)}${drawWaterSurface(40, yUp, 196, 210 - yUp)}${drawWaterSurface(324, yDown, 176, 210 - yDown)}${flow(`M150 ${yUp - 10}h220`)}${drawDimension(30, yUp, 30, crest, `h = ${num(d.h)} m`)}${t(80, yUp - 10, "amont")}${t(360, yDown - 10, "aval")}${t(200, 236, `L = ${num(d.L)} m · Cᵈ = ${num(d.Cd)}`)}`)
+      svg: svg("Déversoir mince", `${up.body}${isoFace([[248, 150], [278, 138], [278, 210], [248, 222]], "#94a3b8")}${down.body}${t(36, 32, `h = ${num(d.h)} m · L = ${num(d.L)} m · Cᵈ = ${num(d.Cd)}`)}${t(36, 52, "amont")}${t(380, 52, "aval")}`)
     };
   },
   hydraulicJump(d) {
     const y1 = Math.max(+d.y1 || 0.3, 0.05), V1 = +d.V1 || 1;
     const Fr1 = V1 / Math.sqrt(Gfig * y1);
     const y2 = 0.5 * y1 * (-1 + Math.sqrt(1 + 8 * Fr1 ** 2));
-    const V2 = V1 * y1 / Math.max(y2, 1e-6);
-    const E1 = y1 + V1 * V1 / (2 * Gfig), E2 = y2 + V2 * V2 / (2 * Gfig);
     const dE = (y2 - y1) ** 3 / (4 * y1 * y2);
     const Lr = 6 * y2;
-    const bed = 205, sc = 120 / Math.max(y2, E1, 0.2);
-    const yA = bed - y1 * sc, yB = bed - y2 * sc, xJ = 200;
-    const yE1 = bed - E1 * sc, yE2 = bed - E2 * sc;
-    const Lpx = clamp(Lr / Math.max(y2, 0.2) * 18, 90, 220);
-    const stations = [
-      { x: 48, egl: yE1, hgl: yA },
-      { x: xJ, egl: yE1, hgl: yA, mark: true },
-      { x: xJ + Lpx, egl: yE2, hgl: yB, mark: true },
-      { x: 520, egl: yE2, hgl: yB }
-    ];
+    const ch1 = isoChannel({ b: 4.2, y: y1, z: 0 }, { L: 2.4, s: 22, ox: 36, oy: 222, wall: Math.max(y2, y1) * 1.15 + 0.5 });
+    const ch2 = isoChannel({ b: 4.2, y: y2, z: 0 }, { L: 3.4, s: 22, ox: 210, oy: 222, wall: Math.max(y2, y1) * 1.15 + 0.5 });
     return {
       caption: "Ressaut : transition turbulente de y₁ (torrentiel) à y₂ (fluvial). y₂ vient de Bélanger ; L_r ≈ 6 y₂ ; ΔE dans le rouleau.",
-      svg: svg("Ressaut hydraulique", `${hatch(40, bed, 480, 16)}${drawWaterSurface(40, yA, xJ - 40, bed - yA, { symbol: false })}<path d="M${xJ} ${yA}C${xJ + 24} ${yA - 10} ${xJ + Lpx * 0.35} ${yB + 8} ${xJ + Lpx} ${yB}H520V${bed}H${xJ}z" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="1.6"/>${flow(`M55 ${yA - 8}h130`)}${drawEnergyLines(stations)}${drawDimension(32, yA, 32, bed, `y₁ = ${num(d.y1)} m`, { side: -1 })}${drawDimension(500, yB, 500, bed, `y₂ = ${num(y2)} m`)}${drawDimension(xJ + Lpx * 0.55, yA, xJ + Lpx * 0.55, yB, `y₂ − y₁`)}${drawDimension(xJ + Lpx + 18, yE1, xJ + Lpx + 18, yE2, `ΔE = ${num(dE)} m`)}${drawDimension(xJ, bed + 16, xJ + Lpx, bed + 16, `L_r ≈ ${num(Lr)} m`, { side: 1 })}${t(70, yA - 10, `V₁ = ${num(d.V1)} m/s`)}${t(40, 36, `Fr₁ = ${num(Fr1)}`)}${t(60, yE1 - 8, "EGL", `fill="${PALETTE.egl}"`)}`)
+      svg: svg("Ressaut hydraulique", `${ch1.body}${ch2.body}${t(36, 32, `y₁ = ${num(d.y1)} m · V₁ = ${num(d.V1)} m/s · Fr₁ = ${num(Fr1)}`)}${t(300, 32, `y₂ = ${num(y2)} m · ΔE = ${num(dE)} m`)}${t(36, 52, `L_r ≈ ${num(Lr)} m`)}`)
     };
   },
   criticalRegime(d) {
     const y = Math.max(+d.y || 1, 0.1), b = +d.b || 1, Q = +d.Q || 1;
     const yc = (Q ** 2 / (Gfig * b * b)) ** (1 / 3);
     const Fr = (Q / (b * y)) / Math.sqrt(Gfig * y);
-    const bed = 205, sc = 140 / Math.max(y, yc, 0.2);
-    const yFree = bed - y * sc, yCrit = bed - yc * sc;
     const regime = Fr < 1 ? "fluvial (y > y_c)" : Fr > 1 ? "torrentiel (y < y_c)" : "critique";
+    const ch = isoChannel({ b: d.b, y: d.y, z: 0 }, { L: 6.2, s: 17, ox: 48, oy: 224 });
     return {
-      caption: "y_c = (Q²/(g b²))^{1/3}. y > y_c : fluvial ; y < y_c : torrentiel. Le trait pointillé est y_c à la même échelle que y.",
-      svg: svg("Régime d’un canal", `${hatch(40, bed, 480, 16)}${drawWaterSurface(80, yFree, 400, bed - yFree)}${line(80, yCrit, 480, yCrit, PALETTE.force, 1.6, 'stroke-dasharray="6 4"')}${drawDimension(60, yFree, 60, bed, `y = ${num(d.y)} m`)}${drawDimension(500, yCrit, 500, bed, `y_c = ${num(yc)} m`, { side: -1 })}${drawDimension(80, bed + 18, 480, bed + 18, `b = ${num(d.b)} m`, { side: 1 })}${t(200, 36, `Q = ${num(d.Q)} m³/s · Fr = ${num(Fr)} · ${regime}`)}`)
+      caption: "y_c = (Q²/(g b²))^{1/3}. y > y_c : fluvial ; y < y_c : torrentiel.",
+      svg: svg("Régime d’un canal", `${ch.body}${t(36, 32, `y = ${num(d.y)} m · y_c = ${num(yc)} m · Fr = ${num(Fr)}`)}${t(36, 52, `Q = ${num(d.Q)} m³/s · b = ${num(d.b)} m · ${regime}`)}`)
     };
   },
   turbinePower(d) {
@@ -1172,11 +1200,10 @@ const figures = {
     };
   },
   channelDischarge(d) {
-    const y = Math.max(+d.y || 1, 0.1);
-    const bed = 200, sc = 110 / Math.max(y, 0.4), yFree = bed - y * sc;
+    const ch = isoChannel({ b: d.b, y: d.y, z: 0 }, { L: 6.4, s: 18, ox: 42, oy: 224 });
     return {
-      caption: "Canal rectangulaire : Q = b y V. Ici on ne cherche pas une pente ni un Strickler — seulement le débit.",
-      svg: svg("Canal rectangulaire", `${hatch(90, bed, 380, 16)}<path d="M120 40v${bed - 40}h320V40" fill="none" stroke="#334155" stroke-width="8"/>${drawWaterSurface(124, yFree, 312, bed - yFree)}${drawDimension(90, yFree, 90, bed, `y = ${num(d.y)} m`)}${drawDimension(124, bed + 22, 436, bed + 22, `b = ${num(d.b)} m`, { side: 1 })}${drawVector(220, yFree + 18, 90, 0, "velocity", `V = ${num(d.V)} m/s`)}${t(220, 36, "Q = b y V  ·  pas de Strickler")}`)
+      caption: "Prisme rectangulaire : Q = b y V. Ici on ne cherche pas une pente ni un Strickler — seulement le débit.",
+      svg: svg("Canal rectangulaire", `${ch.body}${t(36, 36, `y = ${num(d.y)} m · b = ${num(d.b)} m`)}${t(36, 56, `V = ${num(d.V)} m/s · Q = b y V`)}`)
     };
   },
   froudeForceTime(d) {
@@ -1209,6 +1236,138 @@ const figures = {
     return {
       caption: "Échelles de Froude pures : λV = √N, λQ = N^(5/2). On en déduit Qₘ = Qₚ/λQ, sans dessin d’évacuateur obligatoire.",
       svg: svg("Échelles de Froude", `${t(60, 70, `N = ${num(d.N)}`)}${t(60, 110, `λV = √N`)}${t(60, 140, `λQ = N^{5/2}`)}${t(60, 180, `Qₚ = ${num(d.Qp)} m³/s`)}${t(60, 210, `Vₘ = ${num(d.Vm)} m/s`)}<path d="M300 50h80l30 70h70V50h70v160H300z" fill="#cbd5e1" stroke="#334155"/><path d="M380 50l30 70h70V50" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}"/>${t(310, 40, "prototype")}`)
+    };
+  },
+
+  unknownDensityColumn(d) {
+    const h = Math.max(+d.h || 1.06, 0.2);
+    const hPx = clamp(h * 90, 70, 140);
+    return {
+      caption: "p_F = 0 (atmosphère). En descendant de A vers F dans le liquide B, la pression augmente de ρ_B g h. Donc ρ_B = −p_A /(g h) si p_A < 0.",
+      svg: svg("Colonne du liquide B", `${isoTank(220, 210 - hPx, 70, hPx, "rgba(14,165,233,0.35)")}${t(310, 70, "A")}${t(310, 200, "F · p = 0")}${drawDimension(310, 210 - hPx, 310, 210, `h = ${num(d.h)} m`, { side: -1 })}${t(40, 40, `p_A = ${num(d.pA)} MPa`)}${t(40, 64, "liquide B · ρ inconnue")}`)
+    };
+  },
+  threeFluidUTube(d) {
+    return {
+      caption: "Les deux branches sont à l’atmosphère. On chemine : huile puis mercure à gauche, mercure puis eau à droite. Z₁−Z₂, Z₄−Z₃ et Z₂+Z₃ ferment le système.",
+      svg: svg("Tube en U à trois fluides", `<path d="M120 40v130q0 36 36 36h248q36 0 36-36V40" fill="none" stroke="#475569" stroke-width="22"/>
+        <path d="M120 40v48" fill="none" stroke="#f59e0b" stroke-width="14"/>
+        <path d="M120 88v82q0 28 28 28h100" fill="none" stroke="#d97706" stroke-width="14"/>
+        <path d="M440 40v70" fill="none" stroke="${PALETTE.water}" stroke-width="14"/>
+        <path d="M440 110v60q0 28-28 28H280" fill="none" stroke="#d97706" stroke-width="14"/>
+        ${t(40, 48, "A · huile")}${t(40, 100, `Z₁`)}${t(40, 150, `Z₂ · Hg`)}${t(470, 48, "D · eau")}${t(470, 100, `Z₄`)}${t(470, 160, `Z₃ · Hg`)}
+        ${t(80, 230, `Z₁−Z₂ = ${num((+d.d12 || 20))} cm · Z₄−Z₃ = ${num((+d.d43 || 9))} cm · Z₂+Z₃ = ${num((+d.s23 || 100))} cm`)}`)
+    };
+  },
+  penstockNozzle(d) {
+    const zR = +d.zR || 1700, z1 = +d.z1 || 1600, z2 = +d.z2 || 1300;
+    return {
+      caption: "Fluide parfait : Bernoulli entre le plan d’eau, l’entrée de la conduite forcée et la sortie de tuyère (p = pₐₜₘ).",
+      svg: svg("Conduite forcée et tuyère", `${drawWaterSurface(30, 48, 130, 40)}${hatch(30, 88, 130, 14)}<path d="M160 78h200l80 70h80" fill="none" stroke="#475569" stroke-width="10"/>${flow("M170 78h180l80 70h60")}
+        ${t(40, 40, `plan d’eau ${num(d.zR)} m`)}${t(170, 64, `départ ${num(d.z1)} m`)}${t(360, 130, `tuyère ${num(d.z2)} m`)}
+        ${t(40, 220, `S = ${num(d.S)} m² · s_tuyère = ${num(d.sNoz)} m² · Δz = ${num(zR - z2)} m`)}`)
+    };
+  },
+  darcyMoodyRe(d) {
+    return figures.moodyRead({ Re: d.Re, epsRel: (+d.eps || 0.15) / Math.max(+d.D || 75, 1) });
+  },
+  gradualEnlargement(d) {
+    return {
+      caption: "Élargissement conique : K vient de l’angle (Crane). Ce n’est pas Borda, sauf si le cône est trop brusque.",
+      svg: svg("Élargissement conique", `<path d="M40 100h180l160-50v120L220 220H40z" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="3"/>${flow("M50 160h360")}
+        ${t(50, 80, `D₁ = ${num(d.D1)} mm`)}${t(340, 40, `D₂ = ${num(d.D2)} mm`)}${t(50, 236, `θ = ${num(d.theta)}° · Q = ${num(d.Q)} L/s`)}`)
+    };
+  },
+  seriesConePipe(d) {
+    return {
+      caption: "Trois tronçons en série : pertes linéaires Darcy sur AB, CD, EF ; pertes de cône sur BC (contraction) et DE (élargissement).",
+      svg: svg("Conduite à diamètre variable", `<path d="M20 120h140l70-28h90l70 28h140v36H390l-70-20H230l-70 20H20z" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="2.4"/>${flow("M30 138h480")}
+        ${t(40, 100, "AB")}${t(230, 70, "CD")}${t(420, 100, "EF")}${t(40, 220, `Q = ${num(d.Q)} L/s · H_A = ${num(d.HA)} m`)}`)
+    };
+  },
+  hazenWilliams(d) {
+    return {
+      caption: "Hazen–Williams : formule empirique d’AEP, J = 10,67 Q^{1,852}/(C^{1,852} D^{4,87}). Ce n’est pas Colebrook.",
+      svg: svg("Hazen–Williams", `<path d="M40 130h480" stroke="#475569" stroke-width="16"/>${flow("M50 130h400")}${t(40, 70, `C = ${num(d.C)}`)}${t(40, 100, `D = ${num(d.D)} cm · L = ${num(d.L)} m`)}${t(40, 210, Number.isFinite(+d.hf) ? `J donnée → Q` : `Q donné → h_f`)}`)
+    };
+  },
+  pipeABPressure(d) {
+    return {
+      caption: "Conduite horizontale : Bernoulli avec h_f (et h_s s’il y en a). p_B = p_A − ρg (h_f + h_s).",
+      svg: svg("Pression entre A et B", `<path d="M60 130h440" stroke="#475569" stroke-width="14"/>${flow("M70 130h360")}${t(70, 100, "A")}${t(460, 100, "B")}${t(40, 210, `D = ${num(d.D)} cm · Q = ${num(d.Q)} m³/h · L = ${num(d.L)} m`)}`)
+    };
+  },
+  hazenParallelNetwork(d) {
+    return {
+      caption: "A₁ et A₂ en parallèle jusqu’à C (même ΔH). Puis CB et CD. Hazen–Williams sur chaque tronçon.",
+      svg: svg("Réseau Hazen–Williams", `<path d="M40 80h80" stroke="#475569" stroke-width="10"/>
+        <path d="M120 80q80-40 160 0" fill="none" stroke="#475569" stroke-width="8"/>
+        <path d="M120 80q80 40 160 0" fill="none" stroke="#475569" stroke-width="8"/>
+        <path d="M280 80h80" stroke="#475569" stroke-width="10"/>
+        <path d="M360 80h80v50" fill="none" stroke="#475569" stroke-width="8"/>
+        <path d="M360 80h120" stroke="#475569" stroke-width="8"/>
+        ${t(36, 70, "A")}${t(200, 36, "(1)")}${t(200, 140, "(2)")}${t(300, 66, "C")}${t(500, 70, "D")}${t(420, 150, "B")}
+        ${t(40, 210, `Q_A = ${num(d.QA)} L/s · C = ${num(d.C)}`)}`)
+    };
+  },
+  seriesPipeHGL(d) {
+    const D1 = (+d.D1 || 30) / 100, D2 = (+d.D2 || 15) / 100, V1 = +d.V || 2.41;
+    const V2 = V1 * (D1 / D2) ** 2;
+    const hv1 = V1 * V1 / (2 * Gfig), hv2 = V2 * V2 / (2 * Gfig);
+    const f1 = +d.f1 || 0.02, f2 = +d.f2 || 0.015, f3 = +d.f3 || 0.02;
+    const L1 = +d.L1 || 60, L2 = +d.L2 || 30, L3 = +d.L3 || 30;
+    const Kc = +d.K || 0.37;
+    const hf1 = f1 * (L1 / D1) * hv1, hf2 = f2 * (L2 / D2) * hv2, hf3 = f3 * (L3 / D1) * hv1;
+    const hsC = Kc * hv2, hsE = (V2 - V1) ** 2 / (2 * Gfig);
+    const HpiezA = +d.Hp || 60;
+    const HA = HpiezA + hv1;
+    const egl = [HA, HA - hf1, HA - hf1 - hsC, HA - hf1 - hsC - hf2, HA - hf1 - hsC - hf2 - hsE, HA - hf1 - hsC - hf2 - hsE - hf3];
+    const hgl = [HpiezA, egl[1] - hv1, egl[2] - hv2, egl[3] - hv2, egl[4] - hv1, egl[5] - hv1];
+    const xs = [40, 160, 175, 320, 335, 500];
+    const hMax = Math.max(...egl, 1);
+    const Y = h => headY(h, hMax, 200, 140);
+    const stations = xs.map((x, i) => ({ x, egl: Y(egl[i]), hgl: Y(hgl[i]), mark: i === 2 || i === 4 }));
+    return {
+      caption: "Conduite horizontale 30-15-30 cm. EGL chute de h_f et des singularités ; HGL = EGL − V²/2g (plus basse dans le 15 cm).",
+      svg: svg("Lignes de charge en série", `<path d="M40 168h120v0h20l0-18h130v18h20v0h150" fill="none" stroke="#475569" stroke-width="10"/>
+        ${drawEnergyLines(stations)}
+        ${t(36, 36, "EGL", `fill="${PALETTE.egl}"`)}${t(90, 36, "HGL", `fill="${PALETTE.hgl}"`)}
+        ${t(50, 156, "A")}${t(175, 130, "15 cm")}${t(480, 156, "F")}
+        ${t(40, 230, `V₃₀ = ${num(d.V)} m/s · H_piéz A = ${num(d.Hp)} m`)}`)
+    };
+  },
+  canalThreeReaches(d) {
+    const a = isoChannel({ b: d.b, y: d.yA, z: d.z }, { L: 2.2, s: 14, ox: 28, oy: 222, wall: 2.2 });
+    const bch = isoChannel({ b: d.b, y: 1.84, z: 0 }, { L: 2.2, s: 14, ox: 200, oy: 222, wall: 2.2 });
+    const c = isoChannel({ b: d.b, y: d.yC, z: 0 }, { L: 2.2, s: 14, ox: 370, oy: 222, wall: 2.2 });
+    return {
+      caption: "Trois biefs prismatiques : A trapèze (Manning), B rectangle (Chézy), C rectangle plus mince. On lit le régime par y ≷ y_c.",
+      svg: svg("Canal à trois tronçons", `${a.body}${bch.body}${c.body}${t(40, 32, "A trapèze")}${t(210, 32, "B rectangle")}${t(390, 32, "C")}${t(40, 52, `Q = ${num(d.Q)} m³/s · n = ${num(d.n)} · C = ${num(d.C)}`)}`)
+    };
+  },
+  triangularTwoSlopes(d) {
+    const a = isoChannel({ b: 0.05, y: 0.46, z: 1 }, { L: 3.2, s: 22, ox: 50, oy: 222, wall: 1.5 });
+    const bch = isoChannel({ b: 0.05, y: 1, z: 1 }, { L: 3.2, s: 22, ox: 280, oy: 222, wall: 1.5 });
+    return {
+      caption: "Triangle isocèle (berges 1:1). Deux pentes assez longues pour y_n de part et d’autre. Allure : torrentiel puis fluvial.",
+      svg: svg("Canal triangulaire à deux pentes", `${a.body}${bch.body}${t(40, 32, `i₁ = 1/${num(d.i1inv || 12)}`)}${t(300, 32, `y₂ = ${num(d.y2)} m`)}${t(40, 52, `Q = ${num(d.Q)} m³/s · n = ${num(d.n)}`)}`)
+    };
+  },
+  specificEnergyStep(d) {
+    const up = isoChannel({ b: d.b, y: d.y1, z: 0 }, { L: 2.8, s: 12, ox: 30, oy: 222, wall: Math.max(+d.y1 || 2, 1) * 1.1 });
+    const down = isoChannel({ b: d.b, y: Math.max((+d.y1 || 2) - (+d.z || 0.5) * 0.4, 0.4), z: 0 }, { L: 2.6, s: 12, ox: 280, oy: 206, wall: Math.max(+d.y1 || 2, 1) * 1.1 });
+    return {
+      caption: "Seuil / marche : E₂ = E₁ − z. On résout y + q²/(2g y²) = E₂ et on garde la racine du même régime (en général la plus grande en fluvial).",
+      svg: svg("Charge spécifique sur un seuil", `${up.body}${down.body}${t(36, 32, `y₁ = ${num(d.y1)} m · z = ${num(d.z)} m`)}${t(36, 52, `Q = ${num(d.Q)} m³/s · b = ${num(d.b)} m`)}`)
+    };
+  },
+  canalSlopeBreak(d) {
+    const a = isoChannel({ b: d.b1, y: 0.38, z: 0 }, { L: 2.4, s: 16, ox: 28, oy: 222, wall: 1.6 });
+    const bch = isoChannel({ b: d.b1, y: 0.82, z: 0 }, { L: 2.4, s: 16, ox: 200, oy: 222, wall: 1.6 });
+    const c = isoChannel({ b: d.b3, y: d.y3, z: 0 }, { L: 2.2, s: 16, ox: 370, oy: 222, wall: 1.6 });
+    return {
+      caption: "Rupture de pente puis rétrécissement. y_n de Manning sur (1) et (2) ; un ressaut raccorde souvent le torrentiel au fluvial.",
+      svg: svg("Rupture de pente", `${a.body}${bch.body}${c.body}${t(36, 32, `i₁ = ${num(d.i1)}`)}${t(210, 32, `i₂ = ${num(d.i2)}`)}${t(380, 32, `b₃ = ${num(d.b3)} m`)}${t(36, 52, `Q = ${num(d.Q)} m³/s · n = ${num(d.n)}`)}`)
     };
   }
 };

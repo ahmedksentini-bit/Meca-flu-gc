@@ -1,0 +1,379 @@
+[
+  {
+    "id": "HG_S1_01",
+    "chapter": "hydrauGen",
+    "solver": "unknownDensityColumn",
+    "title": "Exercice 1.1 — Pression négative et masse volumique",
+    "difficulty": 2,
+    "statement": "Pour une pression relative en A de p_A, le point F est à l’atmosphère (p_F = 0). Entre A et F se trouve une colonne de hauteur h du liquide B. Déterminer la masse volumique de B.",
+    "variables": [
+      {"key": "pA", "label": "Pression p_A", "unit": "MPa", "value": -0.011, "min": -0.02, "max": -0.005, "step": 0.001},
+      {"key": "h", "label": "Hauteur de B", "unit": "m", "value": 1.06, "min": 0.6, "max": 1.5, "step": 0.02}
+    ],
+    "questions": [
+      {"key": "rhoB", "label": "Masse volumique ρ_B", "unit": "kg/m³"}
+    ]
+  },
+  {
+    "id": "HG_S1_02",
+    "chapter": "hydrauGen",
+    "solver": "threeFluidUTube",
+    "title": "Exercice 1.2 — Tube en U eau, mercure et huile",
+    "difficulty": 3,
+    "statement": "Un tube en U ouvert aux deux extrémités contient de l’huile (gauche), du mercure (fond) et de l’eau (droite). On donne Z₁ − Z₂, Z₄ − Z₃ et Z₂ + Z₃. Calculer Z₁, Z₂, Z₃ et Z₄.",
+    "variables": [
+      {"key": "d12", "label": "Z₁ − Z₂", "unit": "cm", "value": 20, "min": 10, "max": 30, "step": 1},
+      {"key": "d43", "label": "Z₄ − Z₃", "unit": "cm", "value": 9, "min": 4, "max": 16, "step": 1},
+      {"key": "s23", "label": "Z₂ + Z₃", "unit": "cm", "value": 100, "min": 70, "max": 130, "step": 5},
+      {"key": "rhoOil", "label": "ρ huile", "unit": "kg/m³", "value": 800, "min": 750, "max": 900, "step": 10},
+      {"key": "rhoW", "label": "ρ eau", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1020, "step": 5},
+      {"key": "rhoHg", "label": "ρ mercure", "unit": "kg/m³", "value": 13600, "min": 13500, "max": 13600, "step": 50}
+    ],
+    "questions": [
+      {"key": "Z1", "label": "Z₁", "unit": "cm"},
+      {"key": "Z2", "label": "Z₂", "unit": "cm"},
+      {"key": "Z3", "label": "Z₃", "unit": "cm"},
+      {"key": "Z4", "label": "Z₄", "unit": "cm"}
+    ]
+  },
+  {
+    "id": "HG_S1_03",
+    "chapter": "hydrauGen",
+    "solver": "penstockNozzle",
+    "title": "Exercice 1.3 — Barrage, conduite forcée et tuyère",
+    "difficulty": 3,
+    "statement": "Un barrage (plan d’eau à z_R) alimente une conduite forcée de section S (départ z₁, arrivée z₂) puis une tuyère de section s. Fluide parfait. Calculer la pression au départ de la conduite, la vitesse en sortie de tuyère, le débit massique et la vitesse à l’entrée de la tuyère.",
+    "variables": [
+      {"key": "zR", "label": "Altitude du plan d’eau z_R", "unit": "m", "value": 1700, "min": 1400, "max": 1800, "step": 10},
+      {"key": "z1", "label": "Départ conduite z₁", "unit": "m", "value": 1600, "min": 1300, "max": 1650, "step": 10},
+      {"key": "z2", "label": "Arrivée / tuyère z₂", "unit": "m", "value": 1300, "min": 1100, "max": 1450, "step": 10},
+      {"key": "S", "label": "Section conduite S", "unit": "m²", "value": 1, "min": 0.5, "max": 1.5, "step": 0.1},
+      {"key": "sNoz", "label": "Section tuyère s", "unit": "m²", "value": 0.02, "min": 0.01, "max": 0.04, "step": 0.005},
+      {"key": "rho", "label": "Masse volumique ρ", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1020, "step": 5}
+    ],
+    "questions": [
+      {"key": "p1", "label": "Pression au départ p₁", "unit": "Pa"},
+      {"key": "V2", "label": "Vitesse tuyère V₂", "unit": "m/s"},
+      {"key": "mDot", "label": "Débit massique ṁ", "unit": "kg/s"},
+      {"key": "V1", "label": "Vitesse entrée tuyère V₁", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "HG_S1_04",
+    "chapter": "hydrauGen",
+    "solver": "venturi",
+    "title": "Exercice 1.4 — Venturi D = 9 cm, d = 3 cm",
+    "difficulty": 2,
+    "statement": "On intercale un Venturi (D, d) sur une canalisation d’eau. La dénivellation du mercure dans le U vaut Δh. Fluide parfait. Calculer Δp, le débit et la vitesse à l’arrivée sur le convergent.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "mm", "value": 90, "min": 60, "max": 150, "step": 5},
+      {"key": "D2", "label": "Diamètre du col d", "unit": "mm", "value": 30, "min": 20, "max": 50, "step": 5},
+      {"key": "h", "label": "Dénivellation Hg Δh", "unit": "mm", "value": 4, "min": 2, "max": 20, "step": 1},
+      {"key": "rho", "label": "Masse volumique eau", "unit": "kg/m³", "value": 1000, "min": 990, "max": 1010, "step": 5},
+      {"key": "rhoM", "label": "Masse volumique Hg", "unit": "kg/m³", "value": 13600, "min": 13400, "max": 13600, "step": 50}
+    ],
+    "questions": [
+      {"key": "dp", "label": "Différence p₁ − p₂", "unit": "Pa"},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s"},
+      {"key": "V1", "label": "Vitesse amont V₁", "unit": "m/s"}
+    ]
+  },
+  {
+    "id": "HG_S2_01",
+    "chapter": "hydrauGen",
+    "solver": "darcyMoodyRe",
+    "title": "Exercice 2.1 — Perte linéaire, Re et Moody",
+    "difficulty": 2,
+    "statement": "De l’eau à 40 °C s’écoule dans un tuyau de diamètre D avec Re donné. Rugosité absolue ε, longueur L. Lire λ (Colebrook / Moody) et calculer la perte de charge linéaire.",
+    "variables": [
+      {"key": "D", "label": "Diamètre D", "unit": "mm", "value": 75, "min": 50, "max": 150, "step": 5},
+      {"key": "L", "label": "Longueur L", "unit": "m", "value": 300, "min": 100, "max": 600, "step": 25},
+      {"key": "Re", "label": "Reynolds Re", "unit": "—", "value": 80000, "min": 20000, "max": 200000, "step": 5000},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0.15, "min": 0.05, "max": 0.5, "step": 0.05},
+      {"key": "nu", "label": "ν à 40 °C", "unit": "10⁻⁶ m²/s", "value": 0.658, "min": 0.5, "max": 1, "step": 0.01}
+    ],
+    "questions": [
+      {"key": "V", "label": "Vitesse V", "unit": "m/s"},
+      {"key": "f", "label": "Facteur λ", "unit": "—"},
+      {"key": "hf", "label": "Perte h_f", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S2_02",
+    "chapter": "hydrauGen",
+    "solver": "gradualEnlargement",
+    "title": "Exercice 2.2 — Élargissement conique",
+    "difficulty": 2,
+    "statement": "Un tuyau de diamètre D₁ s’élargit à D₂ par un divergents conique d’angle θ. Calculer la perte de charge singulière pour le débit Q (formule de Crane, pas Borda).",
+    "variables": [
+      {"key": "D1", "label": "Diamètre amont D₁", "unit": "mm", "value": 150, "min": 80, "max": 200, "step": 10},
+      {"key": "D2", "label": "Diamètre aval D₂", "unit": "mm", "value": 250, "min": 180, "max": 350, "step": 10},
+      {"key": "theta", "label": "Angle θ", "unit": "°", "value": 30, "min": 10, "max": 60, "step": 5},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 50, "min": 20, "max": 90, "step": 5}
+    ],
+    "questions": [
+      {"key": "V1", "label": "Vitesse V₁", "unit": "m/s"},
+      {"key": "K", "label": "Coefficient K", "unit": "—"},
+      {"key": "hs", "label": "Perte h_s", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S2_03",
+    "chapter": "hydrauGen",
+    "solver": "seriesConePipe",
+    "title": "Exercice 2.3 — Conduite à diamètre variable",
+    "difficulty": 3,
+    "statement": "Conduite : 50 m à D₁, contraction conique θ_c jusqu’à D₂, 30 m à D₂, élargissement conique θ_e, puis retour à D₁. Débit Q, charge H_A. Calculer les pertes linéaires, les pertes de cône et la charge en F.",
+    "variables": [
+      {"key": "D1", "label": "Diamètre D₁", "unit": "cm", "value": 40, "min": 25, "max": 50, "step": 5},
+      {"key": "D2", "label": "Diamètre D₂", "unit": "cm", "value": 20, "min": 12, "max": 30, "step": 2},
+      {"key": "L1", "label": "Longueur AB", "unit": "m", "value": 50, "min": 20, "max": 80, "step": 5},
+      {"key": "L2", "label": "Longueur CD", "unit": "m", "value": 30, "min": 15, "max": 50, "step": 5},
+      {"key": "L3", "label": "Longueur EF", "unit": "m", "value": 30, "min": 15, "max": 50, "step": 5},
+      {"key": "f1", "label": "λ AB", "unit": "—", "value": 0.02, "min": 0.012, "max": 0.03, "step": 0.002},
+      {"key": "f2", "label": "λ CD", "unit": "—", "value": 0.02, "min": 0.012, "max": 0.03, "step": 0.002},
+      {"key": "f3", "label": "λ EF", "unit": "—", "value": 0.02, "min": 0.012, "max": 0.03, "step": 0.002},
+      {"key": "thetaC", "label": "Angle contraction", "unit": "°", "value": 20, "min": 10, "max": 40, "step": 5},
+      {"key": "thetaE", "label": "Angle élargissement", "unit": "°", "value": 40, "min": 20, "max": 60, "step": 5},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 200, "min": 80, "max": 300, "step": 10},
+      {"key": "HA", "label": "Charge en A", "unit": "m", "value": 55, "min": 30, "max": 80, "step": 5}
+    ],
+    "questions": [
+      {"key": "hfAB", "label": "h_f AB", "unit": "m"},
+      {"key": "hfCD", "label": "h_f CD", "unit": "m"},
+      {"key": "hfEF", "label": "h_f EF", "unit": "m"},
+      {"key": "hsBC", "label": "h_s contraction", "unit": "m"},
+      {"key": "hsDE", "label": "h_s élargissement", "unit": "m"},
+      {"key": "HF", "label": "Charge en F", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S2_04",
+    "chapter": "hydrauGen",
+    "solver": "hazenWilliams",
+    "title": "Exercice 2.4 — Hazen–Williams",
+    "difficulty": 2,
+    "statement": "Comparer Hazen–Williams : (1) débit dans un tuyau neuf (C_neuf, D_q) pour une chute piézométrique h_f sur L_j ; (2) perte de charge d’un tuyau usé (C, D, L) au débit Q.",
+    "variables": [
+      {"key": "Cnew", "label": "C neuf", "unit": "—", "value": 140, "min": 120, "max": 150, "step": 5},
+      {"key": "Dq", "label": "D (question débit)", "unit": "cm", "value": 30, "min": 20, "max": 50, "step": 5},
+      {"key": "Lj", "label": "Longueur L_j", "unit": "m", "value": 1500, "min": 500, "max": 2500, "step": 100},
+      {"key": "drop", "label": "Chute piézométrique", "unit": "m", "value": 4.3, "min": 2, "max": 8, "step": 0.1},
+      {"key": "C", "label": "C fonte usée", "unit": "—", "value": 100, "min": 80, "max": 120, "step": 5},
+      {"key": "D", "label": "D fonte", "unit": "cm", "value": 60, "min": 30, "max": 80, "step": 5},
+      {"key": "L", "label": "Longueur fonte", "unit": "m", "value": 1800, "min": 800, "max": 3000, "step": 100},
+      {"key": "Q", "label": "Débit Q", "unit": "L/s", "value": 250, "min": 100, "max": 400, "step": 10}
+    ],
+    "questions": [
+      {"key": "Qj", "label": "Débit (tuyau neuf) Q", "unit": "L/s"},
+      {"key": "hfWorn", "label": "Perte fonte usée h_f", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S2_05",
+    "chapter": "hydrauGen",
+    "solver": "pipeABPressure",
+    "title": "Exercice 2.5 — Re, pertes et pression aval",
+    "difficulty": 2,
+    "statement": "Eau à 20 °C, conduite cylindrique horizontale, débit Q. Calculer Re, la perte linéaire et la pression en B (A et B distants de L). Pour une conduite lisse, prendre ε ≈ 0.",
+    "variables": [
+      {"key": "D", "label": "Diamètre intérieur D", "unit": "cm", "value": 5, "min": 3, "max": 10, "step": 0.5},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/h", "value": 37, "min": 10, "max": 80, "step": 1},
+      {"key": "L", "label": "Distance AB", "unit": "m", "value": 1, "min": 1, "max": 20, "step": 1},
+      {"key": "pA", "label": "Pression en A", "unit": "Pa", "value": 6000, "min": 4000, "max": 60000, "step": 1000},
+      {"key": "eps", "label": "Rugosité ε", "unit": "mm", "value": 0, "min": 0, "max": 0.8, "step": 0.05},
+      {"key": "nu", "label": "ν à 20 °C", "unit": "10⁻⁶ m²/s", "value": 1, "min": 0.8, "max": 1.3, "step": 0.05}
+    ],
+    "questions": [
+      {"key": "Re", "label": "Reynolds Re", "unit": "—"},
+      {"key": "hf", "label": "Perte h_f", "unit": "m"},
+      {"key": "pB", "label": "Pression en B", "unit": "Pa"}
+    ]
+  },
+  {
+    "id": "HG_S3_01",
+    "chapter": "hydrauGen",
+    "solver": "hazenParallelNetwork",
+    "title": "Exercice 3.1 — Parallèle Hazen–Williams et cote en D",
+    "difficulty": 3,
+    "statement": "Le débit issu du réservoir A est Q_A. Deux conduites en parallèle rejoignent C, puis CB vers B et CD vers D. Coefficient C identique. Calculer les débits, H_C et H_D.",
+    "variables": [
+      {"key": "QA", "label": "Débit du réservoir A", "unit": "L/s", "value": 430, "min": 200, "max": 700, "step": 10},
+      {"key": "C", "label": "C Hazen–Williams", "unit": "—", "value": 120, "min": 90, "max": 140, "step": 5},
+      {"key": "L1", "label": "Longueur (1)", "unit": "m", "value": 1800, "min": 800, "max": 3000, "step": 100},
+      {"key": "D1", "label": "Diamètre (1)", "unit": "cm", "value": 50, "min": 30, "max": 70, "step": 5},
+      {"key": "L2", "label": "Longueur (2)", "unit": "m", "value": 2400, "min": 1000, "max": 3500, "step": 100},
+      {"key": "D2", "label": "Diamètre (2)", "unit": "cm", "value": 60, "min": 40, "max": 80, "step": 5},
+      {"key": "LCB", "label": "Longueur CB", "unit": "m", "value": 2400, "min": 1000, "max": 3500, "step": 100},
+      {"key": "DCB", "label": "Diamètre CB", "unit": "cm", "value": 75, "min": 50, "max": 100, "step": 5},
+      {"key": "LCD", "label": "Longueur CD", "unit": "m", "value": 3000, "min": 1500, "max": 4500, "step": 100},
+      {"key": "DCD", "label": "Diamètre CD", "unit": "cm", "value": 75, "min": 50, "max": 100, "step": 5},
+      {"key": "HA", "label": "H_A piézométrique", "unit": "m", "value": 66.2, "min": 50, "max": 80, "step": 0.2},
+      {"key": "HB", "label": "H_B piézométrique", "unit": "m", "value": 65.4, "min": 50, "max": 80, "step": 0.2}
+    ],
+    "questions": [
+      {"key": "Q1", "label": "Débit conduite (1)", "unit": "L/s"},
+      {"key": "Q2", "label": "Débit conduite (2)", "unit": "L/s"},
+      {"key": "HC", "label": "H_C piézométrique", "unit": "m"},
+      {"key": "QCD", "label": "Débit CD", "unit": "L/s"},
+      {"key": "HD", "label": "H_D piézométrique", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S3_02",
+    "chapter": "hydrauGen",
+    "solver": "seriesPipeHGL",
+    "title": "Exercice 3.2 — Conduite en série 30-15-30 cm",
+    "difficulty": 3,
+    "statement": "Conduite horizontale : 60 m à 30 cm (λ=0,020), rétrécissement brusque à 15 cm, 30 m à 15 cm (λ=0,015), élargissement brusque, 30 m à 30 cm. Charge piézométrique 60 m en A, V=2,41 m/s dans le 30 cm. K=0,37 sur V avale pour la contraction ; Borda à l’élargissement. Tracer HGL/EGL : donner H_F et HGL_F.",
+    "variables": [
+      {"key": "D1", "label": "D 30 cm", "unit": "cm", "value": 30, "min": 20, "max": 40, "step": 2},
+      {"key": "D2", "label": "D 15 cm", "unit": "cm", "value": 15, "min": 8, "max": 20, "step": 1},
+      {"key": "L1", "label": "Longueur AB", "unit": "m", "value": 60, "min": 30, "max": 90, "step": 5},
+      {"key": "L2", "label": "Longueur CD", "unit": "m", "value": 30, "min": 15, "max": 50, "step": 5},
+      {"key": "L3", "label": "Longueur EF", "unit": "m", "value": 30, "min": 15, "max": 50, "step": 5},
+      {"key": "f1", "label": "λ 30 cm", "unit": "—", "value": 0.02, "min": 0.012, "max": 0.03, "step": 0.001},
+      {"key": "f2", "label": "λ 15 cm", "unit": "—", "value": 0.015, "min": 0.01, "max": 0.025, "step": 0.001},
+      {"key": "f3", "label": "λ aval 30 cm", "unit": "—", "value": 0.02, "min": 0.012, "max": 0.03, "step": 0.001},
+      {"key": "V", "label": "Vitesse dans le 30 cm", "unit": "m/s", "value": 2.41, "min": 1, "max": 4, "step": 0.01},
+      {"key": "Hp", "label": "H piézométrique en A", "unit": "m", "value": 60, "min": 30, "max": 80, "step": 1},
+      {"key": "K", "label": "K contraction", "unit": "—", "value": 0.37, "min": 0.2, "max": 0.6, "step": 0.01}
+    ],
+    "questions": [
+      {"key": "V2", "label": "Vitesse dans le 15 cm", "unit": "m/s"},
+      {"key": "hfCD", "label": "h_f du 15 cm", "unit": "m"},
+      {"key": "HF", "label": "Charge EGL en F", "unit": "m"},
+      {"key": "hglF", "label": "HGL en F", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S4_01",
+    "chapter": "hydrauGen",
+    "solver": "canalThreeReaches",
+    "title": "Exercice 4.1 — Canal à trois tronçons",
+    "difficulty": 3,
+    "statement": "Canal à Q constant : A trapèze (b, berges 1:1, n, y_A) ; B rectangle (même b, Chézy C, pente i_B) ; C rectangle (même b et C, tirant y_C). Calculer la pente de A, y_B, les y_c et les Froude.",
+    "variables": [
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 10, "min": 4, "max": 16, "step": 0.5},
+      {"key": "b", "label": "Largeur de fond b", "unit": "m", "value": 6, "min": 3, "max": 10, "step": 0.5},
+      {"key": "z", "label": "Fruit des berges z", "unit": "—", "value": 1, "min": 0.5, "max": 2, "step": 0.25},
+      {"key": "n", "label": "Manning n", "unit": "—", "value": 0.015, "min": 0.012, "max": 0.025, "step": 0.001},
+      {"key": "yA", "label": "Tirant A", "unit": "m", "value": 1, "min": 0.6, "max": 1.6, "step": 0.1},
+      {"key": "C", "label": "Chézy C", "unit": "m½/s", "value": 60, "min": 40, "max": 80, "step": 5},
+      {"key": "iB", "label": "Pente B", "unit": "—", "value": 0.0002, "min": 0.0001, "max": 0.001, "step": 0.0001},
+      {"key": "yC", "label": "Tirant C", "unit": "m", "value": 0.5, "min": 0.3, "max": 1, "step": 0.05}
+    ],
+    "questions": [
+      {"key": "SA", "label": "Pente du tronçon A", "unit": "—"},
+      {"key": "FrA", "label": "Froude A", "unit": "—"},
+      {"key": "yB", "label": "Tirant B", "unit": "m"},
+      {"key": "FrB", "label": "Froude B", "unit": "—"},
+      {"key": "ycC", "label": "Tirant critique C", "unit": "m"},
+      {"key": "FrC", "label": "Froude C", "unit": "—"}
+    ]
+  },
+  {
+    "id": "HG_S4_02",
+    "chapter": "hydrauGen",
+    "solver": "triangularTwoSlopes",
+    "title": "Exercice 4.2 — Canal triangulaire à deux pentes",
+    "difficulty": 3,
+    "statement": "Canal triangulaire isocèle (berges 1:1), n de Manning, débit Q. Premier bief de pente 1/i₁inv, assez long pour y_n. Second bief à tirant y₂. Calculer y_c, y₁, Fr₁, la pente du second bief et Fr₂.",
+    "variables": [
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 3, "min": 1, "max": 6, "step": 0.5},
+      {"key": "n", "label": "Manning n", "unit": "—", "value": 0.015, "min": 0.012, "max": 0.022, "step": 0.001},
+      {"key": "i1inv", "label": "Inverse de i₁", "unit": "—", "value": 12, "min": 8, "max": 20, "step": 1},
+      {"key": "y2", "label": "Tirant y₂", "unit": "m", "value": 1, "min": 0.5, "max": 1.6, "step": 0.1},
+      {"key": "z", "label": "Fruit z", "unit": "—", "value": 1, "min": 0.5, "max": 1.5, "step": 0.25}
+    ],
+    "questions": [
+      {"key": "yc", "label": "Profondeur critique y_c", "unit": "m"},
+      {"key": "y1", "label": "Tirant uniforme y₁", "unit": "m"},
+      {"key": "Fr1", "label": "Froude bief 1", "unit": "—"},
+      {"key": "S2", "label": "Pente du bief 2", "unit": "—"},
+      {"key": "Fr2", "label": "Froude bief 2", "unit": "—"}
+    ]
+  },
+  {
+    "id": "HG_S5_01",
+    "chapter": "hydrauGen",
+    "solver": "specificEnergyStep",
+    "title": "Exercice 5.1 — Hauteur sur un seuil",
+    "difficulty": 2,
+    "statement": "Canal large b, tirant amont y₁, débit Q. Un seuil de hauteur z. Calculer E₁, E₂ = E₁ − z et le tirant y₂ sur le seuil (racine fluviale).",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 10, "min": 6, "max": 16, "step": 1},
+      {"key": "y1", "label": "Tirant amont y₁", "unit": "m", "value": 6, "min": 3, "max": 8, "step": 0.25},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 300, "min": 80, "max": 400, "step": 10},
+      {"key": "z", "label": "Hauteur de seuil z", "unit": "m", "value": 0.5, "min": 0.2, "max": 1.2, "step": 0.1}
+    ],
+    "questions": [
+      {"key": "E1", "label": "Énergie spécifique E₁", "unit": "m"},
+      {"key": "E2", "label": "Énergie sur le seuil E₂", "unit": "m"},
+      {"key": "y2", "label": "Tirant sur le seuil y₂", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S5_02",
+    "chapter": "hydrauGen",
+    "solver": "specificEnergyStep",
+    "title": "Exercice 5.2 — Marche de fond et charge spécifique",
+    "difficulty": 2,
+    "statement": "Canal rectangulaire b, Q, tirant y₁. Le fond se relève de z. Vérifier si y diminue à l’aval (fluvial) et calculer y₂.",
+    "variables": [
+      {"key": "b", "label": "Largeur b", "unit": "m", "value": 6, "min": 3, "max": 10, "step": 0.5},
+      {"key": "y1", "label": "Tirant amont y₁", "unit": "m", "value": 2.5, "min": 1.2, "max": 4, "step": 0.1},
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 30, "min": 10, "max": 50, "step": 2},
+      {"key": "z", "label": "Relèvement z", "unit": "m", "value": 0.5, "min": 0.15, "max": 1, "step": 0.05}
+    ],
+    "questions": [
+      {"key": "E1", "label": "Énergie E₁", "unit": "m"},
+      {"key": "E2", "label": "Énergie aval E₂", "unit": "m"},
+      {"key": "y2", "label": "Tirant aval y₂", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S5_03",
+    "chapter": "hydrauGen",
+    "solver": "canalSlopeBreak",
+    "title": "Exercice 5.3 — Rupture de pente puis rétrécissement",
+    "difficulty": 3,
+    "statement": "Canal rectangulaire, n, Q. Bief 1 largeur b₁ pente i₁ ; bief 2 même largeur pente i₂ ; bief 3 largeur b₃, tirant y₃. Calculer y₁, y₂, y_c et les Froude. Un ressaut apparaît souvent entre 1 et 2.",
+    "variables": [
+      {"key": "Q", "label": "Débit Q", "unit": "m³/s", "value": 6, "min": 3, "max": 12, "step": 0.5},
+      {"key": "n", "label": "Manning n", "unit": "—", "value": 0.012, "min": 0.01, "max": 0.02, "step": 0.001},
+      {"key": "b1", "label": "Largeur biefs 1–2", "unit": "m", "value": 4, "min": 2.5, "max": 6, "step": 0.25},
+      {"key": "i1", "label": "Pente i₁", "unit": "—", "value": 0.01, "min": 0.004, "max": 0.02, "step": 0.001},
+      {"key": "i2", "label": "Pente i₂", "unit": "—", "value": 0.001, "min": 0.0004, "max": 0.004, "step": 0.0002},
+      {"key": "b3", "label": "Largeur bief 3", "unit": "m", "value": 3, "min": 2, "max": 4, "step": 0.25},
+      {"key": "y3", "label": "Tirant y₃", "unit": "m", "value": 0.74, "min": 0.4, "max": 1.2, "step": 0.02}
+    ],
+    "questions": [
+      {"key": "y1", "label": "Tirant y₁", "unit": "m"},
+      {"key": "y2", "label": "Tirant y₂", "unit": "m"},
+      {"key": "yc", "label": "Critique biefs 1–2", "unit": "m"},
+      {"key": "Fr1", "label": "Froude 1", "unit": "—"},
+      {"key": "Fr2", "label": "Froude 2", "unit": "—"},
+      {"key": "yc3", "label": "Critique bief 3", "unit": "m"}
+    ]
+  },
+  {
+    "id": "HG_S5_04",
+    "chapter": "hydrauGen",
+    "solver": "hydraulicJump",
+    "title": "Exercice 5.4 — Ressaut hydraulique",
+    "difficulty": 2,
+    "statement": "Ressaut dans un canal rectangulaire. Amont : y₁, V₁. Déterminer y₂, V₂, Fr₁, Fr₂ et la charge perdue ΔE.",
+    "variables": [
+      {"key": "y1", "label": "Profondeur amont y₁", "unit": "m", "value": 1.5, "min": 0.6, "max": 2.5, "step": 0.1},
+      {"key": "V1", "label": "Vitesse amont V₁", "unit": "m/s", "value": 20, "min": 8, "max": 25, "step": 0.5}
+    ],
+    "questions": [
+      {"key": "Fr1", "label": "Froude amont Fr₁", "unit": "—"},
+      {"key": "y2", "label": "Profondeur aval y₂", "unit": "m"},
+      {"key": "V2", "label": "Vitesse aval V₂", "unit": "m/s"},
+      {"key": "Fr2", "label": "Froude aval Fr₂", "unit": "—"},
+      {"key": "dE", "label": "Charge perdue ΔE", "unit": "m"}
+    ]
+  }
+]

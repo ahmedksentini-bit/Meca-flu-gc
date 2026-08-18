@@ -4,6 +4,16 @@
 .recap-card{border-top:4px solid #0f766e;background:linear-gradient(180deg,#f0fdfa,#fff 42%)}.recap-kicker{margin:0 0 6px;color:#0f766e;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.recap-card h2{margin:0 0 10px;font-size:19px}.recap-section{margin:14px 0 6px;color:#0f766e;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.recap-section:first-of-type{margin-top:4px}.recap-lead{margin:0 0 4px;color:#334155}.recap-points{margin:0;padding:0 0 0 18px}.recap-points li{margin:6px 0;color:#0f172a}.recap-watch{margin:14px 0 0;padding:11px 13px;border-radius:11px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:14px}.recap-watch strong{color:#c2410c}
 .diagram svg{width:100%;height:auto;display:block}.diagram svg.moody-chart{min-height:280px}
 .diagram-zoomable{cursor:zoom-in}
+.diagram-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.diagram-head h2{margin:0}
+.diagram-switch{display:flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:#fff;flex-shrink:0}
+.diagram-switch button{padding:7px 12px;border:0;border-radius:9px;background:none;color:var(--muted);font-weight:800;cursor:pointer}
+.diagram-switch button.active{background:var(--blue);color:#fff}
+.diagram-webgl{min-height:320px;height:320px;padding:0;overflow:hidden;touch-action:none;cursor:grab}
+.diagram-webgl:active{cursor:grabbing}
+.diagram[hidden],.diagram-webgl[hidden]{display:none!important}
+.diagram-webgl canvas{display:block;width:100%!important;height:100%!important}
+.diagram-hint{margin:8px 0 0;color:var(--muted);font-size:12px;font-weight:700}
+@media(max-width:560px){.diagram-head{flex-wrap:wrap}.diagram-webgl{height:260px;min-height:260px}}
 .moody-overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:#0f172a99}
 .moody-dialog{width:min(1100px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:16px 18px 18px;border-radius:18px;background:#fff;box-shadow:0 24px 60px #0f172a33}
 .moody-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}.moody-head h2{margin:0;font-size:20px}

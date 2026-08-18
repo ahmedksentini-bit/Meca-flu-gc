@@ -4,7 +4,14 @@ import { courseRecap } from "./recaps.js";
 import { warmups } from "./warmups.js";
 
 const app = document.querySelector("#app");
-const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null };
+const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramView: "svg", webglToken: 0 };
+const WEBGL_SOLVERS = new Set(["hydraulicPower", "hydraulicJump", "damBreakRitter"]);
+let diagrams3d = null;
+const loadDiagrams3d = () => diagrams3d ? Promise.resolve(diagrams3d) : import("./diagrams3d.js").then(mod => { diagrams3d = mod; return mod; });
+function disposeWebGLView() {
+  state.webglToken++;
+  diagrams3d?.disposeWebGL();
+}
 const modes = { learn: "Apprentissage", train: "Entraînement", exam: "Examen" };
 const pedagogy = {
   density:{hypotheses:"Fluide homogène ; g = 9,81 m/s² ; la densité est définie par rapport à l’eau à ρeau = 1000 kg/m³.",why:["Le volume du cylindre est 𝒱 = πD²h/4, ou 𝒱 est donné. La masse est donnée, ou déduite de W = mg.","La masse volumique mesure la masse contenue par unité de volume.","Le poids volumique est γ = ρg ; on l’exprime ici en kN/m³.","La densité est un rapport de deux masses volumiques : elle n’a donc pas d’unité."],check:"Pour une huile, on attend généralement ρ < 1000 kg/m³ et d < 1."},
@@ -101,10 +108,24 @@ const pedagogy = {
   pumpDutyPoint:{hypotheses:"Pompe H = H₀ − kQ² ; réseau H = H_g + (λL/D+ΣK)V²/2g ; λ par Colebrook, itéré avec Q.",why:["La pompe chute quand Q augmente.","Le réseau monte comme Q².","On égalise et on itère λ(Q).","V = Q/A contrôle le calage."],check:"Si H₀ < H_g la pompe ne démarre pas. k trop grand (pompe « molle ») donne un petit débit."},
   thinWeir:{hypotheses:"Seuil mince, nappe aérée, approche négligée dans Cᵈ ; charge h mesurée au-dessus de la crête.",why:["h est la charge sur le seuil.","L’intégration de Torricelli sur la lame donne Q ∝ L h^{3/2}.","q = Q/L compare des seuils de longueurs différentes."],check:"Q varie comme h^{3/2} : doubler h multiplie Q par 2√2 ≈ 2,8, pas par 2. Cᵈ < 1."},
   hydraulicJump:{hypotheses:"Canal rectangulaire horizontal ; ressaut stationnaire ; frottement de paroi négligé entre les deux sections conjuguées.",why:["Fr₁ = V₁/√(gy₁) doit être > 1.","La conjugaison vient d’Euler + continuité.","ΔE est dissipée en turbulence.","L_r ≈ 6 y₂ est une longueur d’ordre de grandeur."],check:"Pas de ressaut si Fr₁ < 1. y₂ > y₁. ΔE croît très vite avec Fr₁."},
-  criticalRegime:{hypotheses:"Canal rectangulaire large ; écoulement permanent ; y_c = (Q²/(gb²))^{1/3}.",why:["V = Q/(by).","y_c est la profondeur qui minimise E.","Fr ≶ 1 classe fluvial / torrentiel.","On compare E à E_c = 3y_c/2."],check:"y > y_c ⇔ Fr < 1 (fluvial). Au voisinage de y_c, E est minimale : un petit seuil peut faire basculer le régime."}
+  criticalRegime:{hypotheses:"Canal rectangulaire large ; écoulement permanent ; y_c = (Q²/(gb²))^{1/3}.",why:["V = Q/(by).","y_c est la profondeur qui minimise E.","Fr ≶ 1 classe fluvial / torrentiel.","On compare E à E_c = 3y_c/2."],check:"y > y_c ⇔ Fr < 1 (fluvial). Au voisinage de y_c, E est minimale : un petit seuil peut faire basculer le régime."},
+  unknownDensityColumn:{hypotheses:"Fluide au repos ; p_F atmosphérique ; colonne unique de B.",why:["Convertir p_A en Pa.","Hydrostatique : Δp = ρgh.","ρ_B = −p_A/(gh)."],check:"ρ_B doit rester de l’ordre de 800–1200 kg/m³ pour un liquide."},
+  threeFluidUTube:{hypotheses:"U ouvert ; fluides au repos ; pas de capillaire.",why:["Écrire les trois liaisons sur les Z.","Égaler les colonnes ρZ.","Reconstituer Z₁, Z₃, Z₄."],check:"Z₂ et Z₃ positifs et Z₂+Z₃ égal à la donnée."},
+  penstockNozzle:{hypotheses:"Fluide parfait incompressible ; plan d’eau et tuyère à pₐₜₘ.",why:["V₂ par Torricelli sur toute la chute.","Q = sV₂ et ṁ = ρQ.","V₁ = Q/S.","Bernoulli pour p₁."],check:"V₂ ≫ V₁. p₁ ≈ ρg(z_R−z₁) car V₁ est petite."},
+  darcyMoodyRe:{hypotheses:"Conduite circulaire pleine ; λ par Colebrook.",why:["V = Re ν/D.","ε/D.","Itérer Colebrook.","Darcy–Weisbach."],check:"h_f de l’ordre de quelques mètres sur 300 m est plausible."},
+  gradualEnlargement:{hypotheses:"Divergent conique ; K de Crane ; même débit.",why:["V₁ et V₂.","K(θ).","h_s = KV₁²/2g."],check:"K < (1−A₁/A₂)² : plus doux que Borda."},
+  seriesConePipe:{hypotheses:"Permanent ; λ donnés ; K de cône.",why:["Deux vitesses.","Trois h_f.","Deux h_s.","H_F = H_A−Σh."],check:"H_F < H_A. Le tronçon étroit domine h_f."},
+  hazenWilliams:{hypotheses:"Formule empirique d’AEP ; eau.",why:["Écrire h_f(Q,C,D,L).","Inverser pour le tuyau neuf.","Appliquer au tuyau usé."],check:"C plus petit ⇒ h_f plus grand. Q en m³/s dans la formule."},
+  pipeABPressure:{hypotheses:"Horizontal ; Colebrook ; pas de machine.",why:["SI : Q et D.","Re et λ.","h_f.","p_B = p_A−ρgh_f."],check:"p_B < p_A. Si p_B < 0, dépression."},
+  hazenParallelNetwork:{hypotheses:"Hazen–Williams ; nœud sans accumulation.",why:["h_AC commun au parallèle.","Q₁+Q₂=Q_A.","H_C puis CB et CD."],check:"Q₁ et Q₂ positifs. H_D < H_C si l’écoulement va vers D."},
+  seriesPipeHGL:{hypotheses:"Horizontal z=0 ; Darcy + K + Borda.",why:["V₁₅.","h_f des trois tronçons.","Singularités.","EGL puis HGL = EGL−V²/2g."],check:"HGL plus basse dans le 15 cm. EGL toujours au-dessus de HGL."},
+  canalThreeReaches:{hypotheses:"Régime uniforme par bief ; Manning ou Chézy.",why:["Géométrie A.","S_A.","y_B par Chézy.","y_c et Fr."],check:"y_B ≈ 1,8 m pour les données du TD. C torrentiel si y_C < y_c."},
+  triangularTwoSlopes:{hypotheses:"Triangle isocèle ; uniforme sur chaque bief long.",why:["y_c triangle.","y₁ Manning.","S₂ inverse.","Fr."],check:"i=1/12 est torrentiel ; y₂=1 m redevient fluvial."},
+  specificEnergyStep:{hypotheses:"Rectangle ; perte de fond négligée hors z ; E₂=E₁−z.",why:["E₁.","E₂=E₁−z.","y_c.","Racine fluviale de E(y)=E₂."],check:"En fluvial y₂ < y₁ mais y₂ > y_c. y₂ ≠ y₁−z."},
+  canalSlopeBreak:{hypotheses:"Manning ; biefs assez longs pour y_n.",why:["y₁.","y₂.","y_c.","Fr et bief 3."],check:"Si Fr₁>1 et Fr₂<1, un ressaut existe entre 1 et 2."}
 };
 
-const equationSheets={density:["𝒱 = πD²h/4 (cylindre)","m = W/g","ρ = m/𝒱","γ = ρg","d = ρ/ρeau"],viscosity:["τ = F/A","τ = μU/e","ν = μ/ρ"],coaxialViscometer:["ω = 2πN/60","U = ωRᵢ","τ = μU/e","C = τ(2πRᵢL)Rᵢ"],compressibility:["K = −Δp/(Δ𝒱/𝒱)","Δp = p₂−p₁","ρ₂ = ρ₀ 𝒱₁/𝒱₂"],capillary:["h = 4σcosθ/(ρgd)","D_min = 4σ/(ρg h_max)"],laplace:["Goutte : Δp = 2σ/R","Bulle : Δp = 4σ/R"],idealGas:["p = ρRT","T(K) = T(°C)+273,15","m = ρ𝒱","𝒱₂ = 𝒱₁ p₁/p₂"],pressureDepth:["p−pₐₜₘ = ρgh","pabs = pₐₜₘ+ρgh"],layeredPressure:["Δp = ρgΔh","p_fond = Σρᵢghᵢ","1 bar = 10⁵ Pa"],manometer:["Descente : +ρgΔz","Montée : −ρgΔz"],hydraulicPress:["F₁/A₁ = F₂/A₂","A₁x₁ = A₂x₂"],planeForce:["F = ½ρgH²b","z_C = H/3","M = F H/3"],submergedGate:["ȳ = y₀+H/2","F = ρgAȳ","yₚ = ȳ+Iᴳ/(Aȳ)"],circularGate:["A = πD²/4","Iᴳ = πD⁴/64","F = ρgAȳ"],bargeStability:["BM = I/∇","GM = KB+BM−KG","Stable si GM > 0"],venturi:["Q = S₁V₁ = S₂V₂","p/ρg+V²/2g+z = cte","Δp = (ρm−ρ)gΔh"],torricelli:["V = Cᵈ√(2gh)","Q = SV"],jetPlate:["ΣF⃗ = ṁ(V⃗₂−V⃗₁)","F = ρQV"],jetDeflect:["F = 2ρQVsin(θ/2)"],colebrook:["Re = VD/ν","Moody : λ = λ(Re, ε/D)","1/√λ = −2log₁₀[ε/(3,7D)+2,51/(Re√λ)]","h_f = λ(L/D)V²/(2g)"],minorLosses:["h_s = ΣK·V²/(2g)"],froudeSimilarity:["Fr = V/√(gL)","λV = √λL","λQ = λL^(5/2)"],manningChannel:["R = A/P","V = KₛR^(2/3)√S","Fr = V/√(gy)"],pipeContinuity:["Q = AV","A = πD²/4","D = √(4Q/πV)"],twoSectionContinuity:["Q = A₁V₁ = A₂V₂","A = πD²/4","V₂/V₁ = (D₁/D₂)²"],networkNode:["Q = AV","ΣQₑ = ΣQₛ","V₃ = Q₃/A₃"],convectiveAcceleration:["a = ∂V/∂t + V·dV/dx","permanent : a = V dV/dx"],reservoirRise:["A dh/dt = Qₑ − Qₛ","t = AΔh/(Qₑ − Qₛ)"],tankFilling:["Q = 𝒱/t","A = Q/V","D = √(4A/π)"],distributedFlow:["Q(x) = Qₑ − qx","q = (Qₑ − Qₛ)/L"],bernoulliSections:["Q = A₁V₁ = A₂V₂","p/ρg + V²/2g + z = cte"],drainTime:["−A dh/dt = Cᵈa√(2gh)","t = 2A(√h₁−√h₂)/(Cᵈa√(2g))"],pitot:["Δp = (ρₘ − ρ)gΔh","V = √(2Δp/ρ)"],siphon:["V = √(2gΔz)","p_C = pₐₜₘ − ρg(z_C + V²/2g)"],hydraulicPower:["HMT = H_g + h_pertes","Pₕ = ρgQH","P_abs = Pₕ/η"],jetMobile:["F_fixe = 2ρQV","F = 2ρA(V−u)²","P = Fu","u_opt = V/3"],elbowForce:["Fₓ = Fᵧ = pA+ρQV","F = √2(pA+ρQV)"],convergentForce:["p+½ρV² = cte","F = p₁A₁−p₂A₂−ρQ(V₂−V₁)"],jetReaction:["V = √(2gh)","F = ρQV = 2ρghA"],inclinedPlate:["Fₙ = ρQV sinθ","Q₊ = Q(1+cosθ)/2"],reynoldsRegime:["V = Q/A","Re = VD/ν"],hydraulicDiameter:["Dₕ = 4A/P","Re = VDₕ/ν"],fallingFilm:["u(e) = ρge²sinα/(2μ)","q = ρge³sinα/(3μ)"],poiseuilleOil:["λ = 64/Re","h_f = λ(L/D)V²/(2g)","P = QΔp"],gravityPipe:["H = (λL/D+ΣK)V²/(2g)","Q = AV"],pipeSizing:["h_f = λ(L/D)V²/(2g)","retenir min DN avec h_f ≤ H"],pumpStation:["HMT = Δz+h_asp+h_ref","Pₕ = ρgQH","P_abs = Pₕ/η"],bordaCarnot:["hₛ = (V₁−V₂)²/(2g)","p₂−p₁ = ½ρ(V₁²−V₂²)−ρghₛ"],reynoldsDrag:["Reₘ = Reₚ","Fₚ = Fₘ (même fluide)"],froudeSpillway:["λQ = N^(5/2)","λV = λt = √N","λF = N³"],stokesViscosity:["μ = (ρₛ−ρ)gd²/(18V)","Re = ρVd/μ"],trapezoidalChannel:["A = (b+zy)y","P = b+2y√(1+z²)","V = KₛR^(2/3)√S"],normalDepth:["Q = A Kₛ R^(2/3)√S","Fr = V/√(gy)"],waveCelerity:["c = √(gy)","t = L/(c−V)"],damBreakRitter:["c_f = 2√(gh₀)","h = 4h₀/9","V = 2√(gh₀)/3"],damSluice:["F = ρgAȳ","T = W+μF","Q = CᵈA√(2gȳ)"],npshCavitation:["NPSH_d = pₐₜₘ/ρg−pᵥ/ρg−Hₛ−h_asp","h_asp=(λL/D+K)V²/(2g)"],waterCannon:["V₂²−V₁²=2p₁/ρ","F=ρQV₂","F_recul=p₁A₁−ρQ(V₂−V₁)"],cofferdamBallast:["Tₑ=W/(ρgLB)","GM=KB+BM−KG","W+W_b+R=Π"],oilSeason:["Re=VD/ν","h_f=λ(L/D)V²/(2g)","P=ρgQh_f/η"],retainingWall:["F=ρgH²/2","y=H/3","FS=(Wt/2)/(FH/3)"],gravityValve:["H=(λL/D+ΣK)V²/(2g)","Kᵥ=2gH/V'²−λ'L/D−K_autres"],viscosityForce:["τ=μU/e","F=τA","P=FU"],inclinedCircularGate:["F=ρgAh_G","y_G=h_G/sinα","y_C−y_G=Iᴳ/(y_G A)"],quarterCylinder:["F_H=½ρgR²b","F_V=ρgR²(1−π/4)b","F=√(F_H²+F_V²)"],archimedesCaisson:["T=(ρ_b−ρ)g𝒱","Tₑ=W/(ρgLB)"],bearingLoss:["τ=μU/e","C=τ(2πRL)R","P=Cω"],pressureUnits:["1 bar=10⁵ Pa","p=ρgh","h=p/(ρeau g)"],pipeGage:["p=(ρₘΔh−ρz)g"],woodLog:["𝒱_imm=d𝒱","m=dρ𝒱"],iceberg:["émergé=1−ρᵢ/ρₑ"],channelDischarge:["Q=byV"],pitotWater:["V=√(2gh)"],turbinePower:["P=ηρgQH"],momentumHold:["F=ρQV"],froudeForceTime:["tₚ=tₘ√N","Fₚ=FₘN³"],froudeScale:["λV=√N","Qₘ=Qₚ/N^(5/2)"],reynoldsSpeed:["Vₚ=Vₘ/N"],idealGasTwo:["T(K)=T(°C)+273,15","ρ=p/(RT)"],reynoldsTwo:["Re=VD/ν","laminaire < 2000 < transition < 4000 < turbulent"],kinematicField:["div V⃗=∂u/∂x+∂v/∂y","ω_z=∂v/∂x−∂u/∂y"],dimensionsMLT:["[P]=ML²T⁻³","[C]=ML²T⁻²","[σ]=ML⁻¹T⁻²","[ṁ]=MT⁻¹","[σ_s]=MT⁻²","[dp/dx]=ML⁻²T⁻²"],pendulumPi:["T=k Lᵃ gᵇ mᶜ","T∝√(L/g)"],propellerPi:["P=k ρᵃ nᵇ Dᶜ","P=ρ n³ D⁵ f(…)"],moodyRead:["Moody : λ=λ(Re, ε/D)","1/√λ=−2log₁₀[ε/(3,7D)+2,51/(Re√λ)]","rugueux : 1/√λ=−2log₁₀(ε/3,7D)"],twoFluidsShear:["τ=μU/e","F=τA","ν=μ/ρ","F_B/F_A=μ_B/μ_A"],viscosityTemp:["μ(T) interpolé","τ=μU/e","F=τA"],dualSideGate:["F=ρgAȳ","F_net=ρgA(y₁−y₂)"],lockDoor:["F=½ρgH²b","M=F₁H/3−F₂h/3"],piezometricLine:["HGL=p/ρg+z","EGL=HGL+V²/2g","h_f=λ(L/D)V²/2g"],diameterEconomy:["h_f=λ(L/D)V²/2g","C=αD+β h_f"],pumpDutyPoint:["H_p=H₀−kQ²","H_n=H_g+rQ²"],thinWeir:["Q=Cᵈ L √(2g) h^{3/2}"],hydraulicJump:["Fr=V/√(gy)","y₂/y₁=½(−1+√(1+8Fr₁²))","ΔE=(y₂−y₁)³/(4y₁y₂)"],criticalRegime:["y_c=(Q²/(gb²))^{1/3}","Fr=V/√(gy)","E=y+V²/2g"]};
+const equationSheets={density:["𝒱 = πD²h/4 (cylindre)","m = W/g","ρ = m/𝒱","γ = ρg","d = ρ/ρeau"],viscosity:["τ = F/A","τ = μU/e","ν = μ/ρ"],coaxialViscometer:["ω = 2πN/60","U = ωRᵢ","τ = μU/e","C = τ(2πRᵢL)Rᵢ"],compressibility:["K = −Δp/(Δ𝒱/𝒱)","Δp = p₂−p₁","ρ₂ = ρ₀ 𝒱₁/𝒱₂"],capillary:["h = 4σcosθ/(ρgd)","D_min = 4σ/(ρg h_max)"],laplace:["Goutte : Δp = 2σ/R","Bulle : Δp = 4σ/R"],idealGas:["p = ρRT","T(K) = T(°C)+273,15","m = ρ𝒱","𝒱₂ = 𝒱₁ p₁/p₂"],pressureDepth:["p−pₐₜₘ = ρgh","pabs = pₐₜₘ+ρgh"],layeredPressure:["Δp = ρgΔh","p_fond = Σρᵢghᵢ","1 bar = 10⁵ Pa"],manometer:["Descente : +ρgΔz","Montée : −ρgΔz"],hydraulicPress:["F₁/A₁ = F₂/A₂","A₁x₁ = A₂x₂"],planeForce:["F = ½ρgH²b","z_C = H/3","M = F H/3"],submergedGate:["ȳ = y₀+H/2","F = ρgAȳ","yₚ = ȳ+Iᴳ/(Aȳ)"],circularGate:["A = πD²/4","Iᴳ = πD⁴/64","F = ρgAȳ"],bargeStability:["BM = I/∇","GM = KB+BM−KG","Stable si GM > 0"],venturi:["Q = S₁V₁ = S₂V₂","p/ρg+V²/2g+z = cte","Δp = (ρm−ρ)gΔh"],torricelli:["V = Cᵈ√(2gh)","Q = SV"],jetPlate:["ΣF⃗ = ṁ(V⃗₂−V⃗₁)","F = ρQV"],jetDeflect:["F = 2ρQVsin(θ/2)"],colebrook:["Re = VD/ν","Moody : λ = λ(Re, ε/D)","1/√λ = −2log₁₀[ε/(3,7D)+2,51/(Re√λ)]","h_f = λ(L/D)V²/(2g)"],minorLosses:["h_s = ΣK·V²/(2g)"],froudeSimilarity:["Fr = V/√(gL)","λV = √λL","λQ = λL^(5/2)"],manningChannel:["R = A/P","V = KₛR^(2/3)√S","Fr = V/√(gy)"],pipeContinuity:["Q = AV","A = πD²/4","D = √(4Q/πV)"],twoSectionContinuity:["Q = A₁V₁ = A₂V₂","A = πD²/4","V₂/V₁ = (D₁/D₂)²"],networkNode:["Q = AV","ΣQₑ = ΣQₛ","V₃ = Q₃/A₃"],convectiveAcceleration:["a = ∂V/∂t + V·dV/dx","permanent : a = V dV/dx"],reservoirRise:["A dh/dt = Qₑ − Qₛ","t = AΔh/(Qₑ − Qₛ)"],tankFilling:["Q = 𝒱/t","A = Q/V","D = √(4A/π)"],distributedFlow:["Q(x) = Qₑ − qx","q = (Qₑ − Qₛ)/L"],bernoulliSections:["Q = A₁V₁ = A₂V₂","p/ρg + V²/2g + z = cte"],drainTime:["−A dh/dt = Cᵈa√(2gh)","t = 2A(√h₁−√h₂)/(Cᵈa√(2g))"],pitot:["Δp = (ρₘ − ρ)gΔh","V = √(2Δp/ρ)"],siphon:["V = √(2gΔz)","p_C = pₐₜₘ − ρg(z_C + V²/2g)"],hydraulicPower:["HMT = H_g + h_pertes","Pₕ = ρgQH","P_abs = Pₕ/η"],jetMobile:["F_fixe = 2ρQV","F = 2ρA(V−u)²","P = Fu","u_opt = V/3"],elbowForce:["Fₓ = Fᵧ = pA+ρQV","F = √2(pA+ρQV)"],convergentForce:["p+½ρV² = cte","F = p₁A₁−p₂A₂−ρQ(V₂−V₁)"],jetReaction:["V = √(2gh)","F = ρQV = 2ρghA"],inclinedPlate:["Fₙ = ρQV sinθ","Q₊ = Q(1+cosθ)/2"],reynoldsRegime:["V = Q/A","Re = VD/ν"],hydraulicDiameter:["Dₕ = 4A/P","Re = VDₕ/ν"],fallingFilm:["u(e) = ρge²sinα/(2μ)","q = ρge³sinα/(3μ)"],poiseuilleOil:["λ = 64/Re","h_f = λ(L/D)V²/(2g)","P = QΔp"],gravityPipe:["H = (λL/D+ΣK)V²/(2g)","Q = AV"],pipeSizing:["h_f = λ(L/D)V²/(2g)","retenir min DN avec h_f ≤ H"],pumpStation:["HMT = Δz+h_asp+h_ref","Pₕ = ρgQH","P_abs = Pₕ/η"],bordaCarnot:["hₛ = (V₁−V₂)²/(2g)","p₂−p₁ = ½ρ(V₁²−V₂²)−ρghₛ"],reynoldsDrag:["Reₘ = Reₚ","Fₚ = Fₘ (même fluide)"],froudeSpillway:["λQ = N^(5/2)","λV = λt = √N","λF = N³"],stokesViscosity:["μ = (ρₛ−ρ)gd²/(18V)","Re = ρVd/μ"],trapezoidalChannel:["A = (b+zy)y","P = b+2y√(1+z²)","V = KₛR^(2/3)√S"],normalDepth:["Q = A Kₛ R^(2/3)√S","Fr = V/√(gy)"],waveCelerity:["c = √(gy)","t = L/(c−V)"],damBreakRitter:["c_f = 2√(gh₀)","h = 4h₀/9","V = 2√(gh₀)/3"],damSluice:["F = ρgAȳ","T = W+μF","Q = CᵈA√(2gȳ)"],npshCavitation:["NPSH_d = pₐₜₘ/ρg−pᵥ/ρg−Hₛ−h_asp","h_asp=(λL/D+K)V²/(2g)"],waterCannon:["V₂²−V₁²=2p₁/ρ","F=ρQV₂","F_recul=p₁A₁−ρQ(V₂−V₁)"],cofferdamBallast:["Tₑ=W/(ρgLB)","GM=KB+BM−KG","W+W_b+R=Π"],oilSeason:["Re=VD/ν","h_f=λ(L/D)V²/(2g)","P=ρgQh_f/η"],retainingWall:["F=ρgH²/2","y=H/3","FS=(Wt/2)/(FH/3)"],gravityValve:["H=(λL/D+ΣK)V²/(2g)","Kᵥ=2gH/V'²−λ'L/D−K_autres"],viscosityForce:["τ=μU/e","F=τA","P=FU"],inclinedCircularGate:["F=ρgAh_G","y_G=h_G/sinα","y_C−y_G=Iᴳ/(y_G A)"],quarterCylinder:["F_H=½ρgR²b","F_V=ρgR²(1−π/4)b","F=√(F_H²+F_V²)"],archimedesCaisson:["T=(ρ_b−ρ)g𝒱","Tₑ=W/(ρgLB)"],bearingLoss:["τ=μU/e","C=τ(2πRL)R","P=Cω"],pressureUnits:["1 bar=10⁵ Pa","p=ρgh","h=p/(ρeau g)"],pipeGage:["p=(ρₘΔh−ρz)g"],woodLog:["𝒱_imm=d𝒱","m=dρ𝒱"],iceberg:["émergé=1−ρᵢ/ρₑ"],channelDischarge:["Q=byV"],pitotWater:["V=√(2gh)"],turbinePower:["P=ηρgQH"],momentumHold:["F=ρQV"],froudeForceTime:["tₚ=tₘ√N","Fₚ=FₘN³"],froudeScale:["λV=√N","Qₘ=Qₚ/N^(5/2)"],reynoldsSpeed:["Vₚ=Vₘ/N"],idealGasTwo:["T(K)=T(°C)+273,15","ρ=p/(RT)"],reynoldsTwo:["Re=VD/ν","laminaire < 2000 < transition < 4000 < turbulent"],kinematicField:["div V⃗=∂u/∂x+∂v/∂y","ω_z=∂v/∂x−∂u/∂y"],dimensionsMLT:["[P]=ML²T⁻³","[C]=ML²T⁻²","[σ]=ML⁻¹T⁻²","[ṁ]=MT⁻¹","[σ_s]=MT⁻²","[dp/dx]=ML⁻²T⁻²"],pendulumPi:["T=k Lᵃ gᵇ mᶜ","T∝√(L/g)"],propellerPi:["P=k ρᵃ nᵇ Dᶜ","P=ρ n³ D⁵ f(…)"],moodyRead:["Moody : λ=λ(Re, ε/D)","1/√λ=−2log₁₀[ε/(3,7D)+2,51/(Re√λ)]","rugueux : 1/√λ=−2log₁₀(ε/3,7D)"],twoFluidsShear:["τ=μU/e","F=τA","ν=μ/ρ","F_B/F_A=μ_B/μ_A"],viscosityTemp:["μ(T) interpolé","τ=μU/e","F=τA"],dualSideGate:["F=ρgAȳ","F_net=ρgA(y₁−y₂)"],lockDoor:["F=½ρgH²b","M=F₁H/3−F₂h/3"],piezometricLine:["HGL=p/ρg+z","EGL=HGL+V²/2g","h_f=λ(L/D)V²/2g"],diameterEconomy:["h_f=λ(L/D)V²/2g","C=αD+β h_f"],pumpDutyPoint:["H_p=H₀−kQ²","H_n=H_g+rQ²"],thinWeir:["Q=Cᵈ L √(2g) h^{3/2}"],hydraulicJump:["Fr=V/√(gy)","y₂/y₁=½(−1+√(1+8Fr₁²))","ΔE=(y₂−y₁)³/(4y₁y₂)"],criticalRegime:["y_c=(Q²/(gb²))^{1/3}","Fr=V/√(gy)","E=y+V²/2g"],unknownDensityColumn:["p_F=p_A+ρgh","ρ=−p_A/(gh)"],threeFluidUTube:["Σ ρ Z = Σ ρ Z","Z₁=Z₂+Δ₁₂"],penstockNozzle:["V=√(2gΔz)","p/ρg+V²/2g+z=cte"],darcyMoodyRe:["V=Re ν/D","h_f=λ(L/D)V²/2g"],gradualEnlargement:["K=2,6 sin(θ/2)(1−β²)²","h_s=K V₁²/2g"],seriesConePipe:["h_f=λ(L/D)V²/2g","H_F=H_A−Σh"],hazenWilliams:["h_f=10,67 L Q^{1,852}/(C^{1,852} D^{4,87})"],pipeABPressure:["Re=VD/ν","p_B=p_A−ρg h_f"],hazenParallelNetwork:["même ΔH en parallèle","ΣQ=0 au nœud"],seriesPipeHGL:["EGL=HGL+V²/2g","h_s=K V²/2g"],canalThreeReaches:["V=(1/n)R^{2/3}√S","V=C√(Ri)","y_c=(Q²/gb²)^{1/3}"],triangularTwoSlopes:["A=z y²","y_c=(2Q²/gz²)^{1/5}"],specificEnergyStep:["E=y+q²/(2g y²)","E₂=E₁−z"],canalSlopeBreak:["Q=A Kₛ R^{2/3}√i","y_c=(Q²/gb²)^{1/3}"]};
 const esc = value => String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const parse = value => Number(String(value).trim().replace(",", ".").replace(/\s/g, ""));
 const randomValue = v => Number((Math.round((v.min + Math.random() * (v.max - v.min)) / v.step) * v.step).toFixed(8));
@@ -120,7 +141,8 @@ const chapterOrder = {
   losses: ["LOSS_RE_01", "LOSS_LAM_04", "LOSSES_COLEBROOK_01", "LOSS_GRAV_05", "LOSS_SIZE_06", "LOSS_PUMP_07", "LOSS_BORDA_08", "LOSS_MOODY_03", "LOSS_DH_02", "LOSS_FILM_03", "LOSSES_MINOR_02", "COMP_HGL_01", "COMP_ECON_01"],
   similarity: ["SIM_REYNOLDS_02", "SIM_SPILL_03", "SIM_STOKES_04", "SIM_FROUDE_01"],
   freeSurface: ["FS_TRAP_02", "FS_NORMAL_03", "FS_WAVE_04", "FS_RITTER_05", "CHANNEL_MANNING_01", "COMP_DITCH_01", "COMP_FROUDE_01", "COMP_WEIR_01", "COMP_JUMP_01"],
-  pumping: ["COMP_PUMPCURVE_01", "LOSS_PUMP_07", "SYN_NPSH_03"]
+  pumping: ["COMP_PUMPCURVE_01", "LOSS_PUMP_07", "SYN_NPSH_03"],
+  hydrauGen: ["HG_S1_01", "HG_S1_02", "HG_S1_03", "HG_S1_04", "HG_S2_01", "HG_S2_02", "HG_S2_03", "HG_S2_04", "HG_S2_05", "HG_S3_01", "HG_S3_02", "HG_S4_01", "HG_S4_02", "HG_S5_01", "HG_S5_02", "HG_S5_03", "HG_S5_04"]
 };
 
 function exercisesForChapter(chapterId) {
@@ -142,6 +164,7 @@ function exerciseRef(exercise) {
 
 function home() {
   closeMoodyReader();
+  disposeWebGLView();
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
   app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = exercisesForChapter(ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
@@ -150,6 +173,7 @@ function home() {
 }
 
 function chapterPage(chapterId) {
+  disposeWebGLView();
   const chapter = state.catalog.chapters.find(c => c.id === chapterId);
   const exercises = exercisesForChapter(chapterId);
   app.innerHTML = `<button class="back" id="backHome">← Tous les chapitres</button><section class="chapter-banner"><span class="num">${chapter.number}</span><div><h1>${esc(chapter.title)}</h1><p>${esc(chapter.description)}</p></div></section><div class="section-title"><div><h2>Exercices</h2><p>Choisissez une situation puis un mode de travail.</p></div></div><section class="exercise-list">${exercises.map(e=>`<button class="exercise-card" data-exercise="${e.id}"><span class="exercise-index">${esc(exerciseRef(e))}</span><span><strong>${esc(e.title)}</strong><small>Niveau ${e.difficulty} · données paramétriques</small></span><span class="arrow">→</span></button>`).join("")}</section>`;
@@ -167,12 +191,14 @@ function openExercise(exercise, mode = state.mode) {
 }
 
 function renderExercise() {
+  disposeWebGLView();
   const e = state.exercise, chapter = state.catalog.chapters.find(c => c.id === e.chapter);
   const recap = courseRecap(e.solver);
   const ref = exerciseRef(e);
   const refLabel = ref === "App." ? "Application" : ref === "Ex" ? "Examen" : `n° ${ref}`;
   const recapHtml = state.mode === "exam" ? "" : `<article class="card recap-card"><p class="recap-kicker">Rappel de cours</p><h2>${esc(recap.title)}</h2><h3 class="recap-section">Le problème</h3><p class="recap-lead">${esc(recap.problem)}</p><h3 class="recap-section">La physique</h3><p class="recap-lead">${esc(recap.lead)}</p><h3 class="recap-section">Les équations</h3><ul class="recap-points">${recap.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul><p class="recap-watch"><strong>Piège fréquent.</strong> ${esc(recap.watch)}</p></article>`;
-  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · ${esc(refLabel)} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><h2>Schéma de l’exercice</h2><div class="diagram" id="diagram"></div><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
+  const webglSwitch = WEBGL_SOLVERS.has(e.solver) ? `<div class="diagram-switch" role="group" aria-label="Type de schéma"><button type="button" class="${state.diagramView!=="webgl"?"active":""}" data-diagram-view="svg">Schéma</button><button type="button" class="${state.diagramView==="webgl"?"active":""}" data-diagram-view="webgl">3D</button></div>` : "";
+  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · ${esc(refLabel)} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><div class="diagram-head"><h2>Schéma de l’exercice</h2>${webglSwitch}</div><div class="diagram" id="diagram"></div><div class="diagram diagram-webgl" id="diagramWebGL" hidden></div><p class="diagram-hint" id="diagramHint" hidden>Glisser pour tourner · molette pour zoomer</p><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
   const formulas=equationSheets[e.solver]||["Consulter les hypothèses et établir le bilan fondamental."];
   const rightCol = app.querySelector(".workspace > div:nth-child(2)");
   const items = state.mode === "learn" ? warmups[e.id] : null;
@@ -262,6 +288,11 @@ function bindExerciseEvents() {
   document.querySelector("#submitAll").addEventListener("click", submitAll);
   document.querySelector("#showCorrection")?.addEventListener("click", showCorrection);
   document.querySelector("#randomize")?.addEventListener("click", () => openExercise(state.exercise, state.mode));
+  document.querySelectorAll("[data-diagram-view]").forEach(button => button.addEventListener("click", () => {
+    state.diagramView = button.dataset.diagramView;
+    document.querySelectorAll("[data-diagram-view]").forEach(item => item.classList.toggle("active", item === button));
+    refreshDiagram();
+  }));
   document.querySelector(".warmup-card")?.addEventListener("click", event => {
     const b = event.target.closest("[data-warmup]");
     if (!b || b.disabled) return;
@@ -330,25 +361,71 @@ function openMoodyReader() {
   paint();
 }
 
+function showSvgDiagram(figure) {
+  disposeWebGLView();
+  const box = document.querySelector("#diagram");
+  const webglBox = document.querySelector("#diagramWebGL");
+  const hint = document.querySelector("#diagramHint");
+  const note = document.querySelector("#diagramNote");
+  if (webglBox) webglBox.hidden = true;
+  if (hint) hint.hidden = true;
+  if (box) {
+    box.hidden = false;
+    box.innerHTML = figure.svg;
+    box.classList.remove("diagram-zoomable");
+    box.title = "";
+    box.onclick = null;
+    const chart = box.querySelector(".moody-chart");
+    if (chart) {
+      box.classList.add("diagram-zoomable");
+      box.title = "Cliquer pour agrandir";
+      box.onclick = openMoodyReader;
+    }
+  }
+  if (note) note.textContent = figure.caption;
+}
+
+async function showWebGLDiagram(figure) {
+  const box = document.querySelector("#diagram");
+  const webglBox = document.querySelector("#diagramWebGL");
+  const hint = document.querySelector("#diagramHint");
+  const note = document.querySelector("#diagramNote");
+  const token = ++state.webglToken;
+  if (box) {
+    box.hidden = true;
+    box.onclick = null;
+    box.classList.remove("diagram-zoomable");
+  }
+  if (webglBox) webglBox.hidden = false;
+  if (hint) hint.hidden = false;
+  if (note) note.textContent = `${figure.caption} Vue 3D interactive.`;
+  try {
+    const mod = await loadDiagrams3d();
+    if (token !== state.webglToken || !state.exercise) return;
+    const ok = mod.mountOrUpdate("diagramWebGL", state.exercise.solver, state.data);
+    if (!ok) throw new Error("WebGL indisponible");
+  } catch {
+    if (token !== state.webglToken) return;
+    toast("Vue 3D indisponible sur cet appareil.");
+    state.diagramView = "svg";
+    document.querySelectorAll("[data-diagram-view]").forEach(item => item.classList.toggle("active", item.dataset.diagramView === "svg"));
+    showSvgDiagram(figure);
+  }
+}
+
 function refreshDiagram() {
   if (!state.exercise) return;
   const figure = drawFigure(state.exercise.solver, state.data);
-  const box = document.querySelector("#diagram");
-  const note = document.querySelector("#diagramNote");
-  if (box) box.innerHTML = figure.svg;
-  if (note) note.textContent = figure.caption;
-  const chart = box?.querySelector(".moody-chart");
-  if (chart) {
-    box.classList.add("diagram-zoomable");
-    box.title = "Cliquer pour agrandir";
-    box.onclick = openMoodyReader;
-  }
+  const use3d = WEBGL_SOLVERS.has(state.exercise.solver) && state.diagramView === "webgl";
+  if (use3d) showWebGLDiagram(figure);
+  else showSvgDiagram(figure);
 }
 
 function startTimer() { state.seconds = 0; state.timer = setInterval(() => { state.seconds++; const clock = document.querySelector("#clock"); if (clock) clock.textContent = `Temps ${formatTime(state.seconds)}`; }, 1000); }
 function stopTimer() { clearInterval(state.timer); state.timer = null; }
 
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeMoodyReader(); });
+window.addEventListener("pagehide", disposeWebGLView);
 document.querySelector("#homeButton").addEventListener("click", home);
 window.addEventListener("hashchange", () => {
   if (!state.catalog) return;
@@ -361,16 +438,17 @@ if ("serviceWorker" in navigator) window.addEventListener("load", () => navigato
 
 const loadJson = url => fetch(url).then(r => r.ok ? r.json() : []);
 try {
-  const [catalog, batch12, batch34, batch58, batchExam, batchTd, batchComp] = await Promise.all([
+  const [catalog, batch12, batch34, batch58, batchExam, batchTd, batchComp, batchHg] = await Promise.all([
     fetch("./data/exercises.json").then(r => r.json()),
     loadJson("./data/exercises-ch1-ch2.json"),
     loadJson("./data/exercises-ch3-ch4.json"),
     loadJson("./data/exercises-ch5-ch8.json"),
     loadJson("./data/exercises-exam-td.json"),
     loadJson("./data/exercises-td.json"),
-    loadJson("./data/exercises-complements.json")
+    loadJson("./data/exercises-complements.json"),
+    loadJson("./data/exercises-hydrau-gen.json")
   ]);
-  state.catalog = { ...catalog, exercises: [...catalog.exercises, ...batch12, ...batch34, ...batch58, ...batchExam, ...batchTd, ...batchComp] };
+  state.catalog = { ...catalog, exercises: [...catalog.exercises, ...batch12, ...batch34, ...batch58, ...batchExam, ...batchTd, ...batchComp, ...batchHg] };
   const requested = state.catalog.exercises.find(e => `#${e.id}` === location.hash);
   requested ? openExercise(requested) : home();
 } catch {

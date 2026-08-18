@@ -40,6 +40,31 @@ function colebrookIterationText(history) {
   return lines.join("\n");
 }
 
+function bisect(fn, lo, hi, n = 48) {
+  for (let i = 0; i < n; i++) {
+    const mid = (lo + hi) / 2;
+    if (fn(mid) < 0) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+function hazenHf(Q, D, L, C) {
+  return 10.67 * L * (Q ** 1.852) / ((C ** 1.852) * (D ** 4.87));
+}
+function hazenQfrom(hf, D, L, C) {
+  const k = 10.67 * L / ((C ** 1.852) * (D ** 4.87));
+  return (hf / Math.max(k, 1e-18)) ** (1 / 1.852);
+}
+function diffuserK(thetaDeg, D1, D2) {
+  const beta2 = (D1 / D2) ** 2;
+  const sudden = (1 - beta2) ** 2;
+  if (thetaDeg >= 50) return sudden;
+  return 2.6 * Math.sin((thetaDeg * Math.PI) / 360) * sudden;
+}
+function contractionK(thetaDeg, D1, D2) {
+  const beta2 = (D2 / D1) ** 2;
+  return 0.8 * Math.sin((thetaDeg * Math.PI) / 360) * (1 - beta2);
+}
+
 export const solvers = {
   density(d) {
     const fromGeom = Number.isFinite(d.D) && Number.isFinite(d.h) && !Number.isFinite(d.volume);
@@ -1072,11 +1097,14 @@ export const solvers = {
   hydraulicJump(d) {
     const Fr1 = d.V1 / Math.sqrt(G * d.y1);
     const y2 = 0.5 * d.y1 * (-1 + Math.sqrt(1 + 8 * Fr1 ** 2));
+    const V2 = d.V1 * d.y1 / Math.max(y2, 1e-9);
+    const Fr2 = V2 / Math.sqrt(G * y2);
     const dE = (y2 - d.y1) ** 3 / (4 * d.y1 * y2);
     const Lr = 6 * y2;
-    return steps({ Fr1, y2, dE, Lr }, [
+    return steps({ Fr1, y2, V2, Fr2, dE, Lr }, [
       ["Froude amont", `Fr₁ = V₁/√(g y₁) = ${n(Fr1)} ${Fr1 > 1 ? "(torrentiel)" : "(pas de ressaut classique)"}`],
       ["Conjugaison (ressaut rectangulaire)", `y₂/y₁ = ½(−1 + √(1+8 Fr₁²)) ⟹ y₂ = ${n(y2)} m`],
+      ["Aval", `V₂ = V₁ y₁/y₂ = ${n(V2)} m/s ; Fr₂ = ${n(Fr2)}`],
       ["Perte de charge du ressaut", `ΔE = (y₂−y₁)³/(4 y₁ y₂) = ${n(dE)} m`],
       ["Longueur approximative", `L_r ≈ 6 y₂ = ${n(Lr)} m`]
     ]);
@@ -1090,6 +1118,209 @@ export const solvers = {
       ["Profondeur critique (rectangle)", `y_c = (Q²/(g b²))^{1/3} = ${n(yc)} m`],
       ["Nombre de Froude", `Fr = V/√(g y) = ${n(Fr)} : ${Fr < 1 ? "fluvial (y > y_c)" : Fr > 1 ? "torrentiel (y < y_c)" : "critique"}`],
       ["Énergie spécifique", `E = y + V²/2g = ${n(E)} m ; au critique E_c = 3y_c/2 = ${n(Ec)} m`]
+    ]);
+  },
+  unknownDensityColumn(d) {
+    const pA = d.pA * 1e6;
+    const rhoB = -pA / (G * d.h);
+    return steps({ rhoB }, [
+      ["Pressions", `p_A = ${n(d.pA)} MPa = ${n(pA)} Pa (relative) ; p_F = 0.`],
+      ["Hydrostatique A → F", `p_F = p_A + ρ_B g h = 0`],
+      ["Masse volumique", `ρ_B = −p_A /(g h) = ${n(-pA)} / (${n(G)} × ${n(d.h)}) = ${n(rhoB)} kg/m³`]
+    ]);
+  },
+  threeFluidUTube(d) {
+    const d12 = d.d12 / 100, d43 = d.d43 / 100, s23 = d.s23 / 100;
+    const rhoO = d.rhoOil, rhoW = d.rhoW, rhoM = d.rhoHg;
+    const z2 = (rhoW * (s23 + d43) + rhoM * s23 - rhoO * d12) / (rhoO + 2 * rhoM + rhoW);
+    const Z3 = s23 - z2, Z1 = z2 + d12, Z4 = Z3 + d43;
+    return steps({ Z1: Z1 * 100, Z2: z2 * 100, Z3: Z3 * 100, Z4: Z4 * 100 }, [
+      ["Contraintes géométriques", `Z₁ = Z₂ + ${n(d12)} m ; Z₄ = Z₃ + ${n(d43)} m ; Z₃ = ${n(s23)} − Z₂.`],
+      ["Équilibre (p_A = p_D = 0)", `ρ_huile Z₁ + ρ_Hg Z₂ = ρ_eau Z₄ + ρ_Hg Z₃`],
+      ["Inconnue Z₂", `Z₂ = ${n(z2)} m = ${n(z2 * 100)} cm`],
+      ["Autres cotes", `Z₁ = ${n(Z1 * 100)} cm ; Z₃ = ${n(Z3 * 100)} cm ; Z₄ = ${n(Z4 * 100)} cm`]
+    ]);
+  },
+  penstockNozzle(d) {
+    const rho = d.rho || 1000;
+    const V2 = Math.sqrt(2 * G * (d.zR - d.z2));
+    const Q = d.sNoz * V2, mDot = rho * Q, V1 = Q / d.S;
+    const p1 = rho * G * (d.zR - d.z1) - 0.5 * rho * V1 ** 2;
+    return steps({ p1, V2, mDot, V1 }, [
+      ["Tuyère (p = pₐₜₘ, V_plan d’eau ≈ 0)", `V₂ = √[2g(z_R − z₂)] = ${n(V2)} m/s`],
+      ["Débit", `Q = s V₂ = ${n(Q)} m³/s ; ṁ = ρQ = ${n(mDot)} kg/s`],
+      ["Entrée de tuyère = sortie de conduite", `V₁ = Q/S = ${n(V1)} m/s`],
+      ["Pression au départ de la conduite", `p₁ = ρg(z_R − z₁) − ½ρV₁² = ${n(p1)} Pa`]
+    ]);
+  },
+  darcyMoodyRe(d) {
+    const D = d.D / 1000, epsRel = d.eps / d.D, nu = d.nu * 1e-6;
+    const V = d.Re * nu / D;
+    const { f, history } = colebrookSolve(d.Re, epsRel);
+    const hf = f * (d.L / D) * V ** 2 / (2 * G);
+    return steps({ V, epsRel, f, hf }, [
+      ["Vitesse", `V = Re ν / D = ${n(V)} m/s  (ν à 40 °C)`],
+      ["Rugosité relative", `ε/D = ${n(epsRel)}`],
+      history.length ? ["Itérations de Colebrook–White", colebrookIterationText(history)] : ["Laminaire", `λ = 64/Re = ${n(f)}`],
+      ["Darcy–Weisbach", `h_f = λ (L/D) V²/(2g) = ${n(hf)} m`]
+    ]);
+  },
+  gradualEnlargement(d) {
+    const D1 = d.D1 / 1000, D2 = d.D2 / 1000, Q = d.Q / 1000;
+    const V1 = Q / circle(D1), V2 = Q / circle(D2);
+    const K = diffuserK(d.theta, D1, D2);
+    const hs = K * V1 ** 2 / (2 * G);
+    return steps({ V1, V2, K, hs }, [
+      ["Vitesses", `V₁ = ${n(V1)} m/s ; V₂ = ${n(V2)} m/s`],
+      ["Coefficient de cône (Crane)", `K = 2,6 sin(θ/2) (1 − (D₁/D₂)²)² = ${n(K)}`],
+      ["Perte singulière", `h_s = K V₁²/(2g) = ${n(hs)} m`]
+    ]);
+  },
+  seriesConePipe(d) {
+    const Q = d.Q / 1000, D1 = d.D1 / 100, D2 = d.D2 / 100;
+    const V1 = Q / circle(D1), V2 = Q / circle(D2);
+    const hv1 = V1 ** 2 / (2 * G), hv2 = V2 ** 2 / (2 * G);
+    const hfAB = d.f1 * (d.L1 / D1) * hv1, hfCD = d.f2 * (d.L2 / D2) * hv2, hfEF = d.f3 * (d.L3 / D1) * hv1;
+    const Kc = contractionK(d.thetaC, D1, D2), Ke = diffuserK(d.thetaE, D2, D1);
+    const hsBC = Kc * hv2, hsDE = Ke * hv2;
+    const HF = d.HA - hfAB - hsBC - hfCD - hsDE - hfEF;
+    return steps({ V1, V2, hfAB, hfCD, hfEF, hsBC, hsDE, HF }, [
+      ["Continuité", `V₁ = ${n(V1)} m/s (D = ${n(d.D1)} cm) ; V₂ = ${n(V2)} m/s (D = ${n(d.D2)} cm)`],
+      ["Pertes linéaires", `h_AB = ${n(hfAB)} m ; h_CD = ${n(hfCD)} m ; h_EF = ${n(hfEF)} m`],
+      ["Cônes", `K_contraction = ${n(Kc)} → h_BC = ${n(hsBC)} m ; K_élargissement = ${n(Ke)} → h_DE = ${n(hsDE)} m`],
+      ["Charge en F", `H_F = H_A − Σh = ${n(HF)} m`]
+    ]);
+  },
+  hazenWilliams(d) {
+    const D = d.D / 100, Q = d.Q / 1000, Dq = d.Dq / 100;
+    const Qj = hazenQfrom(d.drop, Dq, d.Lj, d.Cnew) * 1000;
+    const hfWorn = hazenHf(Q, D, d.L, d.C);
+    return steps({ Qj, hfWorn }, [
+      ["Formule SI", `h_f = 10,67 L Q^{1,852} / (C^{1,852} D^{4,87})  (Q en m³/s, D en m)`],
+      ["Débit pour la chute piézométrique", `Q = ${n(Qj)} L/s  (C = ${n(d.Cnew)}, L = ${n(d.Lj)} m, h_f = ${n(d.drop)} m)`],
+      ["Perte pour le débit imposé", `h_f = ${n(hfWorn)} m  (C = ${n(d.C)}, L = ${n(d.L)} m, Q = ${n(d.Q)} L/s)`]
+    ]);
+  },
+  pipeABPressure(d) {
+    const D = d.D / 100, Q = d.Q / 3600, nu = d.nu * 1e-6, epsRel = (d.eps / 1000) / D;
+    const V = Q / circle(D), Re = V * D / nu;
+    const { f, history } = colebrookSolve(Re, epsRel);
+    const hf = f * (d.L / D) * V ** 2 / (2 * G);
+    const pB = d.pA - (d.rho || 1000) * G * hf;
+    return steps({ Re, hf, pB }, [
+      ["Vitesse et Reynolds", `Q = ${n(d.Q)} m³/h = ${n(Q)} m³/s ; V = ${n(V)} m/s ; Re = ${n(Re)}`],
+      history.length ? ["Colebrook", colebrookIterationText(history)] : ["Laminaire", `λ = 64/Re = ${n(f)}`],
+      ["Perte linéaire", `h_f = ${n(hf)} m`],
+      ["Bernoulli horizontal", `p_B = p_A − ρg h_f = ${n(pB)} Pa`]
+    ]);
+  },
+  hazenParallelNetwork(d) {
+    const C = d.C, QA = d.QA / 1000;
+    const D1 = d.D1 / 100, D2 = d.D2 / 100, DCB = d.DCB / 100, DCD = d.DCD / 100;
+    const hfAC = bisect(h => hazenQfrom(h, D1, d.L1, C) + hazenQfrom(h, D2, d.L2, C) - QA, 0.05, 40);
+    const Q1 = hazenQfrom(hfAC, D1, d.L1, C), Q2 = hazenQfrom(hfAC, D2, d.L2, C);
+    const HC = d.HA - hfAC;
+    const hfCB = d.HB - HC;
+    const QCB = Math.sign(hfCB) * hazenQfrom(Math.abs(hfCB), DCB, d.LCB, C);
+    const QCD = QA + QCB;
+    const hfCD = hazenHf(Math.abs(QCD), DCD, d.LCD, C);
+    const HD = HC - Math.sign(QCD) * hfCD;
+    return steps({ Q1: Q1 * 1000, Q2: Q2 * 1000, HC, QCB: QCB * 1000, QCD: QCD * 1000, HD }, [
+      ["Parallèle A→C", `h_AC tel que Q₁+Q₂ = Q_A → h_AC = ${n(hfAC)} m`],
+      ["Débits (1) et (2)", `Q₁ = ${n(Q1 * 1000)} L/s ; Q₂ = ${n(Q2 * 1000)} L/s`],
+      ["Nœud C", `H_C = H_A − h_AC = ${n(HC)} m`],
+      ["Branche CB", `H_B − H_C = ${n(hfCB)} m → Q_CB = ${n(QCB * 1000)} L/s (vers C si H_B > H_C)`],
+      ["Conduite CD", `Q_CD = Q_A + Q_CB = ${n(QCD * 1000)} L/s ; H_D = ${n(HD)} m`]
+    ]);
+  },
+  seriesPipeHGL(d) {
+    const D1 = d.D1 / 100, D2 = d.D2 / 100, V1 = d.V;
+    const V2 = V1 * (D1 / D2) ** 2, Q = V1 * circle(D1);
+    const hv1 = V1 ** 2 / (2 * G), hv2 = V2 ** 2 / (2 * G);
+    const hfAB = d.f1 * (d.L1 / D1) * hv1, hfCD = d.f2 * (d.L2 / D2) * hv2, hfEF = d.f3 * (d.L3 / D1) * hv1;
+    const hsC = d.K * hv2, hsE = (V2 - V1) ** 2 / (2 * G);
+    const HA = d.Hp + hv1;
+    const HB = HA - hfAB, HC = HB - hsC, HD = HC - hfCD, HE = HD - hsE, HF = HE - hfEF;
+    const hglA = d.Hp, hglB = HB - hv1, hglC = HC - hv2, hglD = HD - hv2, hglE = HE - hv1, hglF = HF - hv1;
+    return steps({ Q, V2, hfAB, hfCD, hfEF, hsC, hsE, HF, hglF }, [
+      ["Débit et V₁₅", `Q = ${n(Q)} m³/s ; V₁₅ = V₃₀ (D₃₀/D₁₅)² = ${n(V2)} m/s`],
+      ["Pertes linéaires", `h_AB = ${n(hfAB)} m ; h_CD = ${n(hfCD)} m ; h_EF = ${n(hfEF)} m`],
+      ["Singularités", `contraction K V₁₅²/2g = ${n(hsC)} m ; élargissement Borda (V₁₅−V₃₀)²/2g = ${n(hsE)} m`],
+      ["Charge en F (EGL)", `H_F = ${n(HF)} m`],
+      ["Piézométrie en F", `HGL_F = H_F − V₃₀²/2g = ${n(hglF)} m`]
+    ]);
+  },
+  canalThreeReaches(d) {
+    const z = d.z, b = d.b, yA = d.yA, nm = d.n, Q = d.Q;
+    const AA = (b + z * yA) * yA, PA = b + 2 * yA * Math.sqrt(1 + z * z), RA = AA / PA, TA = b + 2 * z * yA, ymA = AA / TA;
+    const VA = Q / AA, SA = (nm * VA / RA ** (2 / 3)) ** 2, FrA = VA / Math.sqrt(G * ymA);
+    const yB = bisect(y => {
+      const A = b * y, R = A / (b + 2 * y);
+      return A * d.C * Math.sqrt(R * d.iB) - Q;
+    }, 0.05, 8);
+    const AB = b * yB, VB = Q / AB, FrB = VB / Math.sqrt(G * yB);
+    const ycB = (Q ** 2 / (G * b ** 2)) ** (1 / 3);
+    const ycC = ycB, yC = d.yC, FrC = (Q / (b * yC)) / Math.sqrt(G * yC);
+    return steps({ SA, FrA, yB, FrB, ycB, ycC, FrC }, [
+      ["Tronçon A (Manning)", `A = ${n(AA)} m² ; R = ${n(RA)} m ; S_A = [n V / R^{2/3}]² = ${n(SA)}`],
+      ["Régime A", `Fr_A = V/√(g ȳ) = ${n(FrA)} (${FrA < 1 ? "fluvial" : "torrentiel"})`],
+      ["Tronçon B (Chézy)", `Q = b y C √(R i) → y_B = ${n(yB)} m ; Fr_B = ${n(FrB)}`],
+      ["Critique rectangle", `y_c = (Q²/(g b²))^{1/3} = ${n(ycB)} m`],
+      ["Tronçon C", `y_C = ${n(yC)} m ≷ y_c → Fr_C = ${n(FrC)} (${FrC < 1 ? "fluvial" : "torrentiel"})`]
+    ]);
+  },
+  triangularTwoSlopes(d) {
+    const z = d.z || 1, Q = d.Q, nm = d.n, S1 = 1 / d.i1inv;
+    const yc = (2 * Q ** 2 / (G * z ** 2)) ** 0.2;
+    const y1 = bisect(y => {
+      const A = z * y * y, P = 2 * y * Math.sqrt(1 + z * z), R = A / P;
+      return A / nm * R ** (2 / 3) * Math.sqrt(S1) - Q;
+    }, 0.05, 4);
+    const A1 = z * y1 * y1, V1 = Q / A1, ym1 = A1 / (2 * z * y1), Fr1 = V1 / Math.sqrt(G * ym1);
+    const y2 = d.y2, A2 = z * y2 * y2, P2 = 2 * y2 * Math.sqrt(1 + z * z), R2 = A2 / P2, V2 = Q / A2;
+    const S2 = (nm * V2 / R2 ** (2 / 3)) ** 2, ym2 = A2 / (2 * z * y2), Fr2 = V2 / Math.sqrt(G * ym2);
+    return steps({ yc, y1, Fr1, S2, Fr2 }, [
+      ["Critique (triangle)", `y_c = (2 Q² /(g z²))^{1/5} = ${n(yc)} m`],
+      ["Bief 1, i = 1/" + `${n(d.i1inv)}`, `y₁ = ${n(y1)} m ; Fr₁ = ${n(Fr1)} (${Fr1 > 1 ? "torrentiel" : "fluvial"})`],
+      ["Bief 2, y₂ imposé", `S₂ = [n V / R^{2/3}]² = ${n(S2)}`],
+      ["Régime 2", `Fr₂ = ${n(Fr2)} (${Fr2 > 1 ? "torrentiel" : "fluvial"})`]
+    ]);
+  },
+  specificEnergyStep(d) {
+    const q = d.Q / d.b, y1 = d.y1;
+    const E1 = y1 + q ** 2 / (2 * G * y1 ** 2);
+    const E2 = E1 - d.z;
+    const yc = (q ** 2 / G) ** (1 / 3);
+    const y2 = E2 <= 1.5 * yc + 1e-6
+      ? yc
+      : bisect(y => y + q ** 2 / (2 * G * y * y) - E2, yc, Math.max(E2, yc + 0.2));
+    return steps({ E1, E2, yc, y2 }, [
+      ["Énergie amont", `E₁ = y₁ + q²/(2g y₁²) = ${n(E1)} m  (q = Q/b = ${n(q)} m²/s)`],
+      ["Seuil", `E₂ = E₁ − z = ${n(E2)} m`],
+      ["Critique", `y_c = (q²/g)^{1/3} = ${n(yc)} m`],
+      ["Profondeur aval (racine fluviale)", `y₂ + q²/(2g y₂²) = E₂ → y₂ = ${n(y2)} m`]
+    ]);
+  },
+  canalSlopeBreak(d) {
+    const Ks = 1 / d.n, Q = d.Q, b = d.b1;
+    const y1 = bisect(y => {
+      const A = b * y, R = A / (b + 2 * y);
+      return A * Ks * R ** (2 / 3) * Math.sqrt(d.i1) - Q;
+    }, 0.05, 4);
+    const y2 = bisect(y => {
+      const A = b * y, R = A / (b + 2 * y);
+      return A * Ks * R ** (2 / 3) * Math.sqrt(d.i2) - Q;
+    }, 0.05, 6);
+    const yc = (Q ** 2 / (G * b ** 2)) ** (1 / 3);
+    const Fr1 = (Q / (b * y1)) / Math.sqrt(G * y1);
+    const Fr2 = (Q / (b * y2)) / Math.sqrt(G * y2);
+    const yc3 = (Q ** 2 / (G * d.b3 ** 2)) ** (1 / 3);
+    const Fr3 = (Q / (d.b3 * d.y3)) / Math.sqrt(G * d.y3);
+    return steps({ y1, y2, yc, Fr1, Fr2, yc3, Fr3 }, [
+      ["Bief 1 (Manning)", `y₁ = ${n(y1)} m ; Fr₁ = ${n(Fr1)} (${Fr1 > 1 ? "torrentiel" : "fluvial"})`],
+      ["Bief 2", `y₂ = ${n(y2)} m ; Fr₂ = ${n(Fr2)} (${Fr2 > 1 ? "torrentiel" : "fluvial"})`],
+      ["Critique biefs 1–2", `y_c = ${n(yc)} m — un ressaut raccorde souvent 1 à 2`],
+      ["Bief 3 rétréci", `y_c3 = ${n(yc3)} m ; y₃ = ${n(d.y3)} m ; Fr₃ = ${n(Fr3)}`]
     ]);
   }
 };
