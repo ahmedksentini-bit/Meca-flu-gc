@@ -1,6 +1,7 @@
 const recaps = {
   density: {
     title: "Masse volumique, poids volumique, densité",
+    problem: "On a un volume d’huile (cylindre ou volume donné) et une masse ou un poids. Il faut en déduire la masse volumique, le poids volumique et la densité.",
     lead: "Trois grandeurs décrivent « combien de matière » contient un volume, mais elles ne sont pas interchangeables. On part du volume (souvent un cylindre) et de la masse, ou du poids.",
     points: [
       "Cylindre : 𝒱 = πD²h/4. Sinon le volume est donné.",
@@ -11,6 +12,7 @@ const recaps = {
   },
   viscosity: {
     title: "Viscosité et écoulement de Couette",
+    problem: "Un fluide est cisaillé entre une plaque mobile et une plaque fixe. On mesure l’effort, la surface, la vitesse et l’épaisseur pour en tirer μ, puis ν.",
     lead: "Un fluide newtonien relie la contrainte de cisaillement au gradient de vitesse. Entre deux plaques, le profil est linéaire : c’est le modèle de Couette du chapitre 1.",
     points: [
       "Adhérence : le fluide a la vitesse de la paroi (U en haut, 0 en bas).",
@@ -21,6 +23,7 @@ const recaps = {
   },
   compressibility: {
     title: "Compressibilité et module K",
+    problem: "Un volume d’eau fermé subit une forte hausse de pression. On cherche de combien le volume diminue, c’est-à-dire la « raideur » du fluide.",
     lead: "L’eau n’est pas incompressible au sens strict : une forte hausse de pression réduit très légèrement le volume. Le module d’élasticité volumique K mesure cette raideur.",
     points: [
       "Définition : K = −Δp / (Δ𝒱/𝒱). Le signe « − » dit qu’une compression diminue le volume.",
@@ -31,6 +34,7 @@ const recaps = {
   },
   coaxialViscometer: {
     title: "Viscosimètre de Couette cylindrique",
+    problem: "Un cylindre intérieur tourne dans un stator fixe, l’entrefer étant rempli d’huile. Le couple mesuré doit donner la viscosité.",
     lead: "Si l’entrefer est mince devant le rayon, l’écoulement entre deux cylindres se ramène localement à un Couette plan. Le couple mesuré donne alors μ.",
     points: [
       "Vitesse angulaire ω = 2πN/60, puis vitesse périphérique U = ω Rᵢ.",
@@ -41,6 +45,7 @@ const recaps = {
   },
   capillary: {
     title: "Capillarité et loi de Jurin",
+    problem: "Un liquide mouille (ou non) un tube très fin. On veut la hauteur d’ascension, ou le diamètre minimal d’un piézomètre pour limiter l’erreur.",
     lead: "Dans un tube fin, la tension superficielle peut faire monter (ou descendre) une colonne liquide jusqu’à l’équilibre avec le poids.",
     points: [
       "La composante verticale de la tension, πd σ cosθ, équilibre le poids ρg (πd²/4) h.",
@@ -52,6 +57,7 @@ const recaps = {
   },
   laplace: {
     title: "Loi de Laplace",
+    problem: "Une goutte ou une bulle a une interface courbe. On cherche la surpression intérieure par rapport à l’extérieur.",
     lead: "Une interface courbe crée une surpression. Plus le rayon est petit, plus Δp est grand — d’où la fragilité des petites bulles et le rôle de la capillarité à petite échelle.",
     points: [
       "Goutte (une interface) : Δp = 2σ/R.",
@@ -62,6 +68,7 @@ const recaps = {
   },
   idealGas: {
     title: "Gaz parfait",
+    problem: "Une bouteille d’air est à une pression et une température données. On veut la masse volumique, la masse contenue, éventuellement le volume à l’atmosphère.",
     lead: "Pour l’air, la masse volumique dépend fortement de la pression et de la température absolues. L’équation d’état p = ρ R T relie les trois.",
     points: [
       "Température en kelvin : T(K) = T(°C) + 273,15.",
@@ -72,6 +79,7 @@ const recaps = {
   },
   pressureDepth: {
     title: "Relation fondamentale de l’hydrostatique",
+    problem: "Un plongeur, une prise ou un fond se trouve à une profondeur h sous une surface libre. On cherche la pression relative, puis l’absolue.",
     lead: "Au repos, la pression n’augmente qu’avec la profondeur. C’est l’équation dp/dz = −ρg, intégrée à ρ constant.",
     points: [
       "Pression relative : p − pₐₜₘ = ρ g h.",
@@ -82,6 +90,7 @@ const recaps = {
   },
   layeredPressure: {
     title: "Pressions par couches",
+    problem: "Un réservoir contient deux fluides non miscibles superposés. On veut la pression à l’interface et au fond.",
     lead: "Dans un réservoir à fluides non miscibles, on additionne les accroissements ρ g h de chaque couche. La pression est continue à l’interface.",
     points: [
       "On chemine du haut vers le bas : chaque couche ajoute ρᵢ g hᵢ.",
@@ -92,6 +101,7 @@ const recaps = {
   },
   manometer: {
     title: "Manomètre différentiel",
+    problem: "Deux prises (ou une prise et l’atmosphère) sont reliées par un U à fluide dense. La dénivellation lue doit donner Δp.",
     lead: "On relie deux prises en cheminant dans le tube : +ρgΔz en descendant, −ρgΔz en montant. Les colonnes identiques se compensent.",
     points: [
       "Pour deux prises à la même cote : p₁ − p₂ = (ρₘ − ρ) g Δh.",
@@ -102,6 +112,7 @@ const recaps = {
   },
   hydraulicPress: {
     title: "Principe de Pascal",
+    problem: "Un petit piston transmet un effort à un grand piston par un liquide. On cherche la force de levage et les courses correspondantes.",
     lead: "Une pression appliquée à un liquide au repos se transmet intégralement. D’où le multiplicateur de force de la presse hydraulique.",
     points: [
       "Même pression : F₁/A₁ = F₂/A₂, donc F₂/F₁ = (D₂/D₁)².",
@@ -112,6 +123,7 @@ const recaps = {
   },
   planeForce: {
     title: "Mur de réservoir — diagramme des pressions",
+    problem: "Un mur vertical retient une hauteur d’eau H. Il faut la poussée sur une largeur b, son point d’application et le moment au pied.",
     lead: "Sur une paroi verticale affleurante, le diagramme des pressions est un triangle. La poussée est l’aire de ce triangle, appliquée à H/3 du pied.",
     points: [
       "p_max = ρgH au pied ; F = ½ ρg H² b.",
@@ -122,6 +134,7 @@ const recaps = {
   },
   submergedGate: {
     title: "Vanne plane immergée",
+    problem: "Une vanne plane rectangulaire est entièrement sous la surface. On cherche la poussée et la profondeur du centre de poussée.",
     lead: "Même théorème que pour la paroi affleurante, mais le centre de gravité n’est plus à H/2 sous la surface : il est à y₀ + H/2.",
     points: [
       "ȳ = y₀ + H/2, puis F = ρ g A ȳ.",
@@ -132,6 +145,7 @@ const recaps = {
   },
   circularGate: {
     title: "Vanne circulaire",
+    problem: "Une vanne circulaire verticale est immergée, son centre à ȳ. On veut F et yₚ.",
     lead: "Le théorème F = ρ g A ȳ s’applique à toute forme plane. Seules changent l’aire et le moment quadratique du disque.",
     points: [
       "A = π D²/4 et Iᴳ = π D⁴/64.",
@@ -142,6 +156,7 @@ const recaps = {
   },
   bargeStability: {
     title: "Stabilité d’un caisson flottant",
+    problem: "Un caisson flotte avec un tirant Tₑ et un centre de gravité z_G. On doit dire s’il est stable au roulis, via GM.",
     lead: "À l’équilibre, le poids égale la poussée d’Archimède. La stabilité au roulis se lit sur la hauteur métacentrique GM.",
     points: [
       "Volume déplacé ∇ = L B Tₑ ; centre de carène KB = Tₑ/2.",
@@ -152,6 +167,7 @@ const recaps = {
   },
   inclinedCircularGate: {
     title: "Vanne circulaire inclinée",
+    problem: "Un disque est dans une paroi inclinée. On connaît la profondeur verticale du centre ; on veut la poussée et l’écart le long de la paroi.",
     lead: "La poussée ne dépend que de la profondeur du centre. L’écart centre de poussée se mesure le long de la paroi.",
     points: [
       "F = ρ g A h_G, A = πD²/4.",
@@ -162,6 +178,7 @@ const recaps = {
   },
   quarterCylinder: {
     title: "Paroi courbe — quart de cylindre",
+    problem: "Une vanne en quart de cylindre retient de l’eau du côté concave. On sépare la poussée horizontale et la poussée verticale.",
     lead: "Sur une paroi courbe, on sépare horizontale (projection verticale) et verticale (poids du fluide au-dessus de la face).",
     points: [
       "F_H = ½ ρg R² b, appliquée à 2R/3 sous la surface.",
@@ -172,6 +189,7 @@ const recaps = {
   },
   archimedesCaisson: {
     title: "Archimède : poids apparent et flottaison",
+    problem: "D’un côté un bloc immergé suspendu à un câble ; de l’autre un caisson qui doit flotter. On cherche tension, tirant et franc-bord.",
     lead: "Un corps immergé perd le poids du fluide déplacé. Un caisson flotte si la poussée à immersion totale dépasse son poids.",
     points: [
       "Tension du câble T = (ρ_béton − ρ_eau) g 𝒱.",
@@ -182,6 +200,7 @@ const recaps = {
   },
   pipeContinuity: {
     title: "Débit et vitesse moyenne",
+    problem: "Une conduite pleine transporte un débit Q. On veut la vitesse moyenne, ou le diamètre qui respecterait une vitesse cible.",
     lead: "Pour un fluide incompressible en régime permanent, le débit volumique Q = A V est le même tout le long d’une conduite pleine. La vitesse moyenne est un débit divisé par une section.",
     points: [
       "Section circulaire : A = π D²/4, avec D en mètres.",
@@ -192,6 +211,7 @@ const recaps = {
   },
   twoSectionContinuity: {
     title: "Équation de continuité",
+    problem: "Le diamètre change entre deux sections d’une même conduite. Le débit se conserve : on cherche le rapport des vitesses.",
     lead: "Sans accumulation ni fuite, le débit se conserve : A₁ V₁ = A₂ V₂. Réduire le diamètre accélère fortement l’écoulement.",
     points: [
       "Q = A V dans chaque section, avec le même Q.",
@@ -202,6 +222,7 @@ const recaps = {
   },
   networkNode: {
     title: "Bilan de débit à un nœud",
+    problem: "Plusieurs branches se rejoignent. Aucun stockage au nœud : il faut le débit (ou la vitesse) de la branche inconnue.",
     lead: "Un nœud ne stocke pas : la somme des débits entrants égale la somme des débits sortants. C’est la continuité écrite en réseau.",
     points: [
       "Chaque branche : Q = A V.",
@@ -212,6 +233,7 @@ const recaps = {
   },
   convectiveAcceleration: {
     title: "Accélération d’une particule",
+    problem: "Dans un convergent, le régime est permanent mais la section diminue. On veut l’accélération d’une particule le long de l’axe.",
     lead: "Même en régime permanent, une particule accélère si la section se resserre. Il reste le terme convectif V · dV/dx.",
     points: [
       "Dérivée particulaire : a = ∂V/∂t + V dV/dx.",
@@ -222,6 +244,7 @@ const recaps = {
   },
   reservoirRise: {
     title: "Bilan de volume à surface libre",
+    problem: "Un bassin reçoit Qₑ et se vide de Qₛ. On cherche le temps pour que la surface libre monte de Δh.",
     lead: "La variation de niveau d’un réservoir est le débit net divisé par l’aire du plan d’eau. C’est encore la continuité, écrite sur un volume qui change.",
     points: [
       "A dh/dt = Qₑ − Qₛ.",
@@ -232,6 +255,7 @@ const recaps = {
   },
   tankFilling: {
     title: "Dimensionnement par le débit",
+    problem: "Il faut livrer un volume en un temps donné, sans dépasser une vitesse en conduite. Cela fixe le diamètre minimal.",
     lead: "Livrer un volume en un temps donné fixe le débit. La vitesse maximale admissible fixe ensuite la section minimale, donc le diamètre.",
     points: [
       "Q = 𝒱 / t, avec t en secondes.",
@@ -242,6 +266,7 @@ const recaps = {
   },
   distributedFlow: {
     title: "Prélèvement réparti",
+    problem: "Une conduite dessert des prises réparties. Le débit n’est plus constant : on veut Q(x) entre l’entrée et la sortie.",
     lead: "Le long d’une conduite de distribution, le débit diminue. Si le prélèvement est uniforme, Q(x) est une droite entre Qₑ et Qₛ.",
     points: [
       "Débit linéique q = (Qₑ − Qₛ) / L.",
@@ -252,6 +277,7 @@ const recaps = {
   },
   venturi: {
     title: "Venturi et Bernoulli",
+    problem: "Un col accélère l’eau et abaisse la pression. Un manomètre (ou un Δp) doit fournir le débit.",
     lead: "Au col, la section diminue : la vitesse augmente et la pression chute. Le manomètre mesure cette chute ; continuité + Bernoulli donnent le débit.",
     points: [
       "Continuité : Q = S₁ V₁ = S₂ V₂.",
@@ -262,6 +288,7 @@ const recaps = {
   },
   torricelli: {
     title: "Théorème de Torricelli",
+    problem: "Un orifice débite sous une charge h, à l’air libre. On cherche la vitesse du jet et le débit, avec Cᵈ.",
     lead: "Un orifice sous une charge h se comporte comme une chute libre : la vitesse idéale est √(2gh). Le coefficient Cᵈ corrige contraction et pertes.",
     points: [
       "Grande section amont : vitesse de surface négligeable.",
@@ -272,6 +299,7 @@ const recaps = {
   },
   bernoulliSections: {
     title: "Bernoulli entre deux sections",
+    problem: "Deux sections d’une conduite n’ont ni la même cote, ni le même diamètre. On veut p₂ (ou V₂) à partir de l’état 1.",
     lead: "Le long d’une ligne de courant, la somme hauteur de pression + hauteur cinétique + cote se conserve (fluide parfait, pas de machine).",
     points: [
       "p/ρg + V²/2g + z = constante.",
@@ -282,6 +310,7 @@ const recaps = {
   },
   drainTime: {
     title: "Temps de vidange",
+    problem: "Le niveau d’un réservoir baisse en se vidant par un orifice. Le débit n’est pas constant : on cherche le temps de h₁ à h₂.",
     lead: "La charge diminue en vidant : le débit n’est pas constant. On écrit le bilan −A dh/dt = Cᵈ a √(2gh) et on sépare les variables.",
     points: [
       "A est la section du réservoir, a celle de l’orifice.",
@@ -292,6 +321,7 @@ const recaps = {
   },
   pitot: {
     title: "Tube de Pitot",
+    problem: "Un tube arrête localement le fluide. Un manomètre à mercure mesure p₀ − p ; on en déduit la vitesse locale.",
     lead: "Au point d’arrêt, la vitesse s’annule et l’énergie cinétique se convertit en pression. La différence p₀ − p donne la vitesse locale.",
     points: [
       "Bernoulli : p + ½ρV² = p₀, donc V = √(2 Δp / ρ).",
@@ -302,6 +332,7 @@ const recaps = {
   },
   siphon: {
     title: "Siphon",
+    problem: "Un tuyau passe au-dessus du plan d’eau et débouche plus bas. On veut la vitesse de sortie et la dépression au sommet.",
     lead: "Le siphon démarre dès que la sortie est plus basse que la surface libre. Au point haut, une partie de la charge se paie en dépression.",
     points: [
       "Entre surface et sortie : V = √(2 g Δz) (diamètre constant, pₐₜₘ aux deux bouts).",
@@ -312,6 +343,7 @@ const recaps = {
   },
   hydraulicPower: {
     title: "Bernoulli généralisé et puissance",
+    problem: "Une pompe relie deux plans d’eau. On cherche la HMT, la puissance hydraulique, puis la puissance absorbée.",
     lead: "Une pompe ajoute une hauteur H à la charge. Entre deux surfaces libres, HMT = hauteur géométrique + pertes. La puissance hydraulique est ρ g Q H.",
     points: [
       "HMT = H_g + h_pertes.",
@@ -322,6 +354,7 @@ const recaps = {
   },
   jetPlate: {
     title: "Théorème d’Euler — jet sur plaque",
+    problem: "Un jet frappe une plaque fixe normale. Après l’impact, la composante axiale de V s’annule : on veut l’effort sur la plaque.",
     lead: "La force n’est pas une « pression du jet » : c’est la variation de quantité de mouvement à travers un volume de contrôle. Sur une plaque normale fixe, la composante axiale de V s’annule.",
     points: [
       "Σ F⃗ = ṁ (V⃗₂ − V⃗₁), avec ṁ = ρ Q.",
@@ -332,6 +365,7 @@ const recaps = {
   },
   jetDeflect: {
     title: "Jet dévié par un auget",
+    problem: "Un auget dévie un jet d’un angle θ sans changer |V|. On cherche la force sur l’auget.",
     lead: "Si l’auget ne change que la direction, |V| se conserve. La force vient de la différence vectorielle V⃗₂ − V⃗₁.",
     points: [
       "ṁ = ρ Q = ρ S V.",
@@ -342,6 +376,7 @@ const recaps = {
   },
   colebrook: {
     title: "Pertes linéaires — Darcy, Colebrook et Moody",
+    problem: "Une conduite longue dissipe de la charge. Il faut le régime (Re), λ (Moody/Colebrook), puis h_f.",
     lead: "Dans un fluide réel, la charge diminue le long de la conduite. On passe par le Reynolds (régime), le coefficient λ lu sur le diagramme de Moody (ou calculé par Colebrook), puis Darcy–Weisbach.",
     points: [
       "Re = V D / ν. Laminaire si Re < 2000 ; turbulent au-delà de 4000.",
@@ -352,6 +387,7 @@ const recaps = {
   },
   moodyRead: {
     title: "Diagramme de Moody",
+    problem: "On connaît Re et ε/D. Il faut lire λ sur le diagramme de Moody, pas le « deviner ».",
     lead: "Moody (1944) trace λ en fonction de Re pour une famille de rugosités relatives ε/D. C’est la lecture graphique de Colebrook–White, exigée au §6.4.3 du cours.",
     points: [
       "Abscisse log Re, ordonnée log λ. Courbe unique à gauche : λ = 64/Re (laminaire).",
@@ -363,6 +399,7 @@ const recaps = {
   },
   minorLosses: {
     title: "Pertes singulières",
+    problem: "Le parcours comporte des accidents (entrée, coudes, vanne, sortie). On veut la somme des pertes singulières.",
     lead: "Chaque accident de parcours (entrée, coude, vanne, sortie) dissipe une fraction de l’énergie cinétique. Sur un réseau court, ces pertes peuvent dépasser les pertes linéaires.",
     points: [
       "hₛ = K V² / (2g) par singularité, à la vitesse de référence indiquée.",
@@ -373,6 +410,7 @@ const recaps = {
   },
   froudeSimilarity: {
     title: "Similitude de Froude",
+    problem: "Un ouvrage à surface libre est reproduit au 1/N. On transpose vitesses et débits du modèle au prototype.",
     lead: "Sur un modèle à surface libre, on égale les nombres de Froude. Avec la même gravité, les échelles se déduisent de l’échelle géométrique N = Lₚ/Lₘ.",
     points: [
       "Fr = V / √(g L). λV = √λL = √N.",
@@ -383,6 +421,7 @@ const recaps = {
   },
   manningChannel: {
     title: "Régime uniforme — Manning–Strickler",
+    problem: "Un canal rectangulaire s’écoule en régime uniforme. Connaissant y, b, S et Kₛ, on veut V, Q et Fr.",
     lead: "Dans un canal prismatique à pente constante, le poids moteur équilibre le frottement. La profondeur est alors constante (profondeur normale) et V suit Strickler.",
     points: [
       "Périmètre mouillé : parois seulement, jamais la surface libre. Rectangle : P = b + 2y.",
@@ -393,6 +432,7 @@ const recaps = {
   },
   jetMobile: {
     title: "Auget mobile — puissance d’un jet",
+    problem: "Un auget en U avance à la vitesse u sous un jet V. On cherche la force, la puissance, et u qui maximise P.",
     lead: "Un auget en U inverse le jet. S’il est fixe, F = 2ρQV. S’il avance à u, seule la vitesse relative compte. La puissance P = Fu est maximale pour u = V/3.",
     points: [
       "Référentiel de l’auget : V_rel = V − u, puis F = 2ρA V_rel².",
@@ -403,6 +443,7 @@ const recaps = {
   },
   elbowForce: {
     title: "Ancrage d’un coude",
+    problem: "Un coude change la direction de l’eau. Il faut dimensionner l’ancrage : pressions de bride plus variation de quantité de mouvement.",
     lead: "L’eau change de direction : il faut un massif d’ancrage. La force a deux origines : la pression sur les sections et la variation de quantité de mouvement.",
     points: [
       "Coude 90°, D constant, fluide parfait : p et V se conservent.",
@@ -413,6 +454,7 @@ const recaps = {
   },
   convergentForce: {
     title: "Effort sur un convergent",
+    problem: "Un convergent accélère l’eau et abaisse p. On veut l’effort axial que les brides doivent reprendre.",
     lead: "Bernoulli donne p₂ ; Euler donne l’effort axial. L’eau accélère et la pression chute : le convergent est souvent « tiré » vers l’aval.",
     points: [
       "V₂/V₁ = (D₁/D₂)², puis p₂ = p₁ + ½ρ(V₁² − V₂²).",
@@ -423,6 +465,7 @@ const recaps = {
   },
   jetReaction: {
     title: "Propulsion par réaction",
+    problem: "Un réservoir éjecte un jet. Pour qu’il ne parte pas, une force extérieure doit équilibrer le flux de quantité de mouvement.",
     lead: "Le réservoir éjecte de la quantité de mouvement. Pour rester immobile, une force extérieure F = ρQV doit l’équilibrer. Elle vaut 2ρghA.",
     points: [
       "V = √(2gh) (orifice profilé, Cᵈ = 1).",
@@ -433,6 +476,7 @@ const recaps = {
   },
   inclinedPlate: {
     title: "Jet sur plaque inclinée",
+    problem: "Un jet frappe une plaque lisse inclinée. On veut la réaction normale et le partage du débit entre les deux nappes.",
     lead: "Plaque lisse : la réaction est normale. Le bilan tangentiel partage le débit entre une nappe aval et une nappe qui remonte.",
     points: [
       "Fₙ = ρ Q V sinθ.",
@@ -443,6 +487,7 @@ const recaps = {
   },
   reynoldsRegime: {
     title: "Nombre de Reynolds",
+    problem: "On connaît Q, D et ν. Il faut dire si l’écoulement est laminaire, transitoire ou turbulent.",
     lead: "Re = VD/ν décide du régime. En conduite circulaire : laminaire sous 2000, turbulent au-delà de 4000. L’hydraulique urbaine est presque toujours turbulente.",
     points: [
       "V = Q/A d’abord, avec D en mètres.",
@@ -453,6 +498,7 @@ const recaps = {
   },
   hydraulicDiameter: {
     title: "Diamètre hydraulique",
+    problem: "La section n’est pas circulaire (gaine). On remplace D par Dₕ pour Re et les pertes.",
     lead: "Pour une section non circulaire, on remplace D par Dₕ = 4A/P dans Reynolds et Darcy. P est le périmètre mouillé (parois seulement).",
     points: [
       "Gaine pleine : Dₕ = 2ab/(a+b).",
@@ -463,6 +509,7 @@ const recaps = {
   },
   fallingFilm: {
     title: "Film ruisselant — solution exacte NS",
+    problem: "Un film ruisselle sur un parement incliné. On veut le profil de vitesse, le débit linéique, et un contrôle de régime.",
     lead: "Sur un parement incliné, Navier–Stokes se réduit à un équilibre pesanteur/viscosité. Le profil est un demi-Poiseuille. Encore faut-il que le film soit vraiment laminaire.",
     points: [
       "u(y) = (ρg sinα / 2μ) (2ey − y²), u(e) = ρge²sinα/(2μ).",
@@ -473,6 +520,7 @@ const recaps = {
   },
   poiseuilleOil: {
     title: "Hagen–Poiseuille",
+    problem: "De l’huile s’écoule lentement en conduite. Si le régime est laminaire, la perte suit Hagen–Poiseuille, pas Colebrook.",
     lead: "En laminaire, λ = 64/Re n’est pas empirique : c’est la solution exacte de Navier–Stokes en conduite. La perte est proportionnelle à V, pas à V².",
     points: [
       "Vérifier Re < 2000 avant d’appliquer λ = 64/Re.",
@@ -483,6 +531,7 @@ const recaps = {
   },
   gravityPipe: {
     title: "Débitance d’une conduite gravitaire",
+    problem: "Deux réservoirs imposent H. Le débit est l’inconnue : λ dépend de V, donc on itère.",
     lead: "Entre deux réservoirs, H est connue et Q est l’inconnue. λ dépend de V donc de Q : il faut itérer (Colebrook).",
     points: [
       "Bernoulli : H = (λL/D + ΣK) V²/(2g).",
@@ -493,6 +542,7 @@ const recaps = {
   },
   pipeSizing: {
     title: "Choix d’un diamètre commercial",
+    problem: "Q et H disponible sont connus. On teste les DN commerciaux et on retient le plus petit qui passe, à vitesse raisonnable.",
     lead: "On connaît Q et H disponible. On teste les DN de la série 150, 200, 250, 300, 350, 400 mm et on retient le plus petit tel que h_f ≤ H.",
     points: [
       "Pour chaque D : V = Q/A, λ(Colebrook), h_f = λ(L/D)V²/(2g).",
@@ -503,6 +553,7 @@ const recaps = {
   },
   pumpStation: {
     title: "Hauteur manométrique totale",
+    problem: "Une pompe aspire à z₁ et refoule à z₂, avec des pertes des deux côtés. On veut HMT et puissances.",
     lead: "La pompe doit vaincre la dénivelée et toutes les pertes d’aspiration et de refoulement. HMT = Δz + h_asp + h_ref, puis Pₕ = ρgQH.",
     points: [
       "Chaque côté a sa vitesse : ne pas prendre le même V partout.",
@@ -513,6 +564,7 @@ const recaps = {
   },
   bordaCarnot: {
     title: "Élargissement brusque",
+    problem: "Un élargissement brusque décolle l’écoulement. On cherche la perte singulière et la remontée de pression.",
     lead: "Le théorème d’Euler appliqué à un élargissement donne la perte de Borda–Carnot. La pression remonte, mais moins qu’en fluide parfait.",
     points: [
       "hₛ = (V₁ − V₂)² / (2g).",
@@ -523,6 +575,7 @@ const recaps = {
   },
   reynoldsDrag: {
     title: "Similitude de Reynolds",
+    problem: "Un obstacle en charge est testé au 1/N dans le même fluide. On transpose vitesses et forces à Re constant.",
     lead: "En charge, sans surface libre, on égale les Reynolds. Avec le même fluide, les forces modèle et prototype sont identiques — mais le modèle doit aller N fois plus vite.",
     points: [
       "Reₘ = Reₚ et ν identique ⟹ Vₘ = N Vₚ.",
@@ -533,6 +586,7 @@ const recaps = {
   },
   froudeSpillway: {
     title: "Échelles de Froude",
+    problem: "Un évacuateur est calé au 1/N. Il faut les échelles de vitesse, de débit, de force et de temps.",
     lead: "Un évacuateur se calque à Fr constant. Chaque grandeur se transpose par une puissance de N = Lₚ/Lₘ.",
     points: [
       "λV = λt = √N, λQ = N^(5/2), λF = N³ (même fluide).",
@@ -543,6 +597,7 @@ const recaps = {
   },
   stokesViscosity: {
     title: "Loi de Stokes",
+    problem: "Une bille tombe à vitesse limite dans un fluide. Poids, Archimède et traînée s’équilibrent : on en tire μ, puis on vérifie Re.",
     lead: "À vitesse limite, poids, Archimède et traînée 3πμdV s’équilibrent. C’est le viscosimètre à chute de bille — à condition que Re ≲ 1.",
     points: [
       "μ = (ρₛ − ρ) g d² / (18 V).",
@@ -553,6 +608,7 @@ const recaps = {
   },
   trapezoidalChannel: {
     title: "Section trapézoïdale",
+    problem: "Le lit n’est pas rectangulaire : talus de fruit z. On veut A, P, R, puis le régime via la profondeur moyenne.",
     lead: "A = (b + z y) y et P = b + 2y√(1+z²). Le fruit z est le rapport horizontal/vertical des talus (3H/2V ⟹ z = 1,5).",
     points: [
       "La surface libre n’entre pas dans P.",
@@ -563,6 +619,7 @@ const recaps = {
   },
   normalDepth: {
     title: "Profondeur normale",
+    problem: "Le débit est imposé, y est l’inconnue. On cherche la profondeur normale yₙ, puis Fr.",
     lead: "yₙ est la profondeur qui s’établit en régime uniforme pour un débit donné. L’équation Q = A Kₛ R^(2/3) √S est implicite en y : on itère.",
     points: [
       "Rectangle : A = b y, R = by/(b+2y).",
@@ -573,6 +630,7 @@ const recaps = {
   },
   waveCelerity: {
     title: "Célérité et caractéristiques",
+    problem: "Une intumescence se propage dans un canal. On veut la célérité et le temps pour que l’information remonte vers l’amont.",
     lead: "Une perturbation de surface se propage à c = √(gy) par rapport à l’eau. En fluvial, une onde remonte : l’aval commande. C’est la structure des équations de Saint-Venant.",
     points: [
       "Fronts absolus : V+c (aval) et V−c (amont, soit c−V en valeur).",
@@ -583,6 +641,7 @@ const recaps = {
   },
   damBreakRitter: {
     title: "Solution de Ritter",
+    problem: "Un barrage cède instantanément sur fond sec. On cherche la célérité du front, la hauteur au barrage, le délai d’arrivée.",
     lead: "Rupture instantanée sur fond sec, sans frottement : le front part à 2√(gh₀). Au droit du barrage, h et V restent constants. C’est un majorant d’étude d’onde de submersion.",
     points: [
       "c_f = 2√(gh₀) — plus rapide qu’une voiture en ville pour h₀ = 20 m.",
@@ -593,6 +652,7 @@ const recaps = {
   },
   damSluice: {
     title: "Vanne de fond — poussée, levage, débit",
+    problem: "Une vanne de fond est d’abord fermée (poussée, levage), puis ouverte (débit). Trois bilans successifs.",
     lead: "Trois chapitres en un : hydrostatique (F, yₚ), frottement de glissière (T = W + μF), puis orifice (Torricelli) une fois la vanne ouverte.",
     points: [
       "ȳ = h_seuil − H/2 : la vanne est profonde, yₚ ≈ ȳ.",
@@ -603,6 +663,7 @@ const recaps = {
   },
   npshCavitation: {
     title: "NPSH et cavitation",
+    problem: "Une pompe aspire. On doit vérifier que le NPSH disponible reste au-dessus du NPSH requis, sinon cavitation.",
     lead: "Une pompe en aspiration travaille souvent en dépression. Le NPSH disponible doit rester supérieur au NPSH requis, sinon la veine se vaporise à l’entrée.",
     points: [
       "NPSH_d = pₐₜₘ/ρg − pᵥ/ρg − Hₛ − h_asp.",
@@ -613,6 +674,7 @@ const recaps = {
   },
   waterCannon: {
     title: "Lance, jet et recul",
+    problem: "Une lance accélère l’eau vers un écran. Il y a deux efforts distincts : force sur l’écran et recul de la lance.",
     lead: "Bernoulli donne la vitesse du jet ; Euler donne deux forces différentes : celle sur l’écran (ρQV) et le recul de la lance (pressions de bride moins variation de quantité de mouvement).",
     points: [
       "Sortie à l’air libre : p₂ = 0 relatif.",
@@ -623,6 +685,7 @@ const recaps = {
   },
   cofferdamBallast: {
     title: "Flottaison puis lestage",
+    problem: "Un batardeau est d’abord remorqué (flottaison, GM), puis posé et lesté. Le ballast n’est pas le tirant à vide.",
     lead: "On dimensionne d’abord le tirant et la stabilité à vide, puis le ballast qui garantit l’appui une fois le caisson posé sous l’eau — les sous-pressions sont énormes.",
     points: [
       "Tₑ = W / (ρ g L B).",
@@ -633,6 +696,7 @@ const recaps = {
   },
   oilSeason: {
     title: "Laminaire contre turbulent",
+    problem: "Le même oléoduc voit ν changer de l’été à l’hiver. Re, λ et la puissance peuvent changer de loi.",
     lead: "Quand ν double, Re peut retraverser 2000. λ = 64/Re en laminaire, Colebrook en turbulent. La puissance ne varie pas toujours dans le sens attendu près de la transition.",
     points: [
       "Même V, deux ν, deux Re, deux λ.",
@@ -643,6 +707,7 @@ const recaps = {
   },
   retainingWall: {
     title: "Mur-poids, renversement",
+    problem: "Un mur-poids retient de l’eau. On compare le moment de la poussée au moment du poids, autour de l’arête aval.",
     lead: "La poussée sur un parement vertical vaut ρgH²/2 par mètre et s’applique à H/3 du pied. Le poids du mur, déporté vers l’aval, fournit le moment stabilisateur.",
     points: [
       "F = ρ g H² / 2, bras = H/3.",
@@ -653,6 +718,7 @@ const recaps = {
   },
   gravityValve: {
     title: "Réglage par vanne",
+    problem: "H est fixe. On veut refermer une vanne pour diviser le débit : le Kᵥ nécessaire n’est pas proportionnel à Q.",
     lead: "H est fixe. Diminuer Q de moitié divise V² par 4 : pour consommer la même charge, il faut un Kᵥ énorme. D’où la raideur du réglage en fin de course.",
     points: [
       "On itère d’abord le débit actuel.",
@@ -663,84 +729,98 @@ const recaps = {
   },
   viscosityForce: {
     title: "Loi de Newton : plaque mobile",
+    problem: "μ, U, e et A sont donnés. On cherche la contrainte dans le film, la force de traction sur la plaque, la puissance dissipée.",
     lead: "μ est donnée. Le profil linéaire dans le film fixe le gradient U/e, donc τ, puis la force de traction et la puissance dissipée.",
     points: ["τ = μ U/e.", "F = τ A.", "P = F U (chaleur dans le film).", "e en mètres."],
     watch: "Ne pas recalculer μ : c’est une donnée. Convertir e en mètres avant U/e."
   },
   bearingLoss: {
     title: "Palier lisse",
+    problem: "Un palier lisse a un jeu rempli d’huile. Le couple visqueux dissipe une puissance P = Cω à calculer.",
     lead: "Le jeu d’un palier est un Couette cylindrique. Le couple visqueux dissipe P = Cω, souvent non négligeable à grand régime.",
     points: ["U = ω R, ω = 2πN/60.", "C = μ (2π R³ L / e) ω.", "P = C ω."],
     watch: "N en tr/min, e en mm. Oublier le 2π du périmètre sous-estime C."
   },
   pressureUnits: {
     title: "Unités de pression",
+    problem: "Une même pression est écrite en bar, mmHg, psi. Il faut tout ramener en pascals, puis éventuellement en mCE.",
     lead: "Bar, mmHg, psi et mCE mesurent la même grandeur. On passe toujours par le pascal, puis on divise par ρeau g.",
     points: ["1 bar = 10⁵ Pa ≈ 10,2 mCE.", "760 mmHg ≈ 101,3 kPa.", "1 psi ≈ 6895 Pa."],
     watch: "mCE utilise ρ = 1000 kg/m³, pas ρHg. Ne pas traiter les mmHg comme des mm d’eau."
   },
   pipeGage: {
     title: "Manomètre sous conduite",
+    problem: "Un manomètre à mercure est accroché sous une conduite, pas à l’axe. On veut la pression au centre de la conduite.",
     lead: "Le centre n’est pas à la cote des ménisques. On retranche la colonne d’eau z et l’on ajoute la colonne de mercure Δh.",
     points: ["p = (ρₘ Δh − ρ z) g.", "z est la distance verticale centre → ménisque bas.", "Résultat en pascals relatifs."],
     watch: "Oublier z revient à placer la prise au niveau du mercure et surestime p."
   },
   woodLog: {
     title: "Flottaison d’un tronc",
+    problem: "Un tronc de densité d < 1 flotte. On cherche la fraction immergée et la masse.",
     lead: "La densité d fixe la fraction immergée. La masse est celle du bois, égale au poids de l’eau déplacée.",
     points: ["𝒱_imm = d 𝒱.", "m = d ρeau 𝒱.", "d < 1 pour flotter."],
     watch: "d n’est pas la masse volumique en kg/m³ : c’est le rapport à l’eau."
   },
   iceberg: {
     title: "Iceberg",
+    problem: "Un iceberg a ρᵢ < ρₑau. Quelle fraction émerge, en mer ou en eau douce ?",
     lead: "Archimède : la fraction immergée égale le rapport des masses volumiques. En mer, environ 90 % est sous l’eau.",
     points: ["ρᵢ 𝒱 = ρₑ 𝒱_imm.", "Émergé = 1 − ρᵢ/ρₑ."],
     watch: "En eau douce (1000 kg/m³) l’iceberg émerge moins qu’en mer."
   },
   channelDischarge: {
     title: "Débit d’un canal",
+    problem: "Un canal rectangulaire a une largeur, une profondeur et une vitesse données. On veut simplement le débit — pas un Strickler.",
     lead: "Sans frottement à calculer : Q = A V avec A = b y. Penser à convertir en m³/h si demandé.",
     points: ["A = b y.", "Q = A V.", "1 m³/s = 3600 m³/h."],
     watch: "Ce n’est pas encore Manning : V est donnée, on ne la calcule pas."
   },
   pitotWater: {
     title: "Pitot en hauteur d’eau",
+    problem: "Un tube de Pitot ouvert affiche une colonne d’eau h, sans mercure. Cette hauteur est déjà V²/2g.",
     lead: "Si le tube donne directement une hauteur dynamique en mm d’eau, Bernoulli se réduit à V = √(2gh).",
     points: ["h = V²/2g.", "Convertir mm → m avant de prendre la racine."],
     watch: "Ce n’est pas un manomètre à mercure : on ne multiplie pas par (ρₘ−ρ)."
   },
   turbinePower: {
     title: "Puissance d’une turbine",
+    problem: "L’eau descend d’une chute H à travers une turbine. On veut la puissance produite, rendement compris.",
     lead: "Même formule que la pompe, avec le rendement du côté production : P = η ρ g Q H.",
     points: ["H est la chute nette.", "Q déjà en m³/s.", "P en watts ; diviser par 1000 pour des kW."],
     watch: "Pour une turbine η multiplie Pₕ ; pour une pompe il la divise."
   },
   momentumHold: {
     title: "Réaction d’un jet connu",
+    problem: "Un jet de débit et de vitesse connus sort d’un réservoir. Quelle force faut-il pour maintenir le réservoir ?",
     lead: "Si Q et V sont donnés, F = ρ Q V. Pas besoin de Torricelli ni de section.",
     points: ["ṁ = ρ Q.", "F = ṁ V = ρ Q V."],
     watch: "Q en L/s → m³/s. Ne pas recalculer V par √(2gh) si V est déjà donnée."
   },
   froudeForceTime: {
     title: "Échelles de force et de temps",
+    problem: "Un essai de houle au 1/N donne une force et un temps modèle. On transpose au prototype en similitude de Froude.",
     lead: "En Froude, même fluide : les temps suivent √N, les forces suivent N³.",
     points: ["tₚ = tₘ √N.", "Fₚ = Fₘ N³."],
     watch: "La période modèle est en secondes, pas en minutes. N³ croît très vite."
   },
   froudeScale: {
     title: "Débit de modèle",
+    problem: "On connaît N et un débit (ou une vitesse) prototype. On veut les grandeurs modèle à Fr constant.",
     lead: "λQ = N^(5/2) permet de ramener un débit de crue à un débit de laboratoire.",
     points: ["λV = √N.", "Qₘ = Qₚ / N^(5/2)."],
     watch: "Qₘ sort en m³/s : 0,094 m³/s = 94 L/s."
   },
   reynoldsSpeed: {
     title: "Vitesse en similitude de Reynolds",
+    problem: "Même fluide, Re constant, conduite en charge. Le modèle plus petit doit aller plus vite : on cherche Vₘ ou Vₚ.",
     lead: "Même fluide : le modèle doit aller N fois plus vite que le prototype. Inversement, Vₚ = Vₘ / N.",
     points: ["Reₘ = Reₚ ⟹ Vₘ = N Vₚ.", "Vₚ = Vₘ / N."],
     watch: "Ne pas appliquer √N (Froude) à un essai de conduite en charge."
   },
   idealGasTwo: {
     title: "Gaz parfait : deux états",
+    problem: "Deux états d’air (p, T) indépendants. Chaque état a sa propre masse volumique : on les calcule séparément.",
     lead: "Chaque état (p, T) fixe sa propre masse volumique. On convertit d’abord en unités absolues, puis ρ = p/(RT).",
     points: [
       "T(K) = T(°C) + 273,15 ; p(Pa) = p(bar) × 10⁵.",
@@ -751,6 +831,7 @@ const recaps = {
   },
   reynoldsTwo: {
     title: "Nombre de Reynolds et régime",
+    problem: "Une conduite d’eau et une d’huile, vitesses et diamètres donnés. On compare les Reynolds, pas les vitesses.",
     lead: "Re = VD/ν compare inertie et viscosité. Le régime se lit sur Re, pas sur la vitesse seule.",
     points: [
       "Convertir D en mètres et ν en m²/s (souvent donnée en 10⁻⁶ m²/s).",
@@ -761,6 +842,7 @@ const recaps = {
   },
   kinematicField: {
     title: "Champ 2D : continuité et rotationnel",
+    problem: "Un champ plan u(x,y), v(x,y) est donné. On demande s’il est incompressible, et s’il est irrotationnel en un point.",
     lead: "Un champ plan est incompressible si div V⃗ = 0. Il est irrotationnel si ω_z = 0 en tout point.",
     points: [
       "div V⃗ = ∂u/∂x + ∂v/∂y.",
@@ -771,6 +853,7 @@ const recaps = {
   },
   dimensionsMLT: {
     title: "Équations aux dimensions",
+    problem: "On part de définitions (P = FV, σ = F/A, …) et on veut les exposants M, L, T, sans calcul numérique.",
     lead: "Toute grandeur mécanique s’écrit Mᵅ Lᵝ Tᵞ. On part d’une définition, on remplace F = MLT⁻², et on lit les exposants.",
     points: [
       "Puissance P = F V → M L² T⁻³.",
@@ -781,6 +864,7 @@ const recaps = {
   },
   pendulumPi: {
     title: "Théorème des π : pendule",
+    problem: "On pose T = k Lᵃ gᵇ mᶜ. L’homogénéité doit fixer a, b, c — et dire si la masse compte.",
     lead: "Si T = k Lᵃ gᵇ mᶜ, l’homogénéité impose les exposants. La masse disparaît : c’est déjà un résultat physique.",
     points: [
       "[T] = T = Lᵃ (L T⁻²)ᵇ Mᶜ.",
@@ -791,6 +875,7 @@ const recaps = {
   },
   propellerPi: {
     title: "Théorème des π : hélice",
+    problem: "On pose P = k ρᵃ nᵇ Dᶜ pour une hélice. L’identification donne la forme classique ρ n³ D⁵.",
     lead: "La puissance d’une hélice s’écrit P = k ρᵃ nᵇ Dᶜ. L’identification donne la forme P = ρ n³ D⁵ f(…).",
     points: [
       "M L² T⁻³ = (M L⁻³)ᵃ (T⁻¹)ᵇ Lᶜ.",
@@ -801,6 +886,7 @@ const recaps = {
   },
   twoFluidsShear: {
     title: "Deux fluides, même film de Couette",
+    problem: "Deux fluides, même U, e, A. On compare les efforts de cisaillement : c’est un rapport de viscosités, pas de masses volumiques.",
     lead: "À géométrie et vitesse identiques, la force de cisaillement ne dépend que de μ. La masse volumique intervient si l’on parle de Reynolds, pas de τ.",
     points: [
       "τ = μ U/e pour chaque fluide newtonien.",
@@ -811,6 +897,7 @@ const recaps = {
   },
   viscosityTemp: {
     title: "Viscosité et température",
+    problem: "Un tableau donne μ à deux températures. On veut μ au régime de service, puis l’effort de Couette correspondant.",
     lead: "Pour un liquide, μ diminue quand T augmente. Entre deux points de tableau, une interpolation linéaire suffit au niveau du cours.",
     points: [
       "μ(T) = μ₁ + (μ₂−μ₁)(T−T₁)/(T₂−T₁).",
@@ -821,6 +908,7 @@ const recaps = {
   },
   dualSideGate: {
     title: "Vanne mouillée des deux côtés",
+    problem: "Une vanne a de l’eau des deux côtés, à des hauteurs y₁ et y₂. L’effort de manœuvre est la poussée nette, pas F amont seule.",
     lead: "Chaque face a sa poussée ρgAȳ. L’effort de manœuvre est la différence, proportionnelle à (y₁ − y₂), pas à y₁ seul.",
     points: [
       "ȳ se mesure depuis chaque surface libre jusqu’au centre de la vanne.",
@@ -831,6 +919,7 @@ const recaps = {
   },
   lockDoor: {
     title: "Porte d’écluse",
+    problem: "Une porte d’écluse sépare deux biefs affleurants. On veut les poussées, leurs bras depuis le radier, et le moment au palier bas.",
     lead: "Chaque bief impose un triangle de pression. Le palier bas reprend le moment d’ouverture, le palier haut la réaction opposée.",
     points: [
       "F = ½ ρg H² b pour une paroi affleurante.",
@@ -841,6 +930,7 @@ const recaps = {
   },
   piezometricLine: {
     title: "Ligne piézométrique et ligne de charge",
+    problem: "Une conduite part d’un réservoir, avec entrée, frottement, vanne et sortie. On veut tracer EGL et HGL, crans compris.",
     lead: "EGL porte l’énergie totale ; HGL est EGL moins V²/2g. Chaque singularité fait un cran sur les deux lignes ; le frottement les incline.",
     points: [
       "HGL = p/ρg + z ; EGL = HGL + V²/2g.",
@@ -851,6 +941,7 @@ const recaps = {
   },
   diameterEconomy: {
     title: "Diamètre et coût réduit",
+    problem: "Trois DN transportent le même Q. h_f chute si D augmente, mais le tube coûte plus cher : un indicateur C départage.",
     lead: "Un DN plus grand baisse h_f (environ en 1/D⁵ à Q fixé) mais coûte plus de tube. Un indicateur C = αD + β h_f rend le compromis lisible.",
     points: [
       "Pour chaque DN : V, Colebrook, h_f.",
@@ -861,6 +952,7 @@ const recaps = {
   },
   pumpDutyPoint: {
     title: "Point de fonctionnement pompe–réseau",
+    problem: "La courbe de pompe descend avec Q ; la courbe de réseau monte. L’intersection, itérée avec Colebrook, est le débit réel.",
     lead: "La pompe fournit une H qui diminue avec Q ; le réseau en demande une qui augmente avec Q². L’intersection est le débit réel.",
     points: [
       "H_p = H₀ − k Q² (forme usuelle autour d’un point de calage).",
@@ -871,6 +963,7 @@ const recaps = {
   },
   thinWeir: {
     title: "Déversoir en mince paroi",
+    problem: "Une nappe passe au-dessus d’un seuil en mince paroi. On mesure h au-dessus de la crête et on veut Q ∝ h^{3/2}.",
     lead: "La lame se comporte comme une infinité d’orifices superposés : le débit va comme h^{3/2}, pas comme h.",
     points: [
       "Q = Cᵈ L √(2g) h^{3/2}.",
@@ -881,6 +974,7 @@ const recaps = {
   },
   hydraulicJump: {
     title: "Ressaut hydraulique",
+    problem: "Un écoulement torrentiel (y₁, V₁) se raccorde à un régime fluvial. On cherche y₂, la perte d’énergie et la longueur du ressaut.",
     lead: "Un écoulement torrentiel peut se raccorder à un régime fluvial par un ressaut : la profondeur saute, de l’énergie se dissipe.",
     points: [
       "Il faut Fr₁ > 1.",
@@ -891,6 +985,7 @@ const recaps = {
   },
   criticalRegime: {
     title: "Régime fluvial, critique, torrentiel",
+    problem: "Un canal rectangulaire a un débit Q et une profondeur y. On compare y à y_c pour dire fluvial, critique ou torrentiel.",
     lead: "y_c est la profondeur qui, à Q donné, minimise l’énergie spécifique. Fr = 1 sur cette profondeur.",
     points: [
       "Rectangle : y_c = (Q²/(g b²))^{1/3}.",
@@ -903,7 +998,8 @@ const recaps = {
 
 const fallback = {
   title: "Méthode générale",
-  lead: "On convertit d’abord toutes les données en unités SI, on écrit le bilan littéral (masse, énergie ou quantité de mouvement), puis seulement on remplace les nombres.",
+  problem: "On a un énoncé, des données hétérogènes, et une inconnue hydraulique. Il faut choisir le bon bilan avant de calculer.",
+  lead: "D’abord la situation et les hypothèses (permanent, incompressible, fluide parfait ou non), ensuite seulement les formules. Les nombres viennent en dernier.",
   points: [
     "Schéma coté : sections, cotes, sens de l’écoulement.",
     "Hypothèses : permanent ? incompressible ? fluide parfait ?",
@@ -913,5 +1009,12 @@ const fallback = {
 };
 
 export function courseRecap(solver) {
-  return recaps[solver] || fallback;
+  const recap = recaps[solver] || fallback;
+  return {
+    title: recap.title,
+    problem: recap.problem || recap.lead,
+    lead: recap.lead,
+    points: recap.points,
+    watch: recap.watch
+  };
 }
