@@ -111,32 +111,49 @@ const randomValue = v => Number((Math.round((v.min + Math.random() * (v.max - v.
 const formatTime = seconds => `${String(Math.floor(seconds / 60)).padStart(2,"0")}:${String(seconds % 60).padStart(2,"0")}`;
 const toast = text => { const el = document.querySelector("#toast"); el.textContent = text; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); };
 
+const chapterOrder = {
+  properties: ["PROP_DENSITY_01", "PROP_COMPRESS_01", "PROP_VISC_01", "PROP_VISCOMETER_02", "PROP_CAPILLARY_03", "PROP_LAPLACE_04", "PROP_GAS_05", "COMP_TWOFLUID_01", "COMP_VISCTEMP_01"],
+  hydrostatics: ["HYDRO_LAYERS_01", "HYDRO_MANO_01", "HYDRO_PRESS_03", "FORCE_GATE_02", "FORCE_PLANE_01", "HYDRO_INCLINED_06", "HYDRO_CURVED_07", "HYDRO_ARCHIMEDE_08", "HYDRO_STABILITY_04", "COMP_DUALGATE_01", "COMP_LOCKDOOR_01"],
+  forces: ["FORCE_GATE_02", "FORCE_PLANE_01", "HYDRO_INCLINED_06", "HYDRO_CURVED_07", "COMP_DUALGATE_01", "COMP_LOCKDOOR_01"],
+  kinematics: ["KIN_TWO_02", "KIN_NODE_03", "KIN_ACCEL_04", "KIN_RISE_05", "KIN_DIST_07"],
+  bernoulli: ["BERN_SECTIONS_03", "BERNOULLI_TORRICELLI_02", "BERN_DRAIN_06", "BERN_PITOT_05", "BERNOULLI_VENTURI_01", "BERN_SIPHON_07", "BERN_PUMP_08"],
+  momentum: ["MOMENTUM_JET_01", "MOM_BUCKET_03", "MOM_ELBOW_04", "MOM_CONV_05", "MOM_REACT_06", "MOM_INCLINE_07"],
+  losses: ["LOSS_RE_01", "LOSS_LAM_04", "LOSSES_COLEBROOK_01", "LOSS_GRAV_05", "LOSS_SIZE_06", "LOSS_PUMP_07", "LOSS_BORDA_08", "LOSS_MOODY_03", "LOSS_DH_02", "LOSS_FILM_03", "LOSSES_MINOR_02", "COMP_HGL_01", "COMP_ECON_01"],
+  similarity: ["SIM_REYNOLDS_02", "SIM_SPILL_03", "SIM_STOKES_04", "SIM_FROUDE_01"],
+  freeSurface: ["FS_TRAP_02", "FS_NORMAL_03", "FS_WAVE_04", "FS_RITTER_05", "CHANNEL_MANNING_01", "COMP_DITCH_01", "COMP_FROUDE_01", "COMP_WEIR_01", "COMP_JUMP_01"],
+  pumping: ["COMP_PUMPCURVE_01", "LOSS_PUMP_07", "SYN_NPSH_03"]
+};
+
+function exercisesForChapter(chapterId) {
+  const seen = new Set();
+  const listed = (chapterOrder[chapterId] || []).map(id => state.catalog.exercises.find(e => e.id === id)).filter(Boolean);
+  listed.forEach(e => seen.add(e.id));
+  const rest = state.catalog.exercises.filter(e => e.chapter === chapterId && !seen.has(e.id));
+  if (chapterOrder[chapterId]) return [...listed, ...rest];
+  return rest;
+}
+
+function exerciseRef(exercise) {
+  const title = exercise.title || "";
+  const numbered = title.match(/^(Exercice|TD)\s+(\d+\.\d+)/i);
+  if (numbered) return numbered[2];
+  if (/^Examen/i.test(title)) return "Ex";
+  return "App.";
+}
+
 function home() {
   closeMoodyReader();
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
-  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = state.catalog.exercises.filter(e => e.chapter === ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
+  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = exercisesForChapter(ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
   document.querySelectorAll("[data-chapter]").forEach(button => button.addEventListener("click", () => chapterPage(button.dataset.chapter)));
   history.replaceState({}, "", location.pathname);
 }
 
 function chapterPage(chapterId) {
   const chapter = state.catalog.chapters.find(c => c.id === chapterId);
-  const order = {
-    properties: ["PROP_DENSITY_01", "PROP_COMPRESS_01", "PROP_VISC_01", "COMP_TWOFLUID_01", "COMP_VISCTEMP_01", "PROP_VISCOMETER_02", "PROP_CAPILLARY_03", "PROP_LAPLACE_04", "PROP_GAS_05"],
-    hydrostatics: ["HYDRO_LAYERS_01", "HYDRO_MANO_01", "HYDRO_PRESS_03", "FORCE_GATE_02", "COMP_DUALGATE_01", "FORCE_PLANE_01", "COMP_LOCKDOOR_01", "HYDRO_INCLINED_06", "HYDRO_CURVED_07", "HYDRO_ARCHIMEDE_08", "HYDRO_STABILITY_04"],
-    forces: ["FORCE_GATE_02", "COMP_DUALGATE_01", "FORCE_PLANE_01", "COMP_LOCKDOOR_01", "HYDRO_INCLINED_06", "HYDRO_CURVED_07"],
-    losses: ["LOSSES_COLEBROOK_01", "LOSS_MOODY_03", "LOSS_RE_01", "LOSS_DH_02", "LOSS_FILM_03", "LOSS_LAM_04", "LOSSES_MINOR_02", "LOSS_BORDA_08", "LOSS_GRAV_05", "COMP_HGL_01", "LOSS_SIZE_06", "COMP_ECON_01", "LOSS_PUMP_07"],
-    freeSurface: ["CHANNEL_MANNING_01", "COMP_DITCH_01", "FS_TRAP_02", "FS_NORMAL_03", "COMP_FROUDE_01", "COMP_WEIR_01", "COMP_JUMP_01", "FS_WAVE_04", "FS_RITTER_05"],
-    pumping: ["COMP_PUMPCURVE_01", "LOSS_PUMP_07", "SYN_NPSH_03"]
-  };
-  let exercises;
-  if (order[chapterId]) exercises = order[chapterId].map(id => state.catalog.exercises.find(e => e.id === id)).filter(Boolean);
-  else {
-    exercises = state.catalog.exercises.filter(e => e.chapter === chapterId);
-    if (chapterId === "losses") exercises = [...exercises.filter(e => e.solver === "moodyRead"), ...exercises.filter(e => e.solver !== "moodyRead")];
-  }
-  app.innerHTML = `<button class="back" id="backHome">← Tous les chapitres</button><section class="chapter-banner"><span class="num">${chapter.number}</span><div><h1>${esc(chapter.title)}</h1><p>${esc(chapter.description)}</p></div></section><div class="section-title"><div><h2>Exercices</h2><p>Choisissez une situation puis un mode de travail.</p></div></div><section class="exercise-list">${exercises.map((e,i)=>`<button class="exercise-card" data-exercise="${e.id}"><span class="exercise-index">${String(i+1).padStart(2,"0")}</span><span><strong>${esc(e.title)}</strong><small>Niveau ${e.difficulty} · données paramétriques</small></span><span class="arrow">→</span></button>`).join("")}</section>`;
+  const exercises = exercisesForChapter(chapterId);
+  app.innerHTML = `<button class="back" id="backHome">← Tous les chapitres</button><section class="chapter-banner"><span class="num">${chapter.number}</span><div><h1>${esc(chapter.title)}</h1><p>${esc(chapter.description)}</p></div></section><div class="section-title"><div><h2>Exercices</h2><p>Choisissez une situation puis un mode de travail.</p></div></div><section class="exercise-list">${exercises.map(e=>`<button class="exercise-card" data-exercise="${e.id}"><span class="exercise-index">${esc(exerciseRef(e))}</span><span><strong>${esc(e.title)}</strong><small>Niveau ${e.difficulty} · données paramétriques</small></span><span class="arrow">→</span></button>`).join("")}</section>`;
   document.querySelector("#backHome").addEventListener("click", home);
   document.querySelectorAll("[data-exercise]").forEach(b => b.addEventListener("click",()=>openExercise(state.catalog.exercises.find(e=>e.id===b.dataset.exercise))));
 }
@@ -153,8 +170,10 @@ function openExercise(exercise, mode = state.mode) {
 function renderExercise() {
   const e = state.exercise, chapter = state.catalog.chapters.find(c => c.id === e.chapter);
   const recap = courseRecap(e.solver);
+  const ref = exerciseRef(e);
+  const refLabel = ref === "App." ? "Application" : ref === "Ex" ? "Examen" : `n° ${ref}`;
   const recapHtml = state.mode === "exam" ? "" : `<article class="card recap-card"><p class="recap-kicker">Rappel de cours</p><h2>${esc(recap.title)}</h2><p class="recap-lead">${esc(recap.lead)}</p><ul class="recap-points">${recap.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul><p class="recap-watch"><strong>Piège fréquent.</strong> ${esc(recap.watch)}</p></article>`;
-  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><h2>Schéma de l’exercice</h2><div class="diagram" id="diagram"></div><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
+  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · ${esc(refLabel)} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><h2>Schéma de l’exercice</h2><div class="diagram" id="diagram"></div><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
   const formulas=equationSheets[e.solver]||["Consulter les hypothèses et établir le bilan fondamental."];
   const rightCol = app.querySelector(".workspace > div:nth-child(2)");
   const items = state.mode === "learn" ? warmups[e.id] : null;

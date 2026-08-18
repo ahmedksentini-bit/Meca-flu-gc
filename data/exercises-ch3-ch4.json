@@ -21,7 +21,7 @@
     "id": "KIN_TWO_02",
     "chapter": "kinematics",
     "solver": "twoSectionContinuity",
-    "title": "Continuité entre deux tronçons",
+    "title": "Exercice 3.1 — Continuité entre deux tronçons",
     "difficulty": 1,
     "statement": "De l’eau circule en régime permanent dans une conduite dont le diamètre passe de D₁ à D₂. Calculer les sections et les vitesses moyennes dans les deux tronçons. Vérifier que Q = A₁V₁ = A₂V₂.",
     "variables": [
@@ -40,7 +40,7 @@
     "id": "KIN_NODE_03",
     "chapter": "kinematics",
     "solver": "networkNode",
-    "title": "Nœud de réseau de distribution",
+    "title": "Exercice 3.2 — Nœud de réseau de distribution",
     "difficulty": 2,
     "statement": "À un nœud arrivent deux conduites connues par leur diamètre et leur vitesse. Le nœud alimente une conduite 3 et un branchement qui soutire Qᵦ. Appliquer la loi des nœuds, puis calculer le débit et la vitesse dans la conduite 3.",
     "variables": [
@@ -62,7 +62,7 @@
     "id": "KIN_ACCEL_04",
     "chapter": "kinematics",
     "solver": "convectiveAcceleration",
-    "title": "Accélération convective dans un convergent",
+    "title": "Exercice 3.4 — Accélération convective dans un convergent",
     "difficulty": 2,
     "statement": "Dans un convergent de longueur L, la vitesse unidimensionnelle croît linéairement de V₁ à V₂ en régime permanent. Calculer le gradient, la vitesse à mi-parcours et l’accélération convective au milieu. Même en régime permanent, une particule accélère.",
     "variables": [
@@ -80,7 +80,7 @@
     "id": "KIN_RISE_05",
     "chapter": "kinematics",
     "solver": "reservoirRise",
-    "title": "Remplissage d’un réservoir cylindrique",
+    "title": "Exercice 3.5 — Remplissage d’un réservoir cylindrique",
     "difficulty": 2,
     "statement": "Un réservoir cylindrique est alimenté par un débit constant Qₑ et vidangé par un débit Qₛ. Le fluide est incompressible. Déterminer le débit net, la vitesse de montée du plan d’eau, puis le temps nécessaire pour élever le niveau de Δh.",
     "variables": [
@@ -116,7 +116,7 @@
     "id": "KIN_DIST_07",
     "chapter": "kinematics",
     "solver": "distributedFlow",
-    "title": "Conduite à débit réparti — irrigation",
+    "title": "Exercice 3.6 — Conduite à débit réparti — irrigation",
     "difficulty": 2,
     "statement": "Une rampe d’irrigation horizontale distribue de l’eau le long de sa longueur. Le débit décroît de Qₑ à Qₛ. Déterminer le volume prélevé, le débit linéique uniforme, puis le débit restant à mi-longueur.",
     "variables": [
@@ -134,7 +134,7 @@
     "id": "BERN_SECTIONS_03",
     "chapter": "bernoulli",
     "solver": "bernoulliSections",
-    "title": "Conduite avec changement de section et de niveau",
+    "title": "Exercice 4.1 — Conduite avec changement de section et de niveau",
     "difficulty": 2,
     "statement": "De l’eau s’écoule en régime permanent dans une conduite qui s’élève, la section diminuant de D₁ à D₂. Fluide parfait. Calculer les vitesses puis la pression au point 2 par Bernoulli.",
     "variables": [
@@ -156,7 +156,7 @@
     "id": "BERN_PITOT_05",
     "chapter": "bernoulli",
     "solver": "pitot",
-    "title": "Tube de Pitot au mercure",
+    "title": "Exercice 4.4 — Tube de Pitot au mercure",
     "difficulty": 1,
     "statement": "Un tube de Pitot statique placé dans l’axe d’une conduite d’eau est relié à un manomètre différentiel au mercure. Déterminer la pression dynamique puis la vitesse locale au point de mesure.",
     "variables": [
@@ -173,7 +173,7 @@
     "id": "BERN_DRAIN_06",
     "chapter": "bernoulli",
     "solver": "drainTime",
-    "title": "Temps de vidange d’un réservoir cylindrique",
+    "title": "Exercice 4.3 — Temps de vidange d’un réservoir cylindrique",
     "difficulty": 3,
     "statement": "Un réservoir cylindrique se vide par un orifice en mince paroi. Le régime est quasi permanent. Déterminer le temps nécessaire pour abaisser le niveau de h₁ à h₂ au-dessus de l’orifice.",
     "variables": [
@@ -193,7 +193,7 @@
     "id": "BERN_SIPHON_07",
     "chapter": "bernoulli",
     "solver": "siphon",
-    "title": "Siphon et risque de cavitation",
+    "title": "Exercice 4.6 — Siphon et risque de cavitation",
     "difficulty": 3,
     "statement": "Un siphon de diamètre constant amorce la vidange d’un réservoir. Le point haut est à une hauteur z_C au-dessus de la surface libre ; la sortie débouche à l’air libre sous une dénivellation Δz. Fluide parfait, réservoir de grande section. Calculer la vitesse, le débit et la pression absolue au point haut.",
     "variables": [
@@ -213,7 +213,7 @@
     "id": "BERN_PUMP_08",
     "chapter": "bernoulli",
     "solver": "hydraulicPower",
-    "title": "Pompage entre deux réservoirs",
+    "title": "Exercice 4.7 — Pompage entre deux réservoirs",
     "difficulty": 2,
     "statement": "Une pompe aspire l’eau d’un puits et la refoule dans un réservoir dont la surface libre est plus haute. Les deux surfaces sont à l’air libre et de grande section. Fluide parfait, plus d’éventuelles pertes déjà estimées. Calculer la hauteur manométrique, la puissance hydraulique et la puissance absorbée.",
     "variables": [

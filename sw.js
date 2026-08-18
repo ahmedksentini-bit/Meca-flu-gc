@@ -1,4 +1,4 @@
-const CACHE = "mecaflu-v2-26";
+const CACHE = "mecaflu-v2-27";
 const ASSETS = ["./","./index.html","./styles.css","./enhancements.css","./src/app.js","./src/solvers.js","./src/diagrams.js","./src/recaps.js","./src/warmups.js","./data/exercises.json","./data/exercises-ch1-ch2.json","./data/exercises-ch3-ch4.json","./data/exercises-ch5-ch8.json","./data/exercises-exam-td.json","./data/exercises-td.json","./data/exercises-complements.json","./manifest.webmanifest","./assets/icon.svg"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));

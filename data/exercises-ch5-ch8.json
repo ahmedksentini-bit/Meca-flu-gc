@@ -3,7 +3,7 @@
     "id": "MOM_BUCKET_03",
     "chapter": "momentum",
     "solver": "jetMobile",
-    "title": "Auget en U fixe puis mobile",
+    "title": "Exercice 5.2 — Auget en U fixe puis mobile",
     "difficulty": 3,
     "statement": "Un jet d’eau frappe un auget en U qui le retourne à 180°. Calculer la force sur l’auget fixe, puis la force et la puissance lorsque l’auget avance à la vitesse u dans le sens du jet. En déduire la vitesse qui maximise la puissance.",
     "variables": [
@@ -23,7 +23,7 @@
     "id": "MOM_ELBOW_04",
     "chapter": "momentum",
     "solver": "elbowForce",
-    "title": "Force d’ancrage d’un coude à 90°",
+    "title": "Exercice 5.3 — Force d’ancrage d’un coude à 90°",
     "difficulty": 3,
     "statement": "Un coude horizontal à 90° de diamètre constant transporte de l’eau. La pression relative à l’entrée est connue. Fluide parfait, même diamètre : p et V se conservent. Calculer la force exercée par l’eau sur le coude (composantes et résultante).",
     "variables": [
@@ -43,7 +43,7 @@
     "id": "MOM_CONV_05",
     "chapter": "momentum",
     "solver": "convergentForce",
-    "title": "Effort axial sur un convergent",
+    "title": "Exercice 5.4 — Effort axial sur un convergent",
     "difficulty": 3,
     "statement": "Un convergent horizontal fait passer une conduite d’eau de D₁ à D₂. Fluide parfait. Calculer les vitesses, la pression aval par Bernoulli, puis la force axiale exercée par l’eau sur le convergent (positive vers l’aval).",
     "variables": [
@@ -64,7 +64,7 @@
     "id": "MOM_REACT_06",
     "chapter": "momentum",
     "solver": "jetReaction",
-    "title": "Réaction d’un jet à la sortie d’un réservoir",
+    "title": "Exercice 5.5 — Réaction d’un jet à la sortie d’un réservoir",
     "difficulty": 2,
     "statement": "Un réservoir sur rouleaux (frottement négligeable) se vide par un orifice latéral profilé (Cᵈ = 1) de section A, sous une charge h. Calculer la force horizontale à exercer pour maintenir le réservoir immobile.",
     "variables": [
@@ -82,7 +82,7 @@
     "id": "MOM_INCLINE_07",
     "chapter": "momentum",
     "solver": "inclinedPlate",
-    "title": "Jet incliné sur une plaque lisse",
+    "title": "Exercice 5.6 — Jet incliné sur une plaque lisse",
     "difficulty": 3,
     "statement": "Un jet plan horizontal frappe une plaque lisse inclinée de θ sur la direction du jet. Pesanteur et frottements négligés : |V| se conserve le long de la plaque. Calculer la force normale et la répartition du débit entre les deux nappes.",
     "variables": [
@@ -101,7 +101,7 @@
     "id": "LOSS_RE_01",
     "chapter": "losses",
     "solver": "reynoldsRegime",
-    "title": "Régime d’écoulement en conduite",
+    "title": "Exercice 6.1 — Régime d’écoulement en conduite",
     "difficulty": 1,
     "statement": "De l’eau circule dans une conduite circulaire. Calculer la vitesse moyenne et le nombre de Reynolds, puis conclure sur le régime (laminaire, transition ou turbulent).",
     "variables": [
@@ -171,7 +171,7 @@
     "id": "LOSS_LAM_04",
     "chapter": "losses",
     "solver": "poiseuilleOil",
-    "title": "Écoulement laminaire d’une huile",
+    "title": "Exercice 6.2 — Écoulement laminaire d’une huile",
     "difficulty": 2,
     "statement": "Une huile circule dans une conduite horizontale. Vérifier le régime, calculer λ = 64/Re, la perte de charge, la chute de pression et la puissance dissipée.",
     "variables": [
@@ -194,7 +194,7 @@
     "id": "LOSS_GRAV_05",
     "chapter": "losses",
     "solver": "gravityPipe",
-    "title": "Conduite gravitaire entre deux réservoirs",
+    "title": "Exercice 6.4 — Conduite gravitaire entre deux réservoirs",
     "difficulty": 3,
     "statement": "Deux réservoirs à surface libre sont reliés par une conduite rugueuse. La dénivelée H est entièrement consommée par les pertes linéaires et singulières. Calculer le débit transité (problème de débitance : λ dépend de V).",
     "variables": [
@@ -215,7 +215,7 @@
     "id": "LOSS_SIZE_06",
     "chapter": "losses",
     "solver": "pipeSizing",
-    "title": "Dimensionnement d’une adduction gravitaire",
+    "title": "Exercice 6.5 — Dimensionnement d’une adduction gravitaire",
     "difficulty": 3,
     "statement": "On veut transiter un débit Q entre deux réservoirs distants de L avec une dénivelée disponible H. Pertes singulières négligées. Déterminer le plus petit diamètre commercial (série 150–400 mm) tel que h_f ≤ H, puis la vitesse correspondante.",
     "variables": [
@@ -235,7 +235,7 @@
     "id": "LOSS_PUMP_07",
     "chapter": "losses",
     "solver": "pumpStation",
-    "title": "Station de pompage complète",
+    "title": "Exercice 6.6 — Station de pompage complète",
     "difficulty": 3,
     "statement": "Une pompe refoule un débit d’une bâche vers un réservoir. Aspiration et refoulement ont des diamètres, longueurs et coefficients K distincts. Le facteur de Darcy λ est donné. Calculer la HMT et les puissances hydraulique et absorbée.",
     "variables": [
@@ -262,7 +262,7 @@
     "id": "LOSS_BORDA_08",
     "chapter": "losses",
     "solver": "bordaCarnot",
-    "title": "Élargissement brusque — Borda–Carnot",
+    "title": "Exercice 6.7 — Élargissement brusque — Borda–Carnot",
     "difficulty": 2,
     "statement": "Une conduite passe brusquement de D₁ à D₂. Calculer la perte singulière de Borda–Carnot, puis la variation de pression à travers l’élargissement (conduite horizontale).",
     "variables": [
@@ -282,7 +282,7 @@
     "id": "SIM_REYNOLDS_02",
     "chapter": "similarity",
     "solver": "reynoldsDrag",
-    "title": "Traînée d’une pile de pont (Reynolds)",
+    "title": "Exercice 7.3 — Traînée d’une pile de pont (Reynolds)",
     "difficulty": 2,
     "statement": "La force de traînée sur une pile cylindrique dépend de D, V, ρ et μ. Des essais au 1/N en similitude de Reynolds, dans le même fluide, donnent une force Fₘ. Quelle est la force sur le prototype ?",
     "variables": [
@@ -298,7 +298,7 @@
     "id": "SIM_SPILL_03",
     "chapter": "similarity",
     "solver": "froudeSpillway",
-    "title": "Modèle d’évacuateur de crues",
+    "title": "Exercice 7.4 — Modèle d’évacuateur de crues",
     "difficulty": 3,
     "statement": "Un évacuateur de crues est étudié au 1/N en similitude de Froude. Transposer le débit de projet sur le modèle, puis une vitesse, une durée et une force mesurées sur le modèle vers le prototype.",
     "variables": [
@@ -319,7 +319,7 @@
     "id": "SIM_STOKES_04",
     "chapter": "similarity",
     "solver": "stokesViscosity",
-    "title": "Chute d’une bille — viscosimètre de Stokes",
+    "title": "Exercice 7.5 — Chute d’une bille — viscosimètre de Stokes",
     "difficulty": 2,
     "statement": "Une bille d’acier tombe à vitesse limite constante dans une huile. En régime de Stokes, la traînée vaut 3πμdV. En déduire la viscosité, puis vérifier Re ≲ 1.",
     "variables": [
@@ -337,7 +337,7 @@
     "id": "FS_TRAP_02",
     "chapter": "freeSurface",
     "solver": "trapezoidalChannel",
-    "title": "Canal trapézoïdal en régime uniforme",
+    "title": "Exercice 8.1 — Canal trapézoïdal en régime uniforme",
     "difficulty": 2,
     "statement": "Un canal d’irrigation trapézoïdal (largeur au fond b, fruits des talus z = ΔH/ΔV) a une pente S. Calculer le débit pour une profondeur y, puis le nombre de Froude (profondeur moyenne A/T).",
     "variables": [
@@ -358,7 +358,7 @@
     "id": "FS_NORMAL_03",
     "chapter": "freeSurface",
     "solver": "normalDepth",
-    "title": "Profondeur normale d’un collecteur",
+    "title": "Exercice 8.2 — Profondeur normale d’un collecteur",
     "difficulty": 3,
     "statement": "Un caniveau rectangulaire de largeur b et de pente S doit évacuer un débit Q. Calculer la profondeur normale yₙ (itération de Manning–Strickler) et vérifier le régime.",
     "variables": [
@@ -377,7 +377,7 @@
     "id": "FS_WAVE_04",
     "chapter": "freeSurface",
     "solver": "waveCelerity",
-    "title": "Célérité d’une intumescence",
+    "title": "Exercice 8.3 — Célérité d’une intumescence",
     "difficulty": 2,
     "statement": "Une vanne de tête d’un canal rectangulaire large (profondeur y, vitesse V) est manœuvrée, créant une petite intumescence. Calculer la célérité et les vitesses absolues des fronts, puis le temps pour atteindre un ouvrage situé à L en amont.",
     "variables": [
@@ -396,7 +396,7 @@
     "id": "FS_RITTER_05",
     "chapter": "freeSurface",
     "solver": "damBreakRitter",
-    "title": "Onde de rupture de barrage (Ritter)",
+    "title": "Exercice 8.4 — Onde de rupture de barrage (Ritter)",
     "difficulty": 3,
     "statement": "Un barrage retenant une hauteur h₀ sur fond horizontal et sec cède instantanément. Solution de Ritter (Saint-Venant sans frottement) : calculer la célérité du front, la profondeur et la vitesse au droit du barrage, puis le temps d’arrivée à une distance x.",
     "variables": [
