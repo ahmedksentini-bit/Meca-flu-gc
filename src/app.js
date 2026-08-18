@@ -159,12 +159,28 @@ function warmupCard(items) {
 function warmupQuestion(q, i) {
   const picked = state.warmup[i];
   const answered = picked != null;
+  const ok = answered && picked === q.correct;
   const choices = q.choices.map(c => {
-    const selected = picked === c.id;
-    return `<button type="button" class="warmup-choice${selected ? " selected" : ""}" data-warmup="${i}" data-choice="${c.id}" ${answered ? "disabled" : ""}>${esc(c.label)}</button>`;
+    let klass = "warmup-choice";
+    let mark = "";
+    if (answered) {
+      if (c.id === q.correct) {
+        klass += " is-correct";
+        mark = `<span class="warmup-mark" aria-hidden="true">✓</span>`;
+      } else if (c.id === picked) {
+        klass += " is-wrong";
+        mark = `<span class="warmup-mark" aria-hidden="true">✕</span>`;
+      } else {
+        klass += " is-muted";
+      }
+    }
+    return `<button type="button" class="${klass}" data-warmup="${i}" data-choice="${c.id}" ${answered ? "disabled" : ""}>${mark}${esc(c.label)}</button>`;
   }).join("");
+  const verdict = !answered ? "" : ok
+    ? `<p class="warmup-verdict is-good">✓ Bravo</p>`
+    : `<p class="warmup-verdict is-bad">✕ Pas tout à fait — la bonne réponse est surlignée.</p>`;
   const explain = answered ? `<p class="warmup-explain">${esc(q.explain)}</p>` : "";
-  return `<div class="warmup-item" id="warmup_${i}"><p class="warmup-prompt">${esc(q.prompt)}</p><div class="warmup-choices">${choices}</div>${explain}</div>`;
+  return `<div class="warmup-item" id="warmup_${i}"><p class="warmup-prompt">${esc(q.prompt)}</p><div class="warmup-choices">${choices}</div>${verdict}${explain}</div>`;
 }
 
 function warmupReady(items) {
