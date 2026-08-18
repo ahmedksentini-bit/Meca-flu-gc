@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { solve, isClose, solvers } from "../src/solvers.js";
+import { warmups } from "../src/warmups.js";
 
 const exercise = solver => ({ solver });
 const venturi = solve(exercise("venturi"), { D1:200,D2:100,h:100,rho:1000,rhoM:13600 }).values;
@@ -256,4 +260,35 @@ assert.ok(caisson.GM > 0);
 
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+function catalogIds() {
+  const files = [
+    "data/exercises.json",
+    "data/exercises-ch1-ch2.json",
+    "data/exercises-ch3-ch4.json",
+    "data/exercises-ch5-ch8.json",
+    "data/exercises-exam-td.json",
+    "data/exercises-td.json"
+  ];
+  const ids = new Set();
+  for (const rel of files) {
+    const parsed = JSON.parse(readFileSync(join(root, rel), "utf8"));
+    const arr = Array.isArray(parsed) ? parsed : parsed.exercises || [];
+    for (const item of arr) {
+      if (item.solver) ids.add(item.id);
+    }
+  }
+  return [...ids];
+}
+
+for (const id of catalogIds()) {
+  const items = warmups[id];
+  assert.ok(Array.isArray(items) && items.length >= 1 && items.length <= 2, `warmup manquant: ${id}`);
+  for (const q of items) {
+    assert.ok(q.prompt && q.explain && q.choices.length >= 2 && q.choices.length <= 4, id);
+    assert.ok(q.choices.some(c => c.id === q.correct), id);
+  }
+}
+
 console.log("✓ Assertions métier validées");

@@ -1,9 +1,10 @@
 import { solve, isClose } from "./solvers.js";
 import { drawFigure, moodyChart, moodyPoint } from "./diagrams.js";
 import { courseRecap } from "./recaps.js";
+import { warmups } from "./warmups.js";
 
 const app = document.querySelector("#app");
-const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, timer: null, seconds: 0, installPrompt: null };
+const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null };
 const modes = { learn: "Apprentissage", train: "Entraînement", exam: "Examen" };
 const pedagogy = {
   density:{hypotheses:"Fluide homogène ; g = 9,81 m/s² ; la densité est définie par rapport à l’eau à ρeau = 1000 kg/m³.",why:["Le volume du cylindre est 𝒱 = πD²h/4, ou 𝒱 est donné. La masse est donnée, ou déduite de W = mg.","La masse volumique mesure la masse contenue par unité de volume.","Le poids volumique est γ = ρg ; on l’exprime ici en kN/m³.","La densité est un rapport de deux masses volumiques : elle n’a donc pas d’unité."],check:"Pour une huile, on attend généralement ρ < 1000 kg/m³ et d < 1."},
@@ -129,7 +130,7 @@ function chapterPage(chapterId) {
 
 function openExercise(exercise, mode = state.mode) {
   closeMoodyReader();
-  stopTimer(); state.exercise = exercise; state.mode = mode; state.attempts = {};
+  stopTimer(); state.exercise = exercise; state.mode = mode; state.attempts = {}; state.warmup = {};
   state.data = Object.fromEntries(exercise.variables.map(v => [v.key, mode === "learn" ? v.value : randomValue(v)]));
   renderExercise();
   if (mode === "exam") startTimer();
@@ -140,11 +141,50 @@ function renderExercise() {
   const e = state.exercise, chapter = state.catalog.chapters.find(c => c.id === e.chapter);
   const recap = courseRecap(e.solver);
   const recapHtml = state.mode === "exam" ? "" : `<article class="card recap-card"><p class="recap-kicker">Rappel de cours</p><h2>${esc(recap.title)}</h2><p class="recap-lead">${esc(recap.lead)}</p><ul class="recap-points">${recap.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul><p class="recap-watch"><strong>Piège fréquent.</strong> ${esc(recap.watch)}</p></article>`;
-  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><h2>Schéma de l’exercice</h2><div class="diagram" id="diagram"></div><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
+  app.innerHTML = `<section class="exercise-head"><div><button class="back" id="back">← Exercices du chapitre</button><h1>${esc(e.title)}</h1><p>Chapitre ${chapter.number} · Niveau ${e.difficulty}</p></div><div><div class="mode-switch" aria-label="Mode de travail">${Object.entries(modes).map(([key,label]) => `<button data-mode="${key}" class="${state.mode===key?"active":""}">${label}</button>`).join("")}</div><div id="clock" class="exam-clock">${state.mode === "exam" ? "Temps 00:00" : ""}</div></div></section><section class="workspace"><div><article class="card"><h2>Schéma de l’exercice</h2><div class="diagram" id="diagram"></div><p class="diagram-note" id="diagramNote"></p></article>${recapHtml}<article class="card"><h2>Énoncé</h2><p class="statement">${esc(e.statement)}</p><div class="data-grid">${e.variables.map(v => `<div class="field"><label for="v_${v.key}">${esc(v.label)}</label><div class="input-wrap"><input id="v_${v.key}" data-variable="${v.key}" type="number" step="any" value="${state.data[v.key]}" ${state.mode === "exam" ? "readonly" : ""}><span class="unit">${v.unit}</span></div></div>`).join("")}</div><div class="actions">${state.mode !== "learn" ? `<button class="secondary" id="randomize">↻ Nouvelles données</button>` : ""}</div></article></div><div><article class="card" id="guidedCard"><h2>${state.mode === "exam" ? "Votre copie" : "Résolution guidée"}</h2><div id="questions">${e.questions.map((q,i) => question(q,i)).join("")}</div><div class="actions"><button class="primary" id="submitAll">${state.mode === "exam" ? "Rendre la copie" : "Tout vérifier"}</button>${state.mode !== "exam" ? `<button class="secondary" id="showCorrection">Voir la correction</button>` : ""}</div><div id="score"></div></article><article class="card correction" id="correction" hidden></article></div></section>`;
   const formulas=equationSheets[e.solver]||["Consulter les hypothèses et établir le bilan fondamental."];
-  app.querySelector(".workspace > div:nth-child(2)").insertAdjacentHTML("afterbegin",`<article class="card equation-card"><h2>Équations utiles</h2><p class="equation-intro">Rappel littéral — identifiez chaque grandeur avant de remplacer les valeurs.</p>${formulas.map(f=>`<div class="equation-line">${esc(f)}</div>`).join("")}</article>`);
+  const rightCol = app.querySelector(".workspace > div:nth-child(2)");
+  const items = state.mode === "learn" ? warmups[e.id] : null;
+  if (items) rightCol.insertAdjacentHTML("afterbegin", warmupCard(items));
+  rightCol.querySelector("#guidedCard").insertAdjacentHTML("beforebegin", `<article class="card equation-card" id="equationCard"><h2>Équations utiles</h2><p class="equation-intro">Rappel littéral — identifiez chaque grandeur avant de remplacer les valeurs.</p>${formulas.map(f=>`<div class="equation-line">${esc(f)}</div>`).join("")}</article>`);
+  applyWarmupGate(items);
   bindExerciseEvents();
   refreshDiagram();
+}
+
+function warmupCard(items) {
+  return `<article class="card warmup-card"><p class="warmup-kicker">Avant de calculer</p><h2>Se faire une idée du phénomène</h2><p class="warmup-intro">Répondez d’abord avec le schéma et ce que vous savez déjà — sans chercher la formule.</p>${items.map((q, i) => warmupQuestion(q, i)).join("")}</article>`;
+}
+
+function warmupQuestion(q, i) {
+  const picked = state.warmup[i];
+  const answered = picked != null;
+  const choices = q.choices.map(c => {
+    const selected = picked === c.id;
+    return `<button type="button" class="warmup-choice${selected ? " selected" : ""}" data-warmup="${i}" data-choice="${c.id}" ${answered ? "disabled" : ""}>${esc(c.label)}</button>`;
+  }).join("");
+  const explain = answered ? `<p class="warmup-explain">${esc(q.explain)}</p>` : "";
+  return `<div class="warmup-item" id="warmup_${i}"><p class="warmup-prompt">${esc(q.prompt)}</p><div class="warmup-choices">${choices}</div>${explain}</div>`;
+}
+
+function warmupReady(items) {
+  return items && items.every((_, i) => state.warmup[i] != null);
+}
+
+function applyWarmupGate(items) {
+  if (!items) return;
+  const ready = warmupReady(items);
+  document.querySelector("#equationCard").hidden = !ready;
+  document.querySelector("#guidedCard").hidden = !ready;
+}
+
+function answerWarmup(index, choice) {
+  if (state.warmup[index] != null) return;
+  state.warmup[index] = choice;
+  const items = warmups[state.exercise.id];
+  const block = document.querySelector(`#warmup_${index}`);
+  if (block) block.outerHTML = warmupQuestion(items[index], index);
+  applyWarmupGate(items);
 }
 
 function question(q, i) { return `<div class="question"><div class="question-title">${i+1}. ${esc(q.label)}</div><div class="answer-row"><div class="input-wrap"><input id="a_${q.key}" data-answer="${q.key}" inputmode="decimal" autocomplete="off" placeholder="Votre réponse"><span class="unit">${q.unit}</span></div>${state.mode !== "exam" ? `<button class="ghost" data-check="${q.key}">Vérifier</button>` : ""}</div><p class="feedback" id="f_${q.key}"></p></div>`; }
@@ -175,6 +215,11 @@ function bindExerciseEvents() {
   document.querySelector("#submitAll").addEventListener("click", submitAll);
   document.querySelector("#showCorrection")?.addEventListener("click", showCorrection);
   document.querySelector("#randomize")?.addEventListener("click", () => openExercise(state.exercise, state.mode));
+  document.querySelector(".warmup-card")?.addEventListener("click", event => {
+    const b = event.target.closest("[data-warmup]");
+    if (!b || b.disabled) return;
+    answerWarmup(Number(b.dataset.warmup), b.dataset.choice);
+  });
 }
 
 function formatRe(value) {
