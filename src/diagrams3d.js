@@ -668,8 +668,8 @@ export class Hydraulic3DEngine {
     shape.closePath();
 
     const geo = new THREE.ExtrudeGeometry(shape, { depth: L, bevelEnabled: false, steps: 1 });
-    geo.rotateY(HALF_PI);
     geo.translate(0, 0, -L / 2);
+    geo.rotateY(HALF_PI);
     const canal = new THREE.Mesh(geo, mat.metal(PAL.metalDark, { metalness: 0.1, roughness: 0.72 }));
     canal.castShadow = true;
     canal.receiveShadow = true;
