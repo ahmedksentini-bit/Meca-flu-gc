@@ -274,15 +274,21 @@ function moodyChart(d, options = {}) {
 
 const figures = {
   viscosity(d) {
+    const yT = 56, yB = 168, xR = 100, uPx = 130, nA = 6, dh = (yB - yT) / (nA + 1);
+    let va = '';
+    for (let i = 1; i <= nA; i++) { const y = yB - i * dh, len = (i / (nA + 1)) * uPx; if (len > 6) va += drawVector(xR, y, len, 0, "velocity"); }
     return {
       caption: "Propriété du fluide : τ = μ U/e. On mesure F et on en déduit μ = τ e/U, puis ν = μ/ρ.",
-      svg: svg("Viscosité dynamique", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(70, 168, 220, 52, PALETTE.velocity, 2.3)}${drawVector(250, 28, 80, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(420, 52, 420, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `F = ${num(d.F)} N · A = ${num(d.A)} m² → μ`)}`)
+      svg: svg("Viscosité dynamique", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(xR, yB, xR, yT, PALETTE.velocity, 1, 'stroke-dasharray="4 3"')}${line(xR, yB, xR + uPx, yT, PALETTE.velocity, 2.3)}${va}${drawVector(250, 28, 80, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(36, 52, 36, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(270, 120, "τ = μ·du/dy = μU/e", `fill="${PALETTE.velocity}" font-size="13"`)}${t(48, 228, "plaque fixe — adhérence u = 0")}${t(270, 228, `F = ${num(d.F)} N · A = ${num(d.A)} m² → μ`)}`)
     };
   },
   viscosityForce(d) {
+    const yT = 56, yB = 168, xR = 100, uPx = 130, nA = 6, dh = (yB - yT) / (nA + 1);
+    let va = '';
+    for (let i = 1; i <= nA; i++) { const y = yB - i * dh, len = (i / (nA + 1)) * uPx; if (len > 6) va += drawVector(xR, y, len, 0, "velocity"); }
     return {
       caption: "Couette plan : profil linéaire, τ = μU/e. La force de traction F = τA s’applique sur la plaque mobile, pas sur le fluide « en bloc ».",
-      svg: svg("Force de traction visqueuse", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(70, 168, 220, 52, PALETTE.velocity, 2.3)}${drawVector(80, 28, 170, 0, "force", `F = τA`)}${drawVector(280, 44, 70, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(420, 52, 420, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `μ = ${num(d.mu)} Pa·s · A = ${num(d.A)} m²`)}`)
+      svg: svg("Force de traction visqueuse", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(xR, yB, xR, yT, PALETTE.velocity, 1, 'stroke-dasharray="4 3"')}${line(xR, yB, xR + uPx, yT, PALETTE.velocity, 2.3)}${va}${drawVector(80, 28, 170, 0, "force", `F = τA`)}${drawVector(280, 44, 70, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(36, 52, 36, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(270, 120, "τ = μ·du/dy = μU/e", `fill="${PALETTE.velocity}" font-size="13"`)}${t(48, 228, "plaque fixe — adhérence u = 0")}${t(270, 228, `μ = ${num(d.mu)} Pa·s · A = ${num(d.A)} m²`)}`)
     };
   },
 
@@ -313,10 +319,36 @@ const figures = {
   coaxialViscometer(d) {
     const ri = +d.ri || 20, ro = +d.ro || 22;
     const e = Math.max(ro - ri, 0.1);
-    const y0 = 70, y1 = 168, xWall = 148, uMax = 70;
+    const cx = 148, yT = 50, yB = 194, wt = 11, ow = 152, iw = 80, sw = 14;
+    const oL = cx - ow / 2, oR = cx + ow / 2, iL = cx - iw / 2, iR = cx + iw / 2;
+    const sL = cx - sw / 2, sR = cx + sw / 2, shY = 22;
+    const fT = yT + wt, fB = yB - wt, iT = fT + 3, iB = fB - 3;
     return {
-      caption: "Coupe : cylindre intérieur tournant, extérieur fixe. L’entrefer e = Rₑ − Rᵢ est un Couette plan enroulé : profil u(y) linéaire.",
-      svg: svg("Viscosimètre coaxial", `<rect x="120" y="36" width="88" height="168" fill="#e2e8f0" stroke="#334155" stroke-width="7"/><rect x="142" y="52" width="44" height="136" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="5"/>${drawDimension(142, 210, 164, 210, `e = ${num(e)} mm`, { side: 1 })}${line(xWall, y1, xWall + uMax, y0, PALETTE.velocity, 2.3)}${drawVector(xWall + uMax, y0, 28, 0, "velocity", "U = ωRᵢ")}${t(250, 58, `N = ${num(d.rpm)} tr/min`)}${t(250, 86, `Rᵢ = ${num(d.ri)} mm`)}${t(250, 114, `Rₑ = ${num(d.ro)} mm`)}${t(250, 142, `L = ${num(d.L)} mm`)}${t(250, 170, `C = ${num(d.torque)} N·m`)}${t(130, 228, "stator fixe")} ${t(155, 28, "rotor")}`)
+      caption: "Coupe verticale : cylindre intérieur tournant, extérieur fixe. L’entrefer e = Rₑ − Rᵢ est un Couette plan enroulé : profil u(y) linéaire.",
+      svg: svg("Viscosimètre coaxial",
+        hatch(oL, yT, wt, yB - yT) + hatch(oR - wt, yT, wt, yB - yT) + hatch(oL, yB - wt, ow, wt) + hatch(oL, yT, sL - oL, wt) + hatch(sR, yT, oR - sR, wt) +
+        `<rect x="${oL}" y="${yT}" width="${ow}" height="${yB - yT}" fill="none" stroke="#334155" stroke-width="2"/>` +
+        `<rect x="${oL + wt}" y="${fT}" width="${ow - 2 * wt}" height="${fB - fT}" fill="${PALETTE.waterFill}" stroke="none"/>` +
+        `<rect x="${iL}" y="${iT}" width="${iw}" height="${iB - iT}" fill="#b0bec5" stroke="#334155" stroke-width="2.5"/>` +
+        `<rect x="${sL}" y="${shY}" width="${sw}" height="${iT - shY + 6}" fill="#b0bec5" stroke="#334155" stroke-width="1.5"/>` +
+        `<path d="M${cx - 16} ${shY - 3}A16 16 0 0 1 ${cx + 16} ${shY - 3}" fill="none" stroke="${PALETTE.force}" stroke-width="2" marker-end="url(#arr)"/>` +
+        t(cx + 20, shY + 1, "\u03c9", `fill="${PALETTE.force}" font-size="15"`) +
+        drawDimension(oL - 8, iT, oL - 8, iB, "L", { side: -1 }) +
+        line(cx, yB + 5, iR, yB + 5, PALETTE.dim, 1.2, 'marker-start="url(#dimA)" marker-end="url(#dimA)"') +
+        t((cx + iR) / 2, yB + 17, "R\u1d62", `fill="${PALETTE.dim}" font-size="11" text-anchor="middle"`) +
+        line(cx, yB + 22, oR - wt, yB + 22, PALETTE.dim, 1.2, 'marker-start="url(#dimA)" marker-end="url(#dimA)"') +
+        t((cx + oR - wt) / 2, yB + 34, "R\u2091", `fill="${PALETTE.dim}" font-size="11" text-anchor="middle"`) +
+        `<line x1="${oL + wt + 1}" y1="${(fT + fB) / 2}" x2="${iL - 1}" y2="${(fT + fB) / 2}" stroke="${PALETTE.dim}" stroke-width="1" stroke-dasharray="3 2" marker-start="url(#dimA)" marker-end="url(#dimA)"/>` +
+        t(oL + wt + 3, (fT + fB) / 2 - 5, "e", `fill="${PALETTE.dim}" font-size="10"`) +
+        t(cx, iT + 16, "rotor", `font-size="11" fill="#455a64" text-anchor="middle"`) +
+        t(cx, yB + 48, "stator fixe", `font-size="11" fill="#455a64" text-anchor="middle"`) +
+        t(280, 58, `N = ${num(d.rpm)} tr/min`) +
+        t(280, 84, `R\u1d62 = ${num(d.ri)} mm`) +
+        t(280, 110, `R\u2091 = ${num(d.ro)} mm`) +
+        t(280, 136, `e = ${num(e)} mm`) +
+        t(280, 162, `L = ${num(d.L)} mm`) +
+        t(280, 188, `C = ${num(d.torque)} N\u00b7m`)
+      )
     };
   },
 

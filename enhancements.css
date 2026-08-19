@@ -37,3 +37,15 @@ body.diagram-fs-open{overflow:hidden}
 .moody-readout{margin:4px 0 0;padding:10px 12px;border-radius:10px;background:#fff7ed;color:#9a3412}
 @media(max-width:640px){.moody-cursors label{grid-template-columns:1fr;gap:4px}}
 @media(max-width:560px){.course-link{padding:8px 10px;font-size:12px}.brand small{display:none}}
+.diagram-zoom-overlay{position:fixed;inset:0;z-index:38;display:flex;align-items:center;justify-content:center;padding:24px;background:#fffffff7;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:manipulation}
+.diagram-zoom-close{position:fixed;top:16px;right:16px;z-index:39;width:48px;height:48px;border:none;border-radius:50%;background:#0f172aee;color:#fff;font-size:24px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px #0f172a33;transition:background .15s}
+.diagram-zoom-close:hover,.diagram-zoom-close:active{background:#1e293b}
+.diagram-zoom-content{width:min(95vw,1200px);max-height:95vh}
+.diagram-zoom-content svg{width:100%;height:auto;display:block}
+body.pdf-open{overflow:hidden}
+.pdf-overlay{position:fixed;inset:0;z-index:42;display:flex;flex-direction:column;background:#fff}
+.pdf-overlay-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:10px 16px;background:linear-gradient(135deg,#0c4a6eee,#075985ee);color:#fff;box-shadow:0 2px 12px #0f172a22}
+.pdf-overlay-bar strong{font-size:16px;letter-spacing:.02em}
+.pdf-overlay-bar .ghost{background:#ffffff18;border-color:#ffffff44;color:#fff;transition:background .15s}
+.pdf-overlay-bar .ghost:hover{background:#ffffff30}
+.pdf-frame{flex:1 1 auto;width:100%;min-height:0;border:none}

@@ -1,8 +1,8 @@
-/** Famille 3D par solveur — sans Three.js, pour l’UI. */
+/** Famille 3D par solveur — sans Three.js, pour l'UI. */
 export const SOLVER_FAMILY = {
+  /* ── pipe ─────────────────────────────────────────────── */
   pipeContinuity: "pipe",
   twoSectionContinuity: "pipe",
-  networkNode: "pipe",
   distributedFlow: "pipe",
   bernoulliSections: "pipe",
   venturi: "pipe",
@@ -35,17 +35,22 @@ export const SOLVER_FAMILY = {
   hazenWilliams: "pipe",
   pipeABPressure: "pipe",
   seriesPipeHGL: "pipe",
-  tankFilling: "pipe",
   convectiveAcceleration: "pipe",
-  waterCannon: "pipe",
-  jetPlate: "pipe",
-  jetDeflect: "pipe",
-  jetMobile: "pipe",
-  jetReaction: "pipe",
-  inclinedPlate: "pipe",
   turbinePower: "pipe",
   hazenParallelNetwork: "pipe",
-  hydraulicPress: "pipe",
+  /* ── jet (impact de jet libre) ───────────────────────── */
+  jetPlate: "jet",
+  jetDeflect: "jet",
+  jetMobile: "jet",
+  jetReaction: "jet",
+  inclinedPlate: "jet",
+  waterCannon: "jet",
+  /* ── tank (réservoir / vidange) ──────────────────────── */
+  torricelli: "tank",
+  drainTime: "tank",
+  reservoirRise: "tank",
+  tankFilling: "tank",
+  /* ── channel ─────────────────────────────────────────── */
   manningChannel: "channel",
   trapezoidalChannel: "channel",
   normalDepth: "channel",
@@ -59,13 +64,9 @@ export const SOLVER_FAMILY = {
   triangularTwoSlopes: "channel",
   specificEnergyStep: "channel",
   canalSlopeBreak: "channel",
-  fallingFilm: "channel",
   froudeSpillway: "channel",
   froudeSimilarity: "channel",
-  reservoirRise: "channel",
-  drainTime: "channel",
-  torricelli: "channel",
-  momentumHold: "channel",
+  /* ── gate ─────────────────────────────────────────────── */
   planeForce: "gate",
   submergedGate: "gate",
   circularGate: "gate",
@@ -75,11 +76,12 @@ export const SOLVER_FAMILY = {
   quarterCylinder: "gate",
   dualSideGate: "gate",
   lockDoor: "gate",
+  /* ── float ───────────────────────────────────────────── */
   bargeStability: "float",
   cofferdamBallast: "float",
   woodLog: "float",
   iceberg: "float",
-  archimedesCaisson: "float"
+  archimedesCaisson: "float",
 };
 
 export function familyForSolver(solver) {

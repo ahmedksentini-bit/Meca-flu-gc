@@ -174,6 +174,8 @@ function exerciseRef(exercise) {
 
 function home() {
   closeMoodyReader();
+  closeDiagramFullscreen();
+  closePdfViewer();
   state.diagramMode = "2D";
   disposeWebGLView();
   stopTimer(); state.exercise = null;
@@ -195,6 +197,8 @@ function chapterPage(chapterId) {
 
 function openExercise(exercise, mode = state.mode) {
   closeMoodyReader();
+  closeDiagramFullscreen();
+  closePdfViewer();
   stopTimer();
   state.diagramMode = "2D";
   disposeWebGLView();
@@ -334,6 +338,65 @@ function closeMoodyReader() {
   document.querySelector("#moodyOverlay")?.remove();
 }
 
+function closeDiagramFullscreen() {
+  document.querySelector("#diagramZoomOverlay")?.remove();
+}
+
+function closePdfViewer() {
+  const el = document.querySelector("#pdfOverlay");
+  if (!el) return;
+  el.remove();
+  document.body.classList.remove("pdf-open");
+}
+
+function hasOpenOverlay() {
+  return Boolean(
+    document.querySelector("#diagramZoomOverlay") ||
+    document.querySelector("#pdfOverlay") ||
+    document.querySelector("#moodyOverlay")
+  );
+}
+
+function dismissOverlay() {
+  const had = hasOpenOverlay();
+  closeDiagramFullscreen();
+  closePdfViewer();
+  closeMoodyReader();
+  if (had) history.back();
+}
+
+function openDiagramFullscreen() {
+  closeDiagramFullscreen();
+  const box = document.querySelector("#diagram");
+  if (!box) return;
+  const svgContent = box.innerHTML;
+  document.body.insertAdjacentHTML("beforeend", `<div class="diagram-zoom-overlay" id="diagramZoomOverlay" role="dialog" aria-modal="true" aria-label="Schéma agrandi">
+    <button type="button" class="diagram-zoom-close" id="diagramZoomClose" aria-label="Fermer">✕</button>
+    <div class="diagram-zoom-content">${svgContent}</div>
+  </div>`);
+  history.pushState({ overlay: "diagram" }, "");
+  document.querySelector("#diagramZoomClose").addEventListener("click", dismissOverlay);
+  document.querySelector("#diagramZoomOverlay").addEventListener("click", event => {
+    if (event.target.id === "diagramZoomOverlay") dismissOverlay();
+  });
+}
+
+function openPdfViewer(event) {
+  event.preventDefault();
+  closePdfViewer();
+  const href = event.currentTarget.href;
+  document.body.insertAdjacentHTML("beforeend", `<div class="pdf-overlay" id="pdfOverlay" role="dialog" aria-modal="true" aria-label="Polycopié du cours">
+    <header class="pdf-overlay-bar">
+      <strong>Polycopié du cours</strong>
+      <button type="button" class="ghost" id="pdfClose" aria-label="Fermer">✕ Fermer</button>
+    </header>
+    <iframe src="${href}" class="pdf-frame" title="Polycopié du cours"></iframe>
+  </div>`);
+  document.body.classList.add("pdf-open");
+  history.pushState({ overlay: "pdf" }, "");
+  document.querySelector("#pdfClose").addEventListener("click", dismissOverlay);
+}
+
 function openMoodyReader() {
   closeMoodyReader();
   const point = moodyPoint(state.data);
@@ -348,6 +411,7 @@ function openMoodyReader() {
       </div>
     </div>
   </div>`);
+  history.pushState({ overlay: "moody" }, "");
   const reInput = document.querySelector("#moodyRe");
   const erInput = document.querySelector("#moodyEr");
   reInput.value = sliderFromLog(point.Re, 500, 1e8);
@@ -371,8 +435,8 @@ function openMoodyReader() {
   };
   reInput.addEventListener("input", paint);
   erInput.addEventListener("input", paint);
-  document.querySelector("#moodyClose").addEventListener("click", closeMoodyReader);
-  document.querySelector("#moodyOverlay").addEventListener("click", event => { if (event.target.id === "moodyOverlay") closeMoodyReader(); });
+  document.querySelector("#moodyClose").addEventListener("click", dismissOverlay);
+  document.querySelector("#moodyOverlay").addEventListener("click", event => { if (event.target.id === "moodyOverlay") dismissOverlay(); });
   paint();
 }
 
@@ -399,15 +463,11 @@ function showSvgDiagram(figure) {
   if (box) {
     box.hidden = false;
     box.innerHTML = figure.svg;
-    box.classList.remove("diagram-zoomable");
-    box.title = "";
-    box.onclick = null;
-    const chart = box.querySelector(".moody-chart");
-    if (chart) {
-      box.classList.add("diagram-zoomable");
-      box.title = "Cliquer pour agrandir";
-      box.onclick = openMoodyReader;
-    }
+    const hasSvg = Boolean(box.querySelector("svg"));
+    const isMoody = Boolean(box.querySelector(".moody-chart"));
+    box.classList.toggle("diagram-zoomable", hasSvg);
+    box.title = hasSvg ? "Cliquer pour agrandir" : "";
+    box.onclick = hasSvg ? (isMoody ? openMoodyReader : openDiagramFullscreen) : null;
   }
   if (note) note.textContent = figure.caption;
 }
@@ -456,12 +516,18 @@ function stopTimer() { clearInterval(state.timer); state.timer = null; }
 
 document.addEventListener("keydown", event => {
   if (event.key !== "Escape") return;
-  closeMoodyReader();
+  if (hasOpenOverlay()) { dismissOverlay(); return; }
   if (state.diagramMode === "3D") closeWebGLView();
 });
 document.querySelector("#diagram3dClose")?.addEventListener("click", closeWebGLView);
 window.addEventListener("pagehide", disposeWebGLView);
 document.querySelector("#homeButton").addEventListener("click", home);
+document.querySelector("#polycopieLink")?.addEventListener("click", openPdfViewer);
+window.addEventListener("popstate", () => {
+  closeDiagramFullscreen();
+  closePdfViewer();
+  closeMoodyReader();
+});
 window.addEventListener("hashchange", () => {
   if (!state.catalog) return;
   const requested = state.catalog.exercises.find(e => `#${e.id}` === location.hash);

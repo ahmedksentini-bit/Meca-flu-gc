@@ -25,6 +25,7 @@ const PAL = Object.freeze({
   sky:        0xd9edf7,
   ground:     0xd5e7f2,
   sunWarm:    0xfff4e6,
+  green:      0x22c55e,
 });
 
 const G = 9.81;
@@ -433,7 +434,14 @@ export class SceneManager3D {
 }
 
 /* ── Hydraulic 3D engine ─────────────────────────────────────────── */
-const FAMILY_BUILDERS = { pipe: "buildPipeSystem", channel: "buildOpenChannel", gate: "buildGateAndDam", float: "buildFloatingBody" };
+const FAMILY_BUILDERS = {
+  pipe: "buildPipeSystem",
+  channel: "buildOpenChannel",
+  gate: "buildGateAndDam",
+  float: "buildFloatingBody",
+  jet: "buildJetScene",
+  tank: "buildTankScene",
+};
 
 export class Hydraulic3DEngine {
   constructor() {
@@ -482,6 +490,10 @@ export class Hydraulic3DEngine {
     const pipeMat = mat.metal(p.kind === "oil" ? PAL.oil : PAL.metal);
     const x0 = -L / 2, x1 = L / 2;
 
+    const sRiseH = clamp(p.rise * 0.5, 1, 2.5);
+    const sDropH = clamp(p.drop * 0.3, 0.3, 1.5);
+    const sBx1 = x0 + L * 0.2, sBx2 = x0 + L * 0.7;
+
     if (p.kind === "elbow") {
       group.add(pipeMesh(x0, 0.2, r1, r1, pipeMat));
       const vert = pipeMesh(0, 2.4, r1, r1, pipeMat);
@@ -499,6 +511,27 @@ export class Hydraulic3DEngine {
       group.add(pipeMesh(x0, -0.4, r1, r1, pipeMat));
       group.add(pipeMesh(-0.4, 0.4, r1, r2, pipeMat));
       group.add(pipeMesh(0.4, x1, r2, r2, pipeMat));
+    } else if (p.kind === "borda") {
+      group.add(pipeMesh(x0, -0.06, r1, r1, pipeMat));
+      group.add(pipeMesh(0.06, x1, r2, r2, pipeMat));
+    } else if (p.kind === "siphon") {
+      group.add(pipeMesh(x0, sBx1, r1, r1, pipeMat));
+      const v1 = pipeMesh(0, sRiseH, r1, r1, pipeMat);
+      v1.rotation.z = 0; v1.position.set(sBx1, sRiseH / 2, 0);
+      group.add(v1);
+      const h1 = pipeMesh(sBx1, sBx2, r1, r1, pipeMat);
+      h1.position.y = sRiseH;
+      group.add(h1);
+      const v2 = pipeMesh(0, sRiseH + sDropH, r1, r1, pipeMat);
+      v2.rotation.z = 0; v2.position.set(sBx2, sRiseH / 2 - sDropH / 2, 0);
+      group.add(v2);
+      const h2 = pipeMesh(sBx2, x1, r1, r1, pipeMat);
+      h2.position.y = -sDropH;
+      group.add(h2);
+      for (const [jx, jy] of [[sBx1, 0], [sBx1, sRiseH], [sBx2, sRiseH], [sBx2, -sDropH]]) {
+        const j = new THREE.Mesh(new THREE.SphereGeometry(r1 * 1.08, 14, 12), pipeMat);
+        j.position.set(jx, jy, 0); j.castShadow = true; group.add(j);
+      }
     } else {
       group.add(pipeMesh(x0, x1, r1, r2, pipeMat));
     }
@@ -578,17 +611,31 @@ export class Hydraulic3DEngine {
       animate: (dt, t) => {
         for (let i = 0; i < particles.count; i++) {
           const s = (i / particles.count + t * speed) % 1;
-          const x = x0 + s * L;
           const angle = (i * 2.399) % TWO_PI;
-          const rSpread = (p.kind === "elbow" && x > 0.15)
-            ? r1 * 0.35
-            : lerp(r1, r2, s) * 0.4;
-          let y = Math.cos(angle) * rSpread;
-          let z = Math.sin(angle) * rSpread;
-          if (p.kind === "elbow" && x > 0.15) {
-            y += (x - 0.15) * 0.9;
+          let x, y, z;
+
+          if (p.kind === "siphon") {
+            const rS = r1 * 0.35;
+            if (s < 0.15)      { x = lerp(x0, sBx1, s / 0.15); y = 0; }
+            else if (s < 0.30) { x = sBx1; y = lerp(0, sRiseH, (s - 0.15) / 0.15); }
+            else if (s < 0.65) { x = lerp(sBx1, sBx2, (s - 0.30) / 0.35); y = sRiseH; }
+            else if (s < 0.80) { x = sBx2; y = lerp(sRiseH, -sDropH, (s - 0.65) / 0.15); }
+            else               { x = lerp(sBx2, x1, (s - 0.80) / 0.20); y = -sDropH; }
+            z = Math.sin(angle) * rS;
+            y += Math.cos(angle) * rS;
+          } else {
+            x = x0 + s * L;
+            const rSpread = (p.kind === "elbow" && x > 0.15)
+              ? r1 * 0.35
+              : lerp(r1, r2, s) * 0.4;
+            y = Math.cos(angle) * rSpread;
+            z = Math.sin(angle) * rSpread;
+            if (p.kind === "elbow" && x > 0.15) {
+              y += (x - 0.15) * 0.9;
+            }
           }
-          particles.positions[i * 3] = x;
+
+          particles.positions[i * 3]     = x;
           particles.positions[i * 3 + 1] = y;
           particles.positions[i * 3 + 2] = z;
         }
@@ -721,6 +768,8 @@ export class Hydraulic3DEngine {
     const H = p.Hvis;
     const B = p.Bvis;
 
+    const wallGroup = new THREE.Group();
+
     const wallMesh = new THREE.Mesh(
       new THREE.BoxGeometry(0.42, H + 1.1, B + 0.8),
       mat.concrete(),
@@ -728,9 +777,9 @@ export class Hydraulic3DEngine {
     wallMesh.position.set(0, (H + 1.1) / 2, 0);
     wallMesh.castShadow = true;
     wallMesh.receiveShadow = true;
-    group.add(wallMesh);
+    wallGroup.add(wallMesh);
 
-    if (p.kind === "circular") {
+    if (p.kind === "circular" || p.kind === "inclined") {
       const disk = new THREE.Mesh(
         new THREE.CylinderGeometry(p.radius, p.radius, 0.12, 36),
         mat.metal(PAL.metalDark),
@@ -738,7 +787,7 @@ export class Hydraulic3DEngine {
       disk.rotation.z = HALF_PI;
       disk.position.set(-0.22, p.yc, 0);
       disk.castShadow = true;
-      group.add(disk);
+      wallGroup.add(disk);
     } else if (p.kind === "segment") {
       const seg = new THREE.Mesh(
         new THREE.CylinderGeometry(H * 0.7, H * 0.7, B * 0.7, 28, 1, false, 0, HALF_PI),
@@ -747,7 +796,7 @@ export class Hydraulic3DEngine {
       seg.rotation.z = Math.PI;
       seg.position.set(-0.05, 0, 0);
       seg.castShadow = true;
-      group.add(seg);
+      wallGroup.add(seg);
     } else {
       const gate = new THREE.Mesh(
         new THREE.BoxGeometry(0.16, p.gateH, p.gateW),
@@ -755,8 +804,13 @@ export class Hydraulic3DEngine {
       );
       gate.position.set(-0.28, p.gateY, 0);
       gate.castShadow = true;
-      group.add(gate);
+      wallGroup.add(gate);
     }
+
+    if (p.kind === "inclined") {
+      wallGroup.rotation.z = HALF_PI - p.alpha;
+    }
+    group.add(wallGroup);
 
     const waterBox = new THREE.Mesh(
       new THREE.BoxGeometry(4.2, H, B),
@@ -792,7 +846,10 @@ export class Hydraulic3DEngine {
         { text: `H = ${fmt(p.Hraw)} m`, world: new THREE.Vector3(-4.2, H + 0.35, 0), tone: "water" },
         { text: "F", world: new THREE.Vector3(-2.2, p.zC, 0), tone: "force" },
         { text: `z_C = H/3`, world: new THREE.Vector3(-0.2, p.zC + 0.45, 0), tone: "force" },
-      ],
+        p.kind === "inclined"
+          ? { text: `α = ${fmt(p.alphaDeg)}°`, world: new THREE.Vector3(0.5, H * 0.75, 0) }
+          : null,
+      ].filter(Boolean),
       animate: () => {},
     };
   }
@@ -869,6 +926,382 @@ export class Hydraulic3DEngine {
     };
   }
 
+  /* ── Jet impact scene ────────────────────────────────── */
+  buildJetScene(p) {
+    const group = this.manager.content;
+    const mat = this.materials;
+    const Y = 1.3;
+    const jetR = p.jetR;
+    const jetLen = p.jetLen;
+
+    const asm = new THREE.Group();
+    asm.position.y = Y;
+    group.add(asm);
+
+    const nozzleMat = mat.metal();
+    asm.add(pipeMesh(-3.5, -0.8, p.nozzleR, p.nozzleR, nozzleMat));
+    asm.add(pipeMesh(-0.8, 0, p.nozzleR, jetR, nozzleMat));
+
+    const stand = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.12, Y, 8),
+      nozzleMat,
+    );
+    stand.position.set(-2, -Y / 2, 0);
+    stand.castShadow = true;
+    asm.add(stand);
+
+    const isReaction = p.kind === "reaction";
+
+    if (p.kind === "plate") {
+      const plate = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 2.4, 2.2),
+        mat.metal(PAL.metalDark),
+      );
+      plate.position.set(jetLen, 0, 0);
+      plate.castShadow = true;
+      asm.add(plate);
+      asm.add(new THREE.ArrowHelper(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(jetLen + 0.4, 0, 0),
+        1.6, PAL.force, 0.26, 0.18,
+      ));
+    } else if (p.kind === "inclined") {
+      const plate = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 2.6, 2.2),
+        mat.metal(PAL.metalDark),
+      );
+      plate.position.set(jetLen, 0, 0);
+      plate.rotation.z = HALF_PI - p.theta;
+      plate.castShadow = true;
+      asm.add(plate);
+      const nx = Math.sin(p.theta), ny = Math.cos(p.theta);
+      asm.add(new THREE.ArrowHelper(
+        new THREE.Vector3(-nx, ny, 0).normalize(),
+        new THREE.Vector3(jetLen + 0.3, 0.3, 0),
+        1.4, PAL.force, 0.24, 0.16,
+      ));
+    } else if (p.kind === "deflect" || p.kind === "mobile") {
+      const bucketR = 0.8;
+      const arcAngle = clamp(p.theta, 0.4, Math.PI);
+      const bucket = new THREE.Mesh(
+        new THREE.TorusGeometry(bucketR, 0.12, 8, 24, arcAngle),
+        mat.metal(PAL.metalDark),
+      );
+      bucket.position.set(jetLen, -bucketR * 0.3, 0);
+      bucket.rotation.z = HALF_PI;
+      bucket.castShadow = true;
+      asm.add(bucket);
+      asm.add(new THREE.ArrowHelper(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(jetLen + 0.8, 0.3, 0),
+        1.4, PAL.force, 0.24, 0.16,
+      ));
+      if (p.kind === "mobile") {
+        asm.add(new THREE.ArrowHelper(
+          new THREE.Vector3(1, 0, 0),
+          new THREE.Vector3(jetLen - 0.8, -1.2, 0),
+          1.2, PAL.green, 0.2, 0.14,
+        ));
+      }
+    } else if (isReaction) {
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 1.5, 1.5),
+        mat.concrete({ transparent: true, opacity: 0.3, side: THREE.DoubleSide }),
+      );
+      box.castShadow = true;
+      asm.add(box);
+      const water = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 1.2, 1.3),
+        mat.water(0.65),
+      );
+      water.position.y = -0.1;
+      asm.add(water);
+      const orif = new THREE.Mesh(
+        new THREE.CylinderGeometry(jetR, jetR, 0.2, 16),
+        mat.metal(PAL.metalDark),
+      );
+      orif.rotation.z = HALF_PI;
+      orif.position.set(1.1, -0.2, 0);
+      asm.add(orif);
+      asm.add(new THREE.ArrowHelper(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(-1.5, 0, 0),
+        1.4, PAL.force, 0.26, 0.18,
+      ));
+      const wheelMat = mat.metal(PAL.metalDark);
+      for (const dx of [-0.6, 0.6]) {
+        const wheel = new THREE.Mesh(
+          new THREE.TorusGeometry(0.2, 0.05, 8, 16),
+          wheelMat,
+        );
+        wheel.position.set(dx, -0.9, 0.8);
+        asm.add(wheel);
+      }
+    } else if (p.kind === "cannon") {
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 3, 3),
+        mat.concrete(),
+      );
+      wall.position.set(jetLen, 0, 0);
+      wall.castShadow = true;
+      asm.add(wall);
+      asm.add(new THREE.ArrowHelper(
+        new THREE.Vector3(-1, 0, 0),
+        new THREE.Vector3(jetLen + 0.6, 0, 0),
+        1.4, PAL.force, 0.24, 0.16,
+      ));
+      asm.add(new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(-3.8, 0, 0),
+        1.2, PAL.force, 0.22, 0.14,
+      ));
+    }
+
+    const particles = makeParticles(220, PAL.waterLight, 0.08);
+    asm.add(particles.points);
+
+    const speed = clamp(0.06 + p.V * 0.004, 0.06, 0.2) * (REDUCE ? 0.2 : 1);
+    const tgtX = isReaction ? 3 : jetLen;
+
+    const labels = [
+      { text: `V = ${fmt(p.V)} m/s`, world: new THREE.Vector3(isReaction ? -1.5 : jetLen * 0.4, Y + jetR + 0.5, 0), tone: "water" },
+      { text: `d = ${fmt(p.dMm)} mm`, world: new THREE.Vector3(-2, Y + p.nozzleR + 0.4, 0) },
+    ];
+    if (p.F != null) {
+      labels.push({ text: `F = ${fmt(p.F)} N`, world: new THREE.Vector3(isReaction ? -1.8 : tgtX + 0.5, Y + 0.6, 0), tone: "force" });
+    }
+    if (p.kind === "inclined" && p.theta) {
+      labels.push({ text: `θ = ${fmt(p.theta * 180 / Math.PI)}°`, world: new THREE.Vector3(jetLen - 0.3, Y - 1.2, 0) });
+    }
+    if ((p.kind === "deflect" || p.kind === "mobile") && p.theta) {
+      labels.push({ text: `θ = ${fmt(p.theta * 180 / Math.PI)}°`, world: new THREE.Vector3(jetLen + 0.5, Y - 0.8, 0) });
+    }
+    if (p.kind === "mobile" && p.u) {
+      labels.push({ text: `u = ${fmt(p.u)} m/s`, world: new THREE.Vector3(jetLen - 0.5, Y - 1.6, 0), tone: "water" });
+    }
+
+    return {
+      camera: { x: isReaction ? 0 : jetLen * 0.3, y: Y + 3.5, z: 10 },
+      target: { x: isReaction ? 0 : jetLen * 0.4, y: Y, z: 0 },
+      labels,
+      animate: (dt, t) => {
+        if (REDUCE) return;
+        for (let i = 0; i < particles.count; i++) {
+          const phase = (i / particles.count + t * speed) % 1;
+          const angle = (i * 2.399) % TWO_PI;
+          const rS = jetR * 0.35;
+
+          if (isReaction) {
+            particles.positions[i * 3]     = 1.1 + phase * 4;
+            particles.positions[i * 3 + 1] = -0.2 + Math.cos(angle) * rS * 0.8;
+            particles.positions[i * 3 + 2] = Math.sin(angle) * rS * 0.8;
+          } else if (p.kind === "plate" || p.kind === "cannon") {
+            if (phase < 0.75) {
+              const s = phase / 0.75;
+              particles.positions[i * 3]     = s * tgtX;
+              particles.positions[i * 3 + 1] = Math.cos(angle) * rS;
+              particles.positions[i * 3 + 2] = Math.sin(angle) * rS;
+            } else {
+              const s = (phase - 0.75) / 0.25;
+              particles.positions[i * 3]     = tgtX - 0.1;
+              particles.positions[i * 3 + 1] = (s - 0.5) * 2.5;
+              particles.positions[i * 3 + 2] = Math.sin(i * 1.7) * s * 1.2;
+            }
+          } else if (p.kind === "inclined") {
+            if (phase < 0.7) {
+              const s = phase / 0.7;
+              particles.positions[i * 3]     = s * tgtX;
+              particles.positions[i * 3 + 1] = Math.cos(angle) * rS;
+              particles.positions[i * 3 + 2] = Math.sin(angle) * rS;
+            } else {
+              const s = (phase - 0.7) / 0.3;
+              const up = (i % 2 === 0) ? 1 : -1;
+              particles.positions[i * 3]     = tgtX + s * 0.4 * Math.cos(p.theta);
+              particles.positions[i * 3 + 1] = up * s * 1.8;
+              particles.positions[i * 3 + 2] = Math.sin(i * 2.1) * s * 0.4;
+            }
+          } else {
+            if (phase < 0.65) {
+              const s = phase / 0.65;
+              particles.positions[i * 3]     = s * tgtX;
+              particles.positions[i * 3 + 1] = Math.cos(angle) * rS;
+              particles.positions[i * 3 + 2] = Math.sin(angle) * rS;
+            } else {
+              const s = (phase - 0.65) / 0.35;
+              const a = s * Math.min(p.theta, Math.PI);
+              particles.positions[i * 3]     = tgtX + 0.8 * Math.sin(a);
+              particles.positions[i * 3 + 1] = -0.8 * (1 - Math.cos(a));
+              particles.positions[i * 3 + 2] = Math.sin(angle) * rS * 0.6;
+            }
+          }
+        }
+        particles.geo.attributes.position.needsUpdate = true;
+      },
+    };
+  }
+
+  /* ── Tank / reservoir scene ──────────────────────────── */
+  buildTankScene(p) {
+    const group = this.manager.content;
+    const mat = this.materials;
+
+    const tankBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(p.tankR, p.tankR, p.tankH, 32, 1, true),
+      mat.concrete({ transparent: true, opacity: 0.18, side: THREE.DoubleSide }),
+    );
+    tankBody.position.y = p.tankH / 2;
+    group.add(tankBody);
+
+    const bottom = new THREE.Mesh(
+      new THREE.CircleGeometry(p.tankR, 32),
+      mat.concrete(),
+    );
+    bottom.rotation.x = -HALF_PI;
+    bottom.position.y = 0.02;
+    bottom.receiveShadow = true;
+    group.add(bottom);
+
+    const rim = new THREE.Mesh(
+      new THREE.TorusGeometry(p.tankR, 0.04, 8, 32),
+      mat.metal(PAL.metalDark),
+    );
+    rim.rotation.x = HALF_PI;
+    rim.position.y = p.tankH;
+    group.add(rim);
+
+    const waterMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(p.tankR * 0.96, p.tankR * 0.96, p.waterH, 32),
+      mat.water(0.72),
+    );
+    waterMesh.position.y = p.waterH / 2 + 0.02;
+    group.add(waterMesh);
+
+    const surface = new THREE.Mesh(
+      new THREE.CircleGeometry(p.tankR * 0.96, 32),
+      mat.water(0.5),
+    );
+    surface.rotation.x = -HALF_PI;
+    surface.position.y = p.waterH + 0.02;
+    group.add(surface);
+
+    let particles = null;
+
+    if (p.kind === "drain") {
+      const orif = new THREE.Mesh(
+        new THREE.CylinderGeometry(p.orificeR, p.orificeR, 0.3, 16),
+        mat.metal(PAL.metalDark),
+      );
+      orif.rotation.z = HALF_PI;
+      orif.position.set(p.tankR + 0.15, 0.15, 0);
+      orif.castShadow = true;
+      group.add(orif);
+      particles = makeParticles(180, PAL.waterLight, 0.07);
+      group.add(particles.points);
+    } else if (p.kind === "rise") {
+      const inPipe = pipeMesh(-p.tankR - 2.5, -p.tankR, 0.15, 0.15, mat.metal());
+      inPipe.position.y = p.waterH * 0.7;
+      group.add(inPipe);
+      const outPipe = pipeMesh(p.tankR, p.tankR + 2.5, 0.15, 0.15, mat.metal());
+      outPipe.position.y = p.waterH * 0.3;
+      group.add(outPipe);
+      group.add(new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(-p.tankR - 2.8, p.waterH * 0.7, 0),
+        1, PAL.green, 0.2, 0.14,
+      ));
+      group.add(new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(p.tankR + 1.5, p.waterH * 0.3, 0),
+        1, PAL.force, 0.2, 0.14,
+      ));
+      particles = makeParticles(100, PAL.waterLight, 0.06);
+      group.add(particles.points);
+    } else {
+      const inPipe = pipeMesh(-p.tankR - 2.5, -p.tankR, 0.15, 0.15, mat.metal());
+      inPipe.position.y = p.tankH * 0.8;
+      group.add(inPipe);
+      group.add(new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(-p.tankR - 2.8, p.tankH * 0.8, 0),
+        1, PAL.green, 0.2, 0.14,
+      ));
+      particles = makeParticles(80, PAL.waterLight, 0.06);
+      group.add(particles.points);
+    }
+
+    const hLineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(p.tankR + 0.5, 0.02, 0),
+      new THREE.Vector3(p.tankR + 0.5, p.waterH + 0.02, 0),
+    ]);
+    group.add(new THREE.Line(hLineGeo, new THREE.LineBasicMaterial({ color: PAL.water })));
+
+    const labels = [
+      { text: `h = ${fmt(p.h)} m`, world: new THREE.Vector3(p.tankR + 0.9, p.waterH * 0.55, 0), tone: "water" },
+    ];
+    if (p.Q != null) {
+      labels.push({ text: `Q = ${fmt(p.Q)} m³/s`, world: new THREE.Vector3(0, p.tankH + 0.4, 0) });
+    }
+    if (p.kind === "rise" && p.Qe != null) {
+      labels.push({ text: `Qₑ = ${fmt(p.Qe)}`, world: new THREE.Vector3(-p.tankR - 1.5, p.waterH * 0.7 + 0.4, 0), tone: "water" });
+    }
+    if (p.kind === "rise" && p.Qs != null) {
+      labels.push({ text: `Qₛ = ${fmt(p.Qs)}`, world: new THREE.Vector3(p.tankR + 1.5, p.waterH * 0.3 + 0.4, 0), tone: "force" });
+    }
+    if (p.kind === "drain") {
+      labels.push({ text: "V = √(2gh)", world: new THREE.Vector3(p.tankR + 1.5, -0.2, 0), tone: "water" });
+    }
+
+    return {
+      camera: { x: 5, y: 3.5, z: 7 },
+      target: { x: 0, y: p.tankH * 0.4, z: 0 },
+      labels,
+      animate: (dt, t) => {
+        if (!particles || REDUCE) return;
+
+        if (p.kind === "drain") {
+          const exitX = p.tankR + 0.3;
+          const exitY = 0.15;
+          const vNorm = Math.sqrt(2 * G * Math.max(p.h, 0.5)) * 0.04;
+          for (let i = 0; i < particles.count; i++) {
+            const phase = (i / particles.count + t * 0.15) % 1;
+            const along = phase * 12;
+            const x = exitX + along * vNorm;
+            const y = exitY - 0.5 * G * 0.0012 * along * along;
+            const angle = (i * 2.399) % TWO_PI;
+            particles.positions[i * 3]     = x;
+            particles.positions[i * 3 + 1] = Math.max(y, -0.02) + Math.cos(angle) * p.orificeR * 0.3;
+            particles.positions[i * 3 + 2] = Math.sin(angle) * p.orificeR * 0.5;
+          }
+        } else if (p.kind === "rise") {
+          const half = Math.floor(particles.count / 2);
+          for (let i = 0; i < particles.count; i++) {
+            const isIn = i < half;
+            const phase = ((i % half) / half + t * 0.12) % 1;
+            const angle = (i * 2.399) % TWO_PI;
+            if (isIn) {
+              particles.positions[i * 3]     = lerp(-p.tankR - 2.5, 0, phase);
+              particles.positions[i * 3 + 1] = p.waterH * 0.7 + Math.sin(phase * Math.PI) * 0.3;
+              particles.positions[i * 3 + 2] = Math.sin(angle) * 0.08;
+            } else {
+              particles.positions[i * 3]     = lerp(0, p.tankR + 2.5, phase);
+              particles.positions[i * 3 + 1] = p.waterH * 0.3 + Math.sin(phase * Math.PI) * 0.2;
+              particles.positions[i * 3 + 2] = Math.sin(angle) * 0.08;
+            }
+          }
+        } else {
+          for (let i = 0; i < particles.count; i++) {
+            const phase = (i / particles.count + t * 0.1) % 1;
+            const angle = (i * 2.399) % TWO_PI;
+            particles.positions[i * 3]     = lerp(-p.tankR - 2.5, 0, phase);
+            particles.positions[i * 3 + 1] = p.tankH * 0.8 - phase * (p.tankH * 0.8 - p.waterH * 0.5);
+            particles.positions[i * 3 + 2] = Math.sin(angle) * 0.1;
+          }
+        }
+        particles.geo.attributes.position.needsUpdate = true;
+      },
+    };
+  }
+
   dispose() {
     this.animate = null;
     this.materials.dispose();
@@ -880,9 +1313,11 @@ export class Hydraulic3DEngine {
 /* ── Parameter normalizers ───────────────────────────────────────── */
 function paramsFromSolver(solver, d) {
   const family = SOLVER_FAMILY[solver] || solver;
-  if (family === "pipe") return pipeParams(solver, d);
+  if (family === "pipe")    return pipeParams(solver, d);
   if (family === "channel") return channelParams(solver, d);
-  if (family === "gate") return gateParams(solver, d);
+  if (family === "gate")    return gateParams(solver, d);
+  if (family === "jet")     return jetParams(solver, d);
+  if (family === "tank")    return tankParams(solver, d);
   return floatParams(solver, d);
 }
 
@@ -901,22 +1336,27 @@ function pipeParams(solver, d) {
   let kind = "straight";
   if (/venturi/i.test(solver)) kind = "venturi";
   else if (/elbow/i.test(solver)) kind = "elbow";
-  else if (/convergent|enlargement|borda|gradual/i.test(solver)) kind = "convergent";
+  else if (/borda/i.test(solver)) kind = "borda";
+  else if (/convergent|enlargement|gradual/i.test(solver)) kind = "convergent";
   else if (/pump|npsh|duty/i.test(solver)) kind = "pump";
   else if (/turbine/i.test(solver)) kind = "turbine";
   else if (/oil/i.test(solver)) kind = "oil";
   else if (/siphon/i.test(solver)) kind = "siphon";
 
   const hasTanks = kind === "pump" || kind === "turbine" || kind === "siphon";
-  const tanks = hasTanks ? [
+  const tanks = hasTanks ? (kind === "siphon" ? [
+    { x: -L / 2 - 1.3, w: 2.1, h: 2.8, d: 2.1, water: 1.8 },
+    { x:  L / 2 + 1.3, w: 2.1, h: 1.5, d: 2.1, water: 0.5 },
+  ] : [
     { x: -L / 2 - 1.3, w: 2.1, h: 2.2, d: 2.1, water: 1.15 },
-    { x: L / 2 + 1.3, w: 2.1, h: 2.0, d: 2.1, water: 1.0 },
-  ] : null;
+    { x:  L / 2 + 1.3, w: 2.1, h: 2.0, d: 2.1, water: 1.0 },
+  ]) : null;
 
   return {
     kind, length: L,
     r1: Math.max(D * 2.8, 0.16), r2: Math.max(D2 * 2.8, 0.12),
     Dmm, D2mm,
+    rise: num(d.rise, 1.5), drop: num(d.drop, 2),
     Q: Number.isFinite(Qraw) ? Qraw : null,
     qUnit: Qraw > 5 ? "L/s" : "m³/s",
     V, H: Number.isFinite(H) ? H : null,
@@ -962,9 +1402,12 @@ function gateParams(solver, d) {
   const Hraw = num(d.H, num(d.hSill, num(d.y1, 4)));
   const scale = 2.6 / Math.max(Hraw, 0.8);
   const Hvis = Hraw * scale;
+  const alphaDeg = num(d.alpha, 90);
+  const alpha = alphaDeg * Math.PI / 180;
 
   let kind = "plane";
-  if (/circular/i.test(solver)) kind = "circular";
+  if (/inclined.*circular|inclinedCircular/i.test(solver)) kind = "inclined";
+  else if (/circular/i.test(solver)) kind = "circular";
   else if (/quarter|segment|curved/i.test(solver)) kind = "segment";
   else if (/sluice/i.test(solver)) kind = "sluice";
   else if (/lock/i.test(solver)) kind = "lock";
@@ -973,6 +1416,7 @@ function gateParams(solver, d) {
 
   return {
     kind, Hraw, Hvis, Bvis: 3.2, pScale: 0.42,
+    alpha, alphaDeg,
     zC: Hvis / 3,
     gateH: kind === "sluice" ? Hvis * 0.28 : Hvis * 0.72,
     gateW: 2.2,
@@ -1010,6 +1454,55 @@ function floatParams(solver, d) {
     wl: 1.35, theta: 0.12,
     zB: zB * scale, zG: zG * scale, zM: (zB + BM) * scale,
     GM, radius: 0.55,
+  };
+}
+
+function jetParams(solver, d) {
+  let kind = "plate";
+  if (/deflect|auget|bucket/i.test(solver))   kind = "deflect";
+  else if (/mobile/i.test(solver))            kind = "mobile";
+  else if (/reaction/i.test(solver))          kind = "reaction";
+  else if (/inclined/i.test(solver))          kind = "inclined";
+  else if (/cannon/i.test(solver))            kind = "cannon";
+
+  const dMm = num(d.d, num(d.D, 50));
+  const D = Math.max(dMm > 20 ? mm(dMm) : dMm, 0.04);
+  const V = num(d.V, num(d.V1, 20));
+  const theta = num(d.theta, num(d.beta, kind === "plate" ? 90 : 120)) * Math.PI / 180;
+  const u = num(d.u, num(d.U, 0));
+  const F = num(d.F, num(d.Fx, null));
+
+  const nozzleR = clamp(D * 3, 0.15, 0.4);
+  const jetR = nozzleR * 0.65;
+  const jetLen = clamp(3 + V * 0.08, 3, 6);
+
+  return {
+    kind, dMm, V, theta, u,
+    F: Number.isFinite(F) ? F : null,
+    nozzleR, jetR, jetLen,
+  };
+}
+
+function tankParams(solver, d) {
+  let kind = "drain";
+  if (/rise/i.test(solver))        kind = "rise";
+  else if (/fill/i.test(solver))   kind = "fill";
+
+  const tankDRaw = num(d.D, num(d.D_tank, num(d.tankD, 2)));
+  const h = num(d.h, num(d.h0, num(d.h_target, 3)));
+  const orificeDRaw = num(d.d, 40);
+
+  const scale = 2.5 / Math.max(h, 1);
+  const tankR = clamp(tankDRaw * 0.35, 0.8, 2);
+  const tankH = clamp(h * scale * 1.3, 2, 4.5);
+  const waterH = clamp(h * scale, 0.5, tankH * 0.85);
+  const orificeR = clamp((orificeDRaw > 20 ? mm(orificeDRaw) : orificeDRaw) * 3, 0.06, 0.25);
+
+  return {
+    kind, tankR, tankH, waterH, orificeR, h,
+    Q: num(d.Q, num(d.Q_pipe, null)) || null,
+    Qe: num(d.Qi, num(d.Qe, null)) || null,
+    Qs: num(d.Qs, null) || null,
   };
 }
 
