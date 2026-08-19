@@ -274,15 +274,21 @@ function moodyChart(d, options = {}) {
 
 const figures = {
   viscosity(d) {
+    const yT = 56, yB = 168, xR = 100, uPx = 130, nA = 6, dh = (yB - yT) / (nA + 1);
+    let va = '';
+    for (let i = 1; i <= nA; i++) { const y = yB - i * dh, len = (i / (nA + 1)) * uPx; if (len > 6) va += drawVector(xR, y, len, 0, "velocity"); }
     return {
       caption: "Propriété du fluide : τ = μ U/e. On mesure F et on en déduit μ = τ e/U, puis ν = μ/ρ.",
-      svg: svg("Viscosité dynamique", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(70, 168, 220, 52, PALETTE.velocity, 2.3)}${drawVector(250, 28, 80, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(420, 52, 420, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `F = ${num(d.F)} N · A = ${num(d.A)} m² → μ`)}`)
+      svg: svg("Viscosité dynamique", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(xR, yB, xR, yT, PALETTE.velocity, 1, 'stroke-dasharray="4 3"')}${line(xR, yB, xR + uPx, yT, PALETTE.velocity, 2.3)}${va}${drawVector(250, 28, 80, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(36, 52, 36, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(270, 120, "τ = μ·du/dy = μU/e", `fill="${PALETTE.velocity}" font-size="13"`)}${t(48, 228, "plaque fixe — adhérence u = 0")}${t(270, 228, `F = ${num(d.F)} N · A = ${num(d.A)} m² → μ`)}`)
     };
   },
   viscosityForce(d) {
+    const yT = 56, yB = 168, xR = 100, uPx = 130, nA = 6, dh = (yB - yT) / (nA + 1);
+    let va = '';
+    for (let i = 1; i <= nA; i++) { const y = yB - i * dh, len = (i / (nA + 1)) * uPx; if (len > 6) va += drawVector(xR, y, len, 0, "velocity"); }
     return {
       caption: "Couette plan : profil linéaire, τ = μU/e. La force de traction F = τA s’applique sur la plaque mobile, pas sur le fluide « en bloc ».",
-      svg: svg("Force de traction visqueuse", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(70, 168, 220, 52, PALETTE.velocity, 2.3)}${drawVector(80, 28, 170, 0, "force", `F = τA`)}${drawVector(280, 44, 70, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(420, 52, 420, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(48, 228, "plaque fixe · u = 0")}${t(250, 228, `μ = ${num(d.mu)} Pa·s · A = ${num(d.A)} m²`)}`)
+      svg: svg("Force de traction visqueuse", `${hatch(40, 36, 360, 16)}${drawWaterSurface(40, 52, 360, 120)}${hatch(40, 172, 360, 16)}${line(xR, yB, xR, yT, PALETTE.velocity, 1, 'stroke-dasharray="4 3"')}${line(xR, yB, xR + uPx, yT, PALETTE.velocity, 2.3)}${va}${drawVector(80, 28, 170, 0, "force", `F = τA`)}${drawVector(280, 44, 70, 0, "velocity", `U = ${num(d.U)} m/s`)}${drawDimension(36, 52, 36, 172, `e = ${num(d.e)} mm`, { side: -1 })}${t(270, 120, "τ = μ·du/dy = μU/e", `fill="${PALETTE.velocity}" font-size="13"`)}${t(48, 228, "plaque fixe — adhérence u = 0")}${t(270, 228, `μ = ${num(d.mu)} Pa·s · A = ${num(d.A)} m²`)}`)
     };
   },
 
