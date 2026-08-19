@@ -14,17 +14,18 @@ body.diagram-fs-open{overflow:hidden}
 .diagram[hidden]{display:none!important}
 .diagram-fs{position:fixed;inset:0;z-index:35;display:flex;flex-direction:column;width:100vw;height:100vh;height:100dvh;background:#d9edf7}
 .diagram-fs[hidden]{display:none!important}
-.diagram-fs-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:10px 16px;background:#0c4a6eed;color:#fff;backdrop-filter:blur(10px)}
-.diagram-fs-bar strong{font-size:16px}
-.diagram-fs-bar .ghost{background:#ffffff18;border-color:#ffffff44;color:#fff}
+.diagram-fs-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0;padding:10px 16px;background:linear-gradient(135deg,#0c4a6eee,#075985ee);color:#fff;backdrop-filter:blur(12px);box-shadow:0 2px 12px #0f172a22}
+.diagram-fs-bar strong{font-size:16px;letter-spacing:0.02em}
+.diagram-fs-bar .ghost{background:#ffffff18;border-color:#ffffff44;color:#fff;transition:background .15s}
+.diagram-fs-bar .ghost:hover{background:#ffffff30}
 .diagram-fs-stage{position:relative;flex:1 1 auto;min-height:0;height:100%;cursor:grab;touch-action:none;background:#d9edf7}
 .diagram-fs-stage:active{cursor:grabbing}
 .diagram-fs-stage canvas{position:absolute;inset:0;z-index:0;display:block;width:100%!important;height:100%!important}
 .diagram-fs-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
-.diagram-fs-label{position:absolute;transform:translate(-50%,-120%);padding:6px 10px;border-radius:10px;background:#fffffff2;color:#0f172a;font-weight:800;font-size:13px;white-space:nowrap;box-shadow:0 8px 20px #0f172a24}
-.diagram-fs-label.is-force{color:#9f1239}
-.diagram-fs-label.is-water{color:#075985}
-.diagram-fs-hint{margin:0;padding:8px 16px 12px;background:#0c4a6eed;color:#e0f2fe;font-size:12px;font-weight:700}
+.diagram-fs-label{position:absolute;transform:translate(-50%,-120%);padding:6px 11px;border-radius:10px;background:#ffffffee;color:#0f172a;font-weight:800;font-size:13px;white-space:nowrap;box-shadow:0 4px 16px #0f172a1a,0 1px 3px #0f172a12;backdrop-filter:blur(6px);border:1px solid #e2e8f022;transition:opacity .2s}
+.diagram-fs-label.is-force{color:#9f1239;border-color:#fecdd322}
+.diagram-fs-label.is-water{color:#075985;border-color:#bae6fd22}
+.diagram-fs-hint{margin:0;padding:8px 16px 12px;background:linear-gradient(135deg,#0c4a6eee,#075985ee);color:#e0f2fe;font-size:12px;font-weight:700;backdrop-filter:blur(12px)}
 .moody-overlay{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:18px;background:#0f172a99}
 .moody-dialog{width:min(1100px,100%);max-height:calc(100vh - 36px);overflow:auto;padding:16px 18px 18px;border-radius:18px;background:#fff;box-shadow:0 24px 60px #0f172a33}
 .moody-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}.moody-head h2{margin:0;font-size:20px}
