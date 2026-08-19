@@ -381,20 +381,46 @@ function openDiagramFullscreen() {
   });
 }
 
-function openPdfViewer(event) {
+async function openPdfViewer(event) {
   event.preventDefault();
   closePdfViewer();
   const href = event.currentTarget.href;
   document.body.insertAdjacentHTML("beforeend", `<div class="pdf-overlay" id="pdfOverlay" role="dialog" aria-modal="true" aria-label="Polycopié du cours">
     <header class="pdf-overlay-bar">
       <strong>Polycopié du cours</strong>
+      <span class="pdf-status" id="pdfStatus">Chargement…</span>
+      <a class="ghost" href="${href}" download>Télécharger</a>
       <button type="button" class="ghost" id="pdfClose" aria-label="Fermer">✕ Fermer</button>
     </header>
-    <iframe src="${href}" class="pdf-frame" title="Polycopié du cours"></iframe>
+    <div class="pdf-pages" id="pdfPages"></div>
   </div>`);
   document.body.classList.add("pdf-open");
   history.pushState({ overlay: "pdf" }, "");
   document.querySelector("#pdfClose").addEventListener("click", dismissOverlay);
+  const pagesEl = document.querySelector("#pdfPages");
+  const status = document.querySelector("#pdfStatus");
+  try {
+    const pdfjsLib = await import("../vendor/pdfjs/pdf.min.mjs");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("../vendor/pdfjs/pdf.worker.min.mjs", import.meta.url).href;
+    const pdf = await pdfjsLib.getDocument(href).promise;
+    const cssWidth = pagesEl.clientWidth || window.innerWidth;
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const scale = cssWidth / base.width;
+      const viewport = page.getViewport({ scale: scale * (window.devicePixelRatio || 1) });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      canvas.className = "pdf-page";
+      pagesEl.appendChild(canvas);
+      await page.render({ canvasContext: canvas.getContext("2d", { alpha: false }), viewport }).promise;
+      if (status) status.textContent = `${n} / ${pdf.numPages}`;
+    }
+  } catch {
+    if (status) status.textContent = "";
+    pagesEl.innerHTML = `<p class="pdf-fallback">Impossible d’afficher le polycopié ici. <a href="${href}" download>Télécharger le PDF</a></p>`;
+  }
 }
 
 function openMoodyReader() {
