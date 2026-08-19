@@ -368,9 +368,28 @@ const figures = {
 
   laplace(d) {
     const bubble = +d.factor === 4;
+    const cx = 185, cy = 114, R = 56, nA = 12;
+    let arrows = '';
+    for (let i = 0; i < nA; i++) {
+      const a = (i / nA) * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+      arrows += line(cx + c * (R + 4), cy + s * (R + 4), cx + c * (R + 21), cy + s * (R + 21), PALETTE.pressure, 1.7, 'marker-end="url(#mkPress)"');
+    }
+    const ra = -Math.PI / 5, rx = cx + Math.cos(ra) * R, ry = cy + Math.sin(ra) * R;
     return {
       caption: bubble ? "Bulle de savon : deux interfaces, Δp = 4σ/R." : "Goutte : une seule interface, Δp = 2σ/R. Plus R est petit, plus la surpression est grande.",
-      svg: svg(bubble ? "Bulle de savon" : "Goutte", `<circle cx="200" cy="120" r="62" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="3"/>${bubble ? `<circle cx="200" cy="120" r="52" fill="none" stroke="${PALETTE.water}" stroke-width="2"/>` : ""}${drawDimension(200, 120, 262, 120, `R = ${num(d.radius)} µm`, { side: -1 })}${drawVector(262, 88, 36, 0, "pressure", "Δp")}${t(330, 120, bubble ? "2 interfaces" : "1 interface")}${t(330, 150, `Δp = ${+d.factor || 2}σ/R`)}`)
+      svg: svg(bubble ? "Bulle de savon" : "Goutte",
+        arrows +
+        `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${PALETTE.waterFill}" stroke="${PALETTE.water}" stroke-width="3"/>` +
+        (bubble ? `<circle cx="${cx}" cy="${cy}" r="${R - 9}" fill="#eef6fc" stroke="${PALETTE.water}" stroke-width="2.5"/>` : "") +
+        line(cx, cy, rx, ry, "#0f172a", 1.6, 'marker-end="url(#ar)"') +
+        t(cx + 15, cy - 18, "R", 'font-size="15"') +
+        t(cx, cy + R + 48, `\u0394p = ${+d.factor || 2}\u03c3/R`, `fill="${PALETTE.pressure}" font-size="17" text-anchor="middle"`) +
+        t(340, 74, bubble ? "Bulle de savon dans l\u2019air" : "Goutte dans un liquide") +
+        t(340, 100, bubble ? "deux interfaces" : "une seule interface", `fill="${PALETTE.water}"`) +
+        t(340, 140, `R = ${num(d.radius)} \u00b5m`) +
+        t(340, 166, `\u03c3 = ${num(d.sigma)} N/m`) +
+        t(340, 198, `\u0394p = ${+d.factor || 2}\u03c3/R`, `fill="${PALETTE.pressure}"`)
+      )
     };
   },
 
