@@ -1,5 +1,17 @@
 # MécaFlu GC — V2
 
+## Modules avancés
+
+Depuis le Bureau de calcul :
+
+- `#calculateur/dimensionnement` : comparaison de diamètres intérieurs réels, choix minimal selon vitesse et perte admissibles, puissance hydraulique dissipée ; reprise d’un tronçon et application du diamètre à l’installation.
+- `#calculateur/npsh` : NPSHA depuis un réservoir, pertes d’aspiration, marge additive et cote maximale de référence pompe. NPSHR fabricant à renseigner au débit étudié ; aucune garantie universelle contre la cavitation.
+- `#calculateur/reseau` : réseau arborescent jusqu’à 50 nœuds, demandes locales imposées, débits cumulés, charges et pressions nodales, charge source minimale. Boucles, sources multiples indépendantes, pompes internes et demandes dépendantes de la pression non modélisées.
+
+Chaque module possède son export/import JSON (200 Ko maximum), ses contrôles de saisie et une note imprimable. Données conservées pendant la navigation dans la session ; exporter avant de recharger ou fermer. Les listes de diamètres et valeurs initiales sont des exemples, pas des catalogues normatifs. Saisir les diamètres intérieurs et rugosités correspondant aux matériaux et séries retenus.
+
+Tests : `node --test tests/*.test.mjs`. Références de méthode : [EPA EPANET](https://www.epa.gov/water-research/epanet), [KSB NPSH](https://www.ksb.com/en-global/centrifugal-pump-lexicon/n). Solveurs internes indépendants d’EPANET.
+
 Application web statique et PWA d’exercices de mécanique des fluides pour le génie civil.
 
 Le **Bureau de calcul** complète le parcours pédagogique avec une interface de logiciel : saisie directe des données, recalcul instantané, schéma physique, résultats et note de calcul pour les conduites, le pompage, Bernoulli, l’hydrostatique et les écoulements à surface libre.

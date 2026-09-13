@@ -1,6 +1,14 @@
 import { defaultInstallation, solveInstallation, validateInstallation, installationLosses, pumpHead } from './installation-solver.js';
 
 let project = defaultInstallation();
+export const getInstallation = () => structuredClone(project);
+export function applyInstallationDiameter(index, diameter) {
+  const next = structuredClone(project);
+  if (!Number.isInteger(index) || !next.sections[index]) throw Error('Tronçon introuvable.');
+  next.sections[index].diameter = diameter;
+  validateInstallation(next);
+  project = next;
+}
 const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n = x => Number(x).toLocaleString('fr-FR', {maximumSignificantDigits: 5});
 const input = (label, key, value, unit = '', type = 'number') => `<label class="plant-field"><span>${label}</span><div><input data-project="${key}" type="${type}" ${type === 'number' ? 'step="any"' : 'maxlength="120"'} value="${esc(value)}"><span>${unit}</span></div></label>`;

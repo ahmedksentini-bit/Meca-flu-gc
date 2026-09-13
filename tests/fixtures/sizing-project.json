@@ -1,0 +1,1 @@
+{"version":1,"module":"dimensionnement","data":{"flow":10,"rho":998,"nu":1.004,"length":200,"roughness":0.05,"sumK":2,"maxVelocity":0.5,"maxLoss":10,"diameters":[100,150,200]}}

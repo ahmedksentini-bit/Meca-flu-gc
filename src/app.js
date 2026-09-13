@@ -4,6 +4,7 @@ import { courseRecap } from "./recaps.js";
 import { warmups } from "./warmups.js";
 import { hasWebGLView } from "./diagrams3d-families.js";
 import { mountInstallation } from "./installation.js";
+import { mountEngineering } from "./engineering.js";
 
 const app = document.querySelector("#app");
 const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramMode: "2D", webglToken: 0, calculatorId: null, calculatorData: {} };
@@ -178,6 +179,13 @@ function formatEngineering(value) {
 
 function calculatorPage(requestedId = state.calculatorId) {
   if (requestedId === 'installation') return installationPage();
+  if (['dimensionnement','npsh','reseau'].includes(requestedId)) {
+    closeMoodyReader(); closeDiagramFullscreen(); closePdfViewer(); disposeWebGLView(); stopTimer();
+    state.exercise = null; state.calculatorId = requestedId;
+    mountEngineering(app, requestedId, calculatorPage);
+    history.replaceState({}, '', `#calculateur/${requestedId}`);
+    return;
+  }
   app.classList.remove('plant-root');
   closeMoodyReader(); closeDiagramFullscreen(); closePdfViewer(); disposeWebGLView(); stopTimer();
   const module = calculatorModule(requestedId);
@@ -194,6 +202,9 @@ function calculatorPage(requestedId = state.calculatorId) {
       <div class="software-title"><span class="software-orbit" aria-hidden="true"></span><div><p>OUTILS D’INGÉNIERIE</p><h1>Bureau de calcul</h1></div></div>
       <nav aria-label="Modules de calcul">${groups.map(group => `<div class="software-group"><p>${esc(group)}</p>${calculatorModules.filter(item => item.group === group).map(item => `<button class="software-module ${item.id === exercise.id ? "active" : ""}" data-calculator="${item.id}"><span class="module-icon" aria-hidden="true">${item.icon}</span><span><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span></button>`).join("")}</div>`).join("")}</nav>
       <button class="software-study" id="installationButton">+ Installation hydraulique</button>
+      <button class="software-study" data-calculator="dimensionnement">Dimensionnement des conduites</button>
+      <button class="software-study" data-calculator="npsh">Aspiration et NPSH</button>
+      <button class="software-study" data-calculator="reseau">Réseau ramifié</button>
       <button class="software-study" id="studyMode">← Retour aux exercices</button>
     </aside>
     <section class="software-main">
