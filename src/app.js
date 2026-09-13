@@ -3,9 +3,10 @@ import { drawFigure, moodyChart, moodyPoint } from "./diagrams.js";
 import { courseRecap } from "./recaps.js";
 import { warmups } from "./warmups.js";
 import { hasWebGLView } from "./diagrams3d-families.js";
+import { mountInstallation } from "./installation.js";
 
 const app = document.querySelector("#app");
-const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramMode: "2D", webglToken: 0 };
+const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramMode: "2D", webglToken: 0, calculatorId: null, calculatorData: {} };
 let diagrams3d = null;
 const loadDiagrams3d = () => diagrams3d ? Promise.resolve(diagrams3d) : import("./diagrams3d.js").then(mod => { diagrams3d = mod; return mod; });
 function hideWebGLOverlay() {
@@ -155,6 +156,102 @@ const chapterOrder = {
   hydrauGen: ["HG_S1_01", "HG_S1_02", "HG_S1_03", "HG_S1_04", "HG_S2_01", "HG_S2_02", "HG_S2_03", "HG_S2_04", "HG_S2_05", "HG_S3_01", "HG_S3_02", "HG_S4_01", "HG_S4_02", "HG_S5_01", "HG_S5_02", "HG_S5_03", "HG_S5_04"]
 };
 
+const calculatorModules = [
+  { id:"LOSSES_COLEBROOK_01", group:"Conduites", label:"Pertes de charge", icon:"↘", description:"Darcy–Weisbach et Colebrook" },
+  { id:"COMP_PUMPCURVE_01", group:"Pompage", label:"Point de fonctionnement", icon:"◉", description:"Courbe pompe et courbe réseau" },
+  { id:"SYN_NPSH_03", group:"Pompage", label:"NPSH & cavitation", icon:"△", description:"Sécurité à l’aspiration" },
+  { id:"BERN_SECTIONS_03", group:"Écoulement", label:"Bernoulli", icon:"⇥", description:"Pressions, vitesses et altitudes" },
+  { id:"BERNOULLI_VENTURI_01", group:"Écoulement", label:"Venturi", icon:"⋈", description:"Mesure de débit" },
+  { id:"FORCE_GATE_02", group:"Hydrostatique", label:"Poussée sur une vanne", icon:"▥", description:"Force et centre de poussée" },
+  { id:"FS_TRAP_02", group:"Surface libre", label:"Canal trapézoïdal", icon:"▽", description:"Manning–Strickler et Froude" }
+];
+
+const calculatorExercise = id => state.catalog.exercises.find(e => e.id === id);
+const calculatorModule = id => calculatorModules.find(module => module.id === id) || calculatorModules[0];
+
+function formatEngineering(value) {
+  if (!Number.isFinite(Number(value))) return "—";
+  const number = Number(value);
+  if (number !== 0 && (Math.abs(number) >= 1e5 || Math.abs(number) < 1e-3)) return number.toExponential(3).replace(".", ",");
+  return number.toLocaleString("fr-FR", { maximumSignificantDigits: 6 });
+}
+
+function calculatorPage(requestedId = state.calculatorId) {
+  if (requestedId === 'installation') return installationPage();
+  app.classList.remove('plant-root');
+  closeMoodyReader(); closeDiagramFullscreen(); closePdfViewer(); disposeWebGLView(); stopTimer();
+  const module = calculatorModule(requestedId);
+  const exercise = calculatorExercise(module.id) || state.catalog.exercises.find(e => e.solver === "colebrook");
+  if (!exercise) return home();
+  state.exercise = null;
+  state.calculatorId = exercise.id;
+  const saved = state.calculatorData[exercise.id];
+  state.calculatorData[exercise.id] = saved || Object.fromEntries(exercise.variables.map(variable => [variable.key, variable.value]));
+  const data = state.calculatorData[exercise.id];
+  const groups = [...new Set(calculatorModules.map(item => item.group))];
+  app.innerHTML = `<section class="software-shell">
+    <aside class="software-sidebar">
+      <div class="software-title"><span class="software-orbit" aria-hidden="true"></span><div><p>OUTILS D’INGÉNIERIE</p><h1>Bureau de calcul</h1></div></div>
+      <nav aria-label="Modules de calcul">${groups.map(group => `<div class="software-group"><p>${esc(group)}</p>${calculatorModules.filter(item => item.group === group).map(item => `<button class="software-module ${item.id === exercise.id ? "active" : ""}" data-calculator="${item.id}"><span class="module-icon" aria-hidden="true">${item.icon}</span><span><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span></button>`).join("")}</div>`).join("")}</nav>
+      <button class="software-study" id="installationButton">+ Installation hydraulique</button>
+      <button class="software-study" id="studyMode">← Retour aux exercices</button>
+    </aside>
+    <section class="software-main">
+      <header class="software-head"><div><p class="eyebrow-dark">${esc(module.group)} · CALCUL DIRECT</p><h2>${esc(module.label)}</h2><p>${esc(exercise.statement)}</p></div><span class="live-badge"><i></i> Calcul instantané</span></header>
+      <div class="software-grid">
+        <article class="software-panel input-panel"><div class="panel-heading"><span>01</span><div><h3>Données du projet</h3><p>Modifiez une valeur pour recalculer.</p></div></div><div class="software-fields">${exercise.variables.map(variable => `<label><span>${esc(variable.label)}</span><div class="engineering-input"><input data-calc-variable="${variable.key}" type="number" step="${variable.step || "any"}" value="${data[variable.key]}"><b>${esc(variable.unit)}</b></div></label>`).join("")}</div><button class="reset-calc" id="resetCalculator">Réinitialiser les données</button></article>
+        <article class="software-panel diagram-panel"><div class="panel-heading"><span>02</span><div><h3>Schéma physique</h3><p>La géométrie suit les données.</p></div></div><div class="software-diagram" id="calculatorDiagram"></div><p class="diagram-note" id="calculatorDiagramNote"></p></article>
+        <article class="software-panel result-panel"><div class="panel-heading"><span>03</span><div><h3>Résultats</h3><p>Valeurs calculées en unités métier.</p></div></div><div id="calculatorResults" aria-live="polite"></div></article>
+      </div>
+      <article class="software-panel method-panel"><div class="panel-heading"><span>04</span><div><h3>Note de calcul</h3><p>Équations et cheminement numérique.</p></div></div><div id="calculatorMethod"></div></article>
+    </section>
+  </section>`;
+  document.querySelectorAll("[data-calculator]").forEach(button => button.addEventListener("click", () => calculatorPage(button.dataset.calculator)));
+  document.querySelectorAll("[data-calc-variable]").forEach(input => input.addEventListener("input", updateCalculator));
+  document.querySelector("#resetCalculator").addEventListener("click", () => { delete state.calculatorData[exercise.id]; calculatorPage(exercise.id); });
+  document.querySelector("#studyMode").addEventListener("click", home);
+  document.querySelector("#installationButton").addEventListener("click", installationPage);
+  history.replaceState({}, "", `#calculateur/${exercise.id}`);
+  updateCalculator();
+}
+
+function updateCalculator() {
+  const exercise = calculatorExercise(state.calculatorId);
+  if (!exercise) return;
+  const data = state.calculatorData[exercise.id];
+  document.querySelectorAll("[data-calc-variable]").forEach(input => data[input.dataset.calcVariable] = input.valueAsNumber);
+  const resultsBox = document.querySelector("#calculatorResults");
+  const methodBox = document.querySelector("#calculatorMethod");
+  const diagramBox = document.querySelector("#calculatorDiagram");
+  try {
+    if (Object.values(data).some(value => !Number.isFinite(value))) throw new Error("Donnée incomplète");
+    const positiveKeys = ['D','D1','D2','L','nu','rho','rhoM','b','H','y','Ks','k','patm'];
+    const nonnegativeKeys = ['eps','Q','h','y0','z','S','Ksum','K','f','pv','NPSHr','margin','H0'];
+    if (positiveKeys.some(key => key in data && data[key] <= 0) || nonnegativeKeys.some(key => key in data && data[key] < 0)) throw new Error('Grandeur physique hors domaine');
+    if (exercise.solver === 'colebrook' && data.Q === 0) throw new Error('Débit nul');
+    if (exercise.solver === 'venturi' && (data.D2 >= data.D1 || data.rhoM <= data.rho)) throw new Error('Géométrie ou manomètre invalide');
+    const result = solve(exercise, data);
+    if (exercise.questions.some(q => !Number.isFinite(Number(result.values[q.key])))) throw new Error('Résultat non fini');
+    resultsBox.innerHTML = `<div class="result-stack">${exercise.questions.map((question, index) => `<div class="result-row ${index === 0 ? "primary-result" : ""}"><span>${esc(question.label)}</span><strong>${formatEngineering(result.values[question.key])}<small>${esc(question.unit)}</small></strong></div>`).join("")}</div><p class="result-ok"><span>✓</span> Résultats calculés · vérifier les hypothèses</p>`;
+    methodBox.innerHTML = result.steps.map((step, index) => `<section class="method-step"><span>${String(index + 1).padStart(2,"0")}</span><div><h4>${esc(step[0])}</h4><p>${esc(step[1]).replace(/\n/g,"<br>")}</p></div></section>`).join("");
+    const figure = drawFigure(exercise.solver, data);
+    diagramBox.innerHTML = figure.svg;
+    document.querySelector("#calculatorDiagramNote").textContent = figure.caption;
+  } catch (error) {
+    resultsBox.innerHTML = `<div class="calc-error"><strong>Calcul indisponible</strong><p>Vérifiez que toutes les données sont numériques et physiquement cohérentes.</p></div>`;
+    methodBox.innerHTML = "";
+    diagramBox.innerHTML = '';
+    document.querySelector('#calculatorDiagramNote').textContent = '';
+  }
+}
+
+function installationPage() {
+  closeMoodyReader(); closeDiagramFullscreen(); closePdfViewer(); disposeWebGLView(); stopTimer();
+  state.exercise = null; state.calculatorId = 'installation';
+  mountInstallation(app, () => calculatorPage('LOSSES_COLEBROOK_01'));
+  history.replaceState({}, '', '#calculateur/installation');
+}
+
 function exercisesForChapter(chapterId) {
   const seen = new Set();
   const listed = (chapterOrder[chapterId] || []).map(id => state.catalog.exercises.find(e => e.id === id)).filter(Boolean);
@@ -173,6 +270,7 @@ function exerciseRef(exercise) {
 }
 
 function home() {
+  app.classList.remove('plant-root');
   closeMoodyReader();
   closeDiagramFullscreen();
   closePdfViewer();
@@ -180,7 +278,8 @@ function home() {
   disposeWebGLView();
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
-  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = exercisesForChapter(ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
+  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="hero-actions"><button class="hero-software" id="openCalculator"><span>⌁</span> Ouvrir le bureau de calcul</button><small>7 outils professionnels · résultats instantanés</small></div><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = exercisesForChapter(ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
+  document.querySelector("#openCalculator").addEventListener("click", () => calculatorPage());
   document.querySelectorAll("[data-chapter]").forEach(button => button.addEventListener("click", () => chapterPage(button.dataset.chapter)));
   history.replaceState({}, "", location.pathname);
 }
@@ -196,6 +295,7 @@ function chapterPage(chapterId) {
 }
 
 function openExercise(exercise, mode = state.mode) {
+  app.classList.remove('plant-root');
   closeMoodyReader();
   closeDiagramFullscreen();
   closePdfViewer();
@@ -548,6 +648,7 @@ document.addEventListener("keydown", event => {
 document.querySelector("#diagram3dClose")?.addEventListener("click", closeWebGLView);
 window.addEventListener("pagehide", disposeWebGLView);
 document.querySelector("#homeButton").addEventListener("click", home);
+document.querySelector("#calculatorButton").addEventListener("click", () => calculatorPage());
 document.querySelector("#polycopieLink")?.addEventListener("click", openPdfViewer);
 window.addEventListener("popstate", () => {
   closeDiagramFullscreen();
@@ -556,6 +657,11 @@ window.addEventListener("popstate", () => {
 });
 window.addEventListener("hashchange", () => {
   if (!state.catalog) return;
+  if (location.hash.startsWith("#calculateur")) {
+    const id = location.hash.split("/")[1];
+    calculatorPage(id);
+    return;
+  }
   const requested = state.catalog.exercises.find(e => `#${e.id}` === location.hash);
   if (requested) openExercise(requested);
   else if (!location.hash) home();
@@ -577,7 +683,7 @@ try {
   ]);
   state.catalog = { ...catalog, exercises: [...catalog.exercises, ...batch12, ...batch34, ...batch58, ...batchExam, ...batchTd, ...batchComp, ...batchHg] };
   const requested = state.catalog.exercises.find(e => `#${e.id}` === location.hash);
-  requested ? openExercise(requested) : home();
+  location.hash.startsWith("#calculateur") ? calculatorPage(location.hash.split("/")[1]) : requested ? openExercise(requested) : home();
 } catch {
   app.innerHTML = `<section class="card"><h1>Chargement impossible</h1><p>Lancez l’application depuis un serveur web local ou depuis Cloudflare Pages.</p></section>`;
 }

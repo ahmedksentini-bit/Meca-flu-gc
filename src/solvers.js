@@ -22,7 +22,7 @@ function colebrookSolve(Re, epsRel, f0 = 0.02) {
   return { f, history };
 }
 
-function darcyFriction(Re, epsRel) {
+export function darcyFriction(Re, epsRel) {
   return colebrookSolve(Re, epsRel).f;
 }
 
