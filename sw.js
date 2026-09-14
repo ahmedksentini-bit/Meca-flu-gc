@@ -1,5 +1,7 @@
-const CACHE = "mecaflu-v2-47";
-const ASSETS = ["./","./index.html","./styles.css","./enhancements.css","./src/app.js","./src/solvers.js","./src/diagrams.js","./src/diagrams3d.js","./src/diagrams3d-families.js","./src/recaps.js","./src/warmups.js","./data/exercises.json","./data/exercises-ch1-ch2.json","./data/exercises-ch3-ch4.json","./data/exercises-ch5-ch8.json","./data/exercises-exam-td.json","./data/exercises-td.json","./data/exercises-complements.json","./data/exercises-hydrau-gen.json","./vendor/three/three.module.min.js","./vendor/three/addons/controls/OrbitControls.js","./vendor/pdfjs/pdf.min.mjs","./vendor/pdfjs/pdf.worker.min.mjs","./docs/Cours_Mecanique_des_Fluides_GC_S1.pdf","./manifest.webmanifest","./assets/icon.svg"];
+// Le polycopie porte sa version dans son nom : une adresse inchangee laissait le cache
+// HTTP resservir les anciens octets au prechargement, figeant l ancienne edition.
+const CACHE = "mecaflu-v2-48";
+const ASSETS = ["./","./index.html","./styles.css","./enhancements.css","./src/app.js","./src/solvers.js","./src/diagrams.js","./src/diagrams3d.js","./src/diagrams3d-families.js","./src/recaps.js","./src/warmups.js","./data/exercises.json","./data/exercises-ch1-ch2.json","./data/exercises-ch3-ch4.json","./data/exercises-ch5-ch8.json","./data/exercises-exam-td.json","./data/exercises-td.json","./data/exercises-complements.json","./data/exercises-hydrau-gen.json","./vendor/three/three.module.min.js","./vendor/three/addons/controls/OrbitControls.js","./vendor/pdfjs/pdf.min.mjs","./vendor/pdfjs/pdf.worker.min.mjs","./docs/Cours_Mecanique_des_Fluides_GC_S1_v01.pdf","./manifest.webmanifest","./assets/icon.svg"];
 ASSETS.push('./installation.css', './src/installation.js', './src/installation-solver.js');
 ASSETS.push('./engineering.css', './src/engineering.js', './src/engineering-solvers.js');
 // Les equations doivent rester lisibles hors connexion ; cours.html (3,4 Mo) et
