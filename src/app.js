@@ -169,11 +169,11 @@ const calculatorModules = [
 ];
 
 const advancedModules = [
-  { id:"installation", label:"+ Installation hydraulique" },
-  { id:"dimensionnement", label:"Dimensionnement des conduites" },
-  { id:"npsh", label:"Aspiration et NPSH" },
-  { id:"reseau", label:"Réseau ramifié" },
-  { id:"atelier", label:"Atelier graphique · réseaux maillés" }
+  { id:"installation", short:"Installation", label:"Installation hydraulique" },
+  { id:"dimensionnement", short:"Diamètres", label:"Dimensionnement des conduites" },
+  { id:"npsh", short:"NPSH", label:"Aspiration et NPSH" },
+  { id:"reseau", short:"Réseau ramifié", label:"Réseau ramifié" },
+  { id:"atelier", short:"Atelier graphique", label:"Atelier graphique · réseaux maillés" }
 ];
 
 const calculatorExercise = id => state.catalog.exercises.find(e => e.id === id);
@@ -214,8 +214,8 @@ function calculatorPage(requestedId = state.calculatorId) {
   app.innerHTML = `<section class="software-shell">
     <aside class="software-sidebar">
       <div class="software-title"><span class="software-orbit" aria-hidden="true"></span><div><p>OUTILS D’INGÉNIERIE</p><h1>Bureau de calcul</h1></div></div>
-      <nav aria-label="Modules de calcul">${groups.map(group => `<div class="software-group"><p>${esc(group)}</p>${calculatorModules.filter(item => item.group === group).map(item => `<button class="software-module ${item.id === exercise.id ? "active" : ""}" data-calculator="${item.id}"><span class="module-icon" aria-hidden="true">${item.icon}</span><span><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span></button>`).join("")}</div>`).join("")}</nav>
-      ${advancedModules.map(item => `<button class="software-study" data-calculator="${item.id}">${esc(item.label)}</button>`).join("")}
+      <nav aria-label="Modules de calcul">${groups.map(group => `<div class="software-group"><p>${esc(group)}</p>${calculatorModules.filter(item => item.group === group).map(item => `<button class="software-module ${item.id === exercise.id ? "active" : ""}" data-calculator="${item.id}" title="${esc(item.description)}"><span class="module-icon" aria-hidden="true">${item.icon}</span><span><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span></button>`).join("")}</div>`).join("")}</nav>
+      <div class="software-advanced"><p>Modules avancés</p>${advancedModules.map(item => `<button class="software-tool" data-calculator="${item.id}" title="${esc(item.label)}" aria-label="${esc(item.label)}">${esc(item.short)}</button>`).join("")}</div>
       <button class="software-study" id="studyMode">← Retour aux exercices</button>
     </aside>
     <section class="software-main">
