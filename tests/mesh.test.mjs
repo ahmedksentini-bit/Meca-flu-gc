@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {defaultMesh,solveMesh,meshLoss,edgeFlow,validateMesh,validateCurve,deliveredDemand} from '../src/mesh-solver.js';
+import {defaultMesh,solveMesh,meshLoss,edgeFlow,validateMesh,validateCurve,deliveredDemand,mapScale,planLength} from '../src/mesh-solver.js';
 import {insideDiameter,parsePumpCSV,validatePipeCatalog,materials} from '../src/technical-library.js';
 import {saveProject,loadProject,listProjects} from '../src/project-store.js';
 import {createReport} from '../src/pdf-report.js';
@@ -21,3 +21,20 @@ test('Transition loss relation remains continuous and monotonic',()=>{const p=si
 test('Catalog dimensions, material unit conversions and curve validation',()=>{near(materials[1].roughness,.15*.3048);near(insideDiameter(110,6.6),96.8);assert.throws(()=>insideDiameter(100,60));const curve=parsePumpCSV('Q;H\n0;40\n5;30\n10;10','Pompe test','Source de test');assert.equal(curve.points.length,3);assert.throws(()=>validateCurve({...curve,source:''}));assert.throws(()=>parsePumpCSV('0;20\n5;30','test','source'));assert.throws(()=>validatePipeCatalog({name:'test',source:'test',pipes:[{series:'SDR',outside:100,thickness:100,roughness:0}]}));});
 test('Local projects survive serialization, invalid storage is isolated and quota errors handled',()=>{const map=new Map(),storage={setItem:(k,v)=>map.set(k,v),getItem:k=>map.get(k),key:i=>[...map.keys()][i],get length(){return map.size;}};const p=defaultMesh();assert.ok(saveProject('studio:test',p,storage));assert.deepEqual(loadProject('studio:test',defaultMesh,validateMesh,storage),p);assert.equal(listProjects(storage).length,1);map.set('mecaflu-project-v1:broken','{');assert.deepEqual(loadProject('broken',defaultMesh,validateMesh,storage),defaultMesh());assert.equal(saveProject('x',p,{setItem(){throw Error('Quota');}}),false);});
 test('PDF includes correct object offsets, pagination and escaped text',()=>{const bytes=createReport({title:'Réseau (test)',date:'2026-09-13',sections:[{title:'Bilan',lines:Array.from({length:130},(_,i)=>`Ligne ${i} : débit (L/s) = 1`)}]});const pdf=new TextDecoder().decode(bytes);assert.ok(pdf.startsWith('%PDF-1.4'));assert.match(pdf,/Page 4\/4/);const start=Number(pdf.match(/startxref\n(\d+)/)[1]);assert.equal(pdf.slice(start,start+4),'xref');const entries=pdf.slice(start).split('\n').slice(3).filter(x=>/^\d{10} 00000 n/.test(x));entries.forEach((e,i)=>assert.ok(pdf.slice(Number(e.slice(0,10))).startsWith(`${i+1} 0 obj`)));});
+test('Basemap calibration validates, scales isotropically and measures plan length',()=>{
+  const p=defaultMesh();
+  assert.equal(mapScale(p),null);
+  assert.equal(planLength(p,p.edges[0]),null);
+  validateMesh(p);
+  p.basemap={label:'Ortho de test',a:{x:100,y:100},b:{x:300,y:100},distance:400};
+  validateMesh(p);
+  near(mapScale(p),2);
+  const a=p.nodes.find(n=>n.id==='R'),b=p.nodes.find(n=>n.id==='A');
+  near(planLength(p,p.edges[0]),Math.hypot(b.x-a.x,b.y-a.y)*2);
+  near(planLength(p,{from:'R',to:'R'}),0);
+  assert.equal(planLength(p,{from:'R',to:'inconnu'}),null);
+  for(const f of [m=>m.b={x:110,y:100},m=>m.distance=0,m=>m.label='  ',m=>m.a={x:-5,y:100},m=>m.b=null,m=>m.distance='400']){
+    const q=defaultMesh();q.basemap={label:'Ortho',a:{x:100,y:100},b:{x:300,y:100},distance:400};f(q.basemap);
+    assert.throws(()=>validateMesh(q));
+  }
+});

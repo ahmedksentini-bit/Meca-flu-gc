@@ -22,6 +22,14 @@ Accessible depuis le Bureau de calcul ou `#calculateur/installation` : réseau e
 
 `src/installation-solver.js` réutilise le facteur de Darcy du moteur existant ; `src/installation.js` gère l’interface. Les valeurs de K initiales sont des exemples à confirmer. Les changements de section ne sont pas ajoutés automatiquement. Ce premier module ne résout ni les réseaux maillés ni les transitoires et ne vérifie pas le NPSH (module séparé). Le diagramme de pertes cumulées n’est pas une ligne piézométrique.
 
+### Fond de plan calibré
+
+L'atelier graphique (`#calculateur/atelier`) accepte un extrait de vue aérienne en fond de plan. Importer l'image, placer deux points dont la distance réelle est connue, saisir cette distance : l'échelle isotrope en découle et chaque tronçon affiche alors sa longueur mesurée, reprenable à l'unité ou en bloc.
+
+L'imagerie est fournie par l'utilisateur, avec son origine saisie et reportée dans la note de calcul ; aucune tuile n'est téléchargée et le module reste utilisable hors connexion. L'image est conservée dans IndexedDB (12 Mo maximum), le projet JSON ne portant que le calage.
+
+La longueur lue est **horizontale** : elle ignore la pente, les coudes et le profil de tranchée, et sous-estime donc la conduite réelle. Elle est proposée, jamais imposée — la saisie manuelle reste la référence. Une image aérienne ne porte aucune altimétrie : les cotes des nœuds restent à renseigner.
+
 ## Architecture
 
 - `data/exercises.json` : chapitres et premier lot d’exercices ;
@@ -30,6 +38,8 @@ Accessible depuis le Bureau de calcul ou `#calculateur/installation` : réseau e
 - `src/app.js` : moteur générique et interface ;
 - `src/recaps.js` : rappel de cours affiché à gauche de chaque exercice ;
 - `src/diagrams.js` : figures de cours, une par situation physique ;
+- `src/mesh-solver.js`, `src/network-studio.js` : réseaux maillés et atelier graphique ;
+- `src/technical-library.js`, `src/project-store.js`, `src/pdf-report.js`, `src/basemap-store.js` : bibliothèque technique, sauvegarde locale, notes PDF et fonds de plan ;
 - `sw.js` et `manifest.webmanifest` : installation et fonctionnement hors connexion ;
 - `tests/` : contrôles numériques des solveurs.
 
