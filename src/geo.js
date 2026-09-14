@@ -48,6 +48,13 @@ export function pan(geo,dx,dy){
     lat:worldYToLat(latToWorldY(geo.lat,zoom)+dy,zoom),
     lon:worldXToLon(lonToWorldX(geo.lon,zoom)+dx,zoom)};
 }
+// Zoom ancre : le point du sol sous le curseur y reste apres changement d echelle.
+export function zoomAt(geo,zoom,x,y){
+  const cible=viewToLatLon(geo,x,y);
+  return {...geo,zoom,
+    lon:worldXToLon(lonToWorldX(cible.lon,zoom)-(x-400),zoom),
+    lat:worldYToLat(latToWorldY(cible.lat,zoom)-(y-220),zoom)};
+}
 export function tilesFor(geo,width=800,height=440){
   const zoom=Math.round(geo.zoom),span=Math.pow(2,zoom);
   const left=lonToWorldX(geo.lon,zoom)-CENTRE_X,top=latToWorldY(geo.lat,zoom)-CENTRE_Y;
