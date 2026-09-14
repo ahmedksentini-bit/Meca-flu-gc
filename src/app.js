@@ -168,6 +168,14 @@ const calculatorModules = [
   { id:"FS_TRAP_02", group:"Surface libre", label:"Canal trapézoïdal", icon:"▽", description:"Manning–Strickler et Froude" }
 ];
 
+const advancedModules = [
+  { id:"installation", label:"+ Installation hydraulique" },
+  { id:"dimensionnement", label:"Dimensionnement des conduites" },
+  { id:"npsh", label:"Aspiration et NPSH" },
+  { id:"reseau", label:"Réseau ramifié" },
+  { id:"atelier", label:"Atelier graphique · réseaux maillés" }
+];
+
 const calculatorExercise = id => state.catalog.exercises.find(e => e.id === id);
 const calculatorModule = id => calculatorModules.find(module => module.id === id) || calculatorModules[0];
 
@@ -207,11 +215,7 @@ function calculatorPage(requestedId = state.calculatorId) {
     <aside class="software-sidebar">
       <div class="software-title"><span class="software-orbit" aria-hidden="true"></span><div><p>OUTILS D’INGÉNIERIE</p><h1>Bureau de calcul</h1></div></div>
       <nav aria-label="Modules de calcul">${groups.map(group => `<div class="software-group"><p>${esc(group)}</p>${calculatorModules.filter(item => item.group === group).map(item => `<button class="software-module ${item.id === exercise.id ? "active" : ""}" data-calculator="${item.id}"><span class="module-icon" aria-hidden="true">${item.icon}</span><span><strong>${esc(item.label)}</strong><small>${esc(item.description)}</small></span></button>`).join("")}</div>`).join("")}</nav>
-      <button class="software-study" id="installationButton">+ Installation hydraulique</button>
-      <button class="software-study" data-calculator="dimensionnement">Dimensionnement des conduites</button>
-      <button class="software-study" data-calculator="npsh">Aspiration et NPSH</button>
-      <button class="software-study" data-calculator="reseau">Réseau ramifié</button>
-      <button class="software-study" data-calculator="atelier">Atelier graphique · réseaux maillés</button>
+      ${advancedModules.map(item => `<button class="software-study" data-calculator="${item.id}">${esc(item.label)}</button>`).join("")}
       <button class="software-study" id="studyMode">← Retour aux exercices</button>
     </aside>
     <section class="software-main">
@@ -228,7 +232,6 @@ function calculatorPage(requestedId = state.calculatorId) {
   document.querySelectorAll("[data-calc-variable]").forEach(input => input.addEventListener("input", updateCalculator));
   document.querySelector("#resetCalculator").addEventListener("click", () => { delete state.calculatorData[exercise.id]; calculatorPage(exercise.id); });
   document.querySelector("#studyMode").addEventListener("click", home);
-  document.querySelector("#installationButton").addEventListener("click", installationPage);
   history.replaceState({}, "", `#calculateur/${exercise.id}`);
   updateCalculator();
 }
@@ -296,7 +299,7 @@ function home() {
   disposeWebGLView();
   stopTimer(); state.exercise = null;
   const total = state.catalog.exercises.length;
-  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="hero-actions"><button class="hero-software" id="openCalculator"><span>⌁</span> Ouvrir le bureau de calcul</button><small>7 outils professionnels · résultats instantanés</small></div><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = exercisesForChapter(ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
+  app.innerHTML = `<section class="hero"><p class="eyebrow">Mécanique des fluides · Génie civil</p><h1>Comprendre, calculer, vérifier.</h1><p>Des exercices paramétriques fidèles au polycopié, avec unités, validation tolérante et correction raisonnée.</p><div class="hero-actions"><button class="hero-software" id="openCalculator"><span>⌁</span> Ouvrir le bureau de calcul</button><small>${calculatorModules.length + advancedModules.length} outils professionnels · résultats instantanés</small></div><div class="signature">École Nationale d’Ingénieurs de Sfax<br><strong>Dr Ahmed Ksentini</strong></div></section><div class="section-title"><div><h2>Choisir un chapitre</h2><p>${total} exercices paramétriques, alignés sur le polycopié du S1.</p></div></div><section class="chapter-grid">${state.catalog.chapters.map(ch => { const count = exercisesForChapter(ch.id).length; return `<button class="chapter" data-chapter="${ch.id}"><span class="num">${ch.number}</span><h3>${esc(ch.title)}</h3><p>${esc(ch.description)}</p><span class="count">${count} exercice${count>1?"s":""} →</span></button>`; }).join("")}</section>`;
   document.querySelector("#openCalculator").addEventListener("click", () => calculatorPage());
   document.querySelectorAll("[data-chapter]").forEach(button => button.addEventListener("click", () => chapterPage(button.dataset.chapter)));
   history.replaceState({}, "", location.pathname);
