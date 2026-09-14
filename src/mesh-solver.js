@@ -19,10 +19,27 @@ export function validateMesh(p){
   p.nodes.forEach(n=>{if(!n||!identifier(n.id)||ids.has(n.id)||!['reservoir','junction'].includes(n.type))throw Error('Nœuds : identifiant unique et type requis.');ids.add(n.id);number(n.z,'Cote',-10000,10000);number(n.head,'Charge',-10000,10000);number(n.demand,'Demande',0,10000);number(n.x,'Position X',20,780);number(n.y,'Position Y',20,420);if(n.type==='reservoir'){reservoirs++;if(n.demand!==0)throw Error('Un réservoir ne porte pas de demande locale.');}});
   if(!reservoirs)throw Error('Ajouter au moins un réservoir à charge imposée.');
   const eids=new Set();p.edges.forEach(e=>{if(!e||!identifier(e.id)||eids.has(e.id)||!ids.has(e.from)||!ids.has(e.to)||e.from===e.to||!['pipe','pump','valve'].includes(e.type)||typeof e.closed!=='boolean')throw Error('Liaison invalide : identifiant, extrémités, type ou état.');eids.add(e.id);number(e.length,'Longueur',.01,100000);number(e.diameter,'Diamètre intérieur',1,20000);number(e.roughness,'Rugosité',0,e.diameter*.05);number(e.sumK,'Somme K',0,100000);if(e.type==='pump'){number(e.h0,'H0 pompe',.001,10000);number(e.k,'k pompe',.000001,10000);if(e.curve)validateCurve(e.curve);}});
+  if(p.basemap){
+    const m=p.basemap;
+    if(typeof m.label!=='string'||!m.label.trim()||m.label.length>120)throw Error('Fond de plan : intitulé et origine de l’image requis (120 caractères maximum).');
+    if(!m.a||!m.b)throw Error('Fond de plan : deux points de calage requis.');
+    [['A',m.a],['B',m.b]].forEach(([name,pt])=>{number(pt.x,`Calage ${name} X`,0,800);number(pt.y,`Calage ${name} Y`,0,440);});
+    number(m.distance,'Distance réelle de calage (m)',.001,1000000);
+    if(Math.hypot(m.b.x-m.a.x,m.b.y-m.a.y)<20)throw Error('Points de calage trop rapprochés : les éloigner pour une échelle fiable.');
+  }
   const seen=new Set(p.nodes.filter(n=>n.type==='reservoir').map(n=>n.id));let changed=true;
   while(changed){changed=false;p.edges.filter(e=>!e.closed).forEach(e=>{if(seen.has(e.from)!==seen.has(e.to)){seen.add(e.from);seen.add(e.to);changed=true;}});}
   if(seen.size!==p.nodes.length)throw Error('Nœud isolé : chaque composante ouverte doit être reliée à un réservoir.');
   return p;
+}
+// Echelle isotrope du fond de plan, en metres par unite du viewBox.
+export const mapScale=p=>p.basemap?p.basemap.distance/Math.hypot(p.basemap.b.x-p.basemap.a.x,p.basemap.b.y-p.basemap.a.y):null;
+// Longueur HORIZONTALE lue sur le plan : ni pente, ni coudes, ni profil de tranchee.
+export function planLength(p,edge){
+  const scale=mapScale(p);if(!scale)return null;
+  const a=p.nodes.find(n=>n.id===edge.from),b=p.nodes.find(n=>n.id===edge.to);
+  if(!a||!b)return null;
+  return Math.hypot(b.x-a.x,b.y-a.y)*scale;
 }
 export function meshLoss(p,e,q){
   const D=e.diameter/1000,v=Math.abs(q)/1000/(Math.PI*D*D/4),Re=v*D/(p.nu*1e-6);
