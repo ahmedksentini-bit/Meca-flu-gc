@@ -22,6 +22,16 @@ Accessible depuis le Bureau de calcul ou `#calculateur/installation` : réseau e
 
 `src/installation-solver.js` réutilise le facteur de Darcy du moteur existant ; `src/installation.js` gère l’interface. Les valeurs de K initiales sont des exemples à confirmer. Les changements de section ne sont pas ajoutés automatiquement. Ce premier module ne résout ni les réseaux maillés ni les transitoires et ne vérifie pas le NPSH (module séparé). Le diagramme de pertes cumulées n’est pas une ligne piézométrique.
 
+### Vue satellite géoréférencée
+
+L'atelier graphique accepte un fond cartographique en tuiles. Coller les coordonnées du site — « latitude, longitude » ou une adresse Google Maps — et la carte se place : chaque nœud porte dès lors de vraies coordonnées et **les longueurs des tronçons se calculent d'elles-mêmes**, en distance orthodromique.
+
+Le fournisseur par défaut est Esri World Imagery, sans clé d'API, dont la mention de source reste affichée sous le schéma. N'importe quel service de tuiles XYZ peut lui être substitué, avec sa propre mention ; vérifier ses conditions d'utilisation. Les tuiles exigent une connexion : le reste de l'application fonctionne hors ligne, pas le fond de carte.
+
+Les nœuds sont ancrés au terrain. Déplacer ou zoomer la carte les fait suivre le sol et non l'écran ; ils peuvent donc sortir du cadre, et « Recentrer sur le réseau » les ramène. La reprise automatique des longueurs se désactive pour revenir à la saisie manuelle.
+
+Réserves identiques au fond de plan calibré : la longueur obtenue est **horizontale**, elle ignore pente, coudes et profil de tranchée, et la précision des positions est celle de l'orthorectification du fournisseur. Une image satellite ne porte aucune altimétrie : les cotes des nœuds restent à renseigner.
+
 ### Fond de plan calibré
 
 L'atelier graphique (`#calculateur/atelier`) accepte un extrait de vue aérienne en fond de plan. Importer l'image, placer deux points dont la distance réelle est connue, saisir cette distance : l'échelle isotrope en découle et chaque tronçon affiche alors sa longueur mesurée, reprenable à l'unité ou en bloc.
@@ -39,6 +49,7 @@ La longueur lue est **horizontale** : elle ignore la pente, les coudes et le pro
 - `src/recaps.js` : rappel de cours affiché à gauche de chaque exercice ;
 - `src/diagrams.js` : figures de cours, une par situation physique ;
 - `src/mesh-solver.js`, `src/network-studio.js` : réseaux maillés et atelier graphique ;
+- `src/geo.js` : projection Web Mercator, distances orthodromiques et pavage en tuiles ;
 - `src/technical-library.js`, `src/project-store.js`, `src/pdf-report.js`, `src/basemap-store.js` : bibliothèque technique, sauvegarde locale, notes PDF et fonds de plan ;
 - `sw.js` et `manifest.webmanifest` : installation et fonctionnement hors connexion ;
 - `tests/` : contrôles numériques des solveurs.

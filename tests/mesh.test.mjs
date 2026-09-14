@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {defaultMesh,solveMesh,meshLoss,edgeFlow,validateMesh,validateCurve,deliveredDemand,mapScale,planLength} from '../src/mesh-solver.js';
 import {insideDiameter,parsePumpCSV,validatePipeCatalog,materials} from '../src/technical-library.js';
+import {geoDistance,metresPerPixel,defaultTiles} from '../src/geo.js';
 import {saveProject,loadProject,listProjects} from '../src/project-store.js';
 import {createReport} from '../src/pdf-report.js';
 const near=(a,b,t=2e-6)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
@@ -37,4 +38,35 @@ test('Basemap calibration validates, scales isotropically and measures plan leng
     const q=defaultMesh();q.basemap={label:'Ortho',a:{x:100,y:100},b:{x:300,y:100},distance:400};f(q.basemap);
     assert.throws(()=>validateMesh(q));
   }
+});
+
+test('A map-backed project validates, measures geodesically and outranks a calibrated image',()=>{
+  const p=defaultMesh();
+  p.geo={lat:34.7406,lon:10.7603,zoom:17,...defaultTiles};
+  validateMesh(p);
+  near(mapScale(p),metresPerPixel(34.7406,17));
+  const a=p.nodes.find(n=>n.id==='R'),b=p.nodes.find(n=>n.id==='A');
+  near(planLength(p,p.edges[0]),geoDistance(p.geo,a,b));
+  // le fond cartographique prime sur un calage d image eventuel
+  p.basemap={label:'Ortho',a:{x:100,y:100},b:{x:300,y:100},distance:400};
+  validateMesh(p);
+  near(planLength(p,p.edges[0]),geoDistance(p.geo,a,b));
+  near(mapScale(p),metresPerPixel(34.7406,17));
+  // l option de reprise automatique est booleenne
+  p.geo.autoLength=true; validateMesh(p);
+  for(const f of [g=>g.lat=90,g=>g.lon=181,g=>g.zoom=0,g=>g.zoom=17.5,
+                  g=>g.url='http://ex/{z}/{x}/{y}',g=>g.url='https://ex/{z}/{x}',
+                  g=>g.attribution='  ',g=>g.autoLength='oui']){
+    const q=defaultMesh(); q.geo={lat:34.7,lon:10.7,zoom:17,...defaultTiles}; f(q.geo);
+    assert.throws(()=>validateMesh(q));
+  }
+});
+
+test('Nodes may scroll off-frame only while anchored to a map',()=>{
+  const sans=defaultMesh(); sans.nodes[1].x=900;
+  assert.throws(()=>validateMesh(sans),undefined,'sans carte, le cadre reste la limite');
+  const avec=defaultMesh(); avec.geo={lat:34.7,lon:10.7,zoom:17,...defaultTiles}; avec.nodes[1].x=900; avec.nodes[2].y=-600;
+  validateMesh(avec);
+  const loin=defaultMesh(); loin.geo={lat:34.7,lon:10.7,zoom:17,...defaultTiles}; loin.nodes[1].x=30000;
+  assert.throws(()=>validateMesh(loin),undefined,'les coordonnées restent bornées');
 });

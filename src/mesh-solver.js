@@ -1,4 +1,5 @@
 import { G, darcyFriction } from './solvers.js';
+import { geoDistance, metresPerPixel } from './geo.js';
 export const defaultMesh = () => ({version:1,name:'Boucle de distribution',rho:998,nu:1.004,mode:'PDA',pmin:0,pfull:15,
   nodes:[{id:'R',type:'reservoir',head:50,z:50,demand:0,x:80,y:210},{id:'A',type:'junction',head:0,z:10,demand:3,x:290,y:100},{id:'B',type:'junction',head:0,z:20,demand:5,x:540,y:210},{id:'C',type:'junction',head:0,z:12,demand:2,x:290,y:320}],
   edges:[['P1','R','A'],['P2','A','B'],['P3','B','C'],['P4','C','R']].map(([id,from,to])=>({id,from,to,type:'pipe',length:200,diameter:100,roughness:0.04572,sumK:0,closed:false,h0:45,k:.06,curve:null}))});
@@ -16,9 +17,20 @@ export function validateMesh(p){
   number(p.rho,'Masse volumique',.01,30000);number(p.nu,'Viscosité',.001,1000000);number(p.pmin,'Pression minimale',0,1000);number(p.pfull,'Pression de service',p.pmin+.001,10000);
   if(!Array.isArray(p.nodes)||p.nodes.length<2||p.nodes.length>30||!Array.isArray(p.edges)||!p.edges.length||p.edges.length>60)throw Error('Limites : 2–30 nœuds et 1–60 liaisons.');
   const ids=new Set();let reservoirs=0;
-  p.nodes.forEach(n=>{if(!n||!identifier(n.id)||ids.has(n.id)||!['reservoir','junction'].includes(n.type))throw Error('Nœuds : identifiant unique et type requis.');ids.add(n.id);number(n.z,'Cote',-10000,10000);number(n.head,'Charge',-10000,10000);number(n.demand,'Demande',0,10000);number(n.x,'Position X',20,780);number(n.y,'Position Y',20,420);if(n.type==='reservoir'){reservoirs++;if(n.demand!==0)throw Error('Un réservoir ne porte pas de demande locale.');}});
+  p.nodes.forEach(n=>{if(!n||!identifier(n.id)||ids.has(n.id)||!['reservoir','junction'].includes(n.type))throw Error('Nœuds : identifiant unique et type requis.');ids.add(n.id);number(n.z,'Cote',-10000,10000);number(n.head,'Charge',-10000,10000);number(n.demand,'Demande',0,10000);const cadre=p.geo?20000:780;number(n.x,'Position X',p.geo?-cadre:20,cadre);number(n.y,'Position Y',p.geo?-cadre:20,p.geo?cadre:420);if(n.type==='reservoir'){reservoirs++;if(n.demand!==0)throw Error('Un réservoir ne porte pas de demande locale.');}});
   if(!reservoirs)throw Error('Ajouter au moins un réservoir à charge imposée.');
   const eids=new Set();p.edges.forEach(e=>{if(!e||!identifier(e.id)||eids.has(e.id)||!ids.has(e.from)||!ids.has(e.to)||e.from===e.to||!['pipe','pump','valve'].includes(e.type)||typeof e.closed!=='boolean')throw Error('Liaison invalide : identifiant, extrémités, type ou état.');eids.add(e.id);number(e.length,'Longueur',.01,100000);number(e.diameter,'Diamètre intérieur',1,20000);number(e.roughness,'Rugosité',0,e.diameter*.05);number(e.sumK,'Somme K',0,100000);if(e.type==='pump'){number(e.h0,'H0 pompe',.001,10000);number(e.k,'k pompe',.000001,10000);if(e.curve)validateCurve(e.curve);}});
+  if(p.geo){
+    const g=p.geo;
+    number(g.lat,'Latitude du projet',-85.05112878,85.05112878);
+    number(g.lon,'Longitude du projet',-180,180);
+    if(!Number.isInteger(g.zoom)||g.zoom<1||g.zoom>21)throw Error('Niveau de zoom attendu entre 1 et 21.');
+    if(typeof g.url!=='string'||!g.url.startsWith('https://')||g.url.length>500||!['{z}','{x}','{y}'].every(k=>g.url.includes(k)))
+      throw Error('Adresse de tuiles attendue en https, avec les repères {z}, {x} et {y}.');
+    if(typeof g.attribution!=='string'||!g.attribution.trim()||g.attribution.length>300)
+      throw Error('Mention de source obligatoire pour le fond de carte.');
+    if(g.autoLength!==undefined&&typeof g.autoLength!=='boolean')throw Error('Reprise automatique des longueurs : valeur vrai ou faux attendue.');
+  }
   if(p.basemap){
     const m=p.basemap;
     if(typeof m.label!=='string'||!m.label.trim()||m.label.length>120)throw Error('Fond de plan : intitulé et origine de l’image requis (120 caractères maximum).');
@@ -33,12 +45,17 @@ export function validateMesh(p){
   return p;
 }
 // Echelle isotrope du fond de plan, en metres par unite du viewBox.
-export const mapScale=p=>p.basemap?p.basemap.distance/Math.hypot(p.basemap.b.x-p.basemap.a.x,p.basemap.b.y-p.basemap.a.y):null;
+// Metres par unite du viewBox : resolution au sol de la carte, ou echelle du calage.
+export const mapScale=p=>p.geo?metresPerPixel(p.geo.lat,p.geo.zoom)
+  :p.basemap?p.basemap.distance/Math.hypot(p.basemap.b.x-p.basemap.a.x,p.basemap.b.y-p.basemap.a.y):null;
 // Longueur HORIZONTALE lue sur le plan : ni pente, ni coudes, ni profil de tranchee.
+// Sur fond cartographique la distance est orthodromique, calculee entre les
+// coordonnees reelles des deux noeuds ; sur image calee, elle vient de l echelle.
 export function planLength(p,edge){
-  const scale=mapScale(p);if(!scale)return null;
   const a=p.nodes.find(n=>n.id===edge.from),b=p.nodes.find(n=>n.id===edge.to);
   if(!a||!b)return null;
+  if(p.geo)return geoDistance(p.geo,a,b);
+  const scale=mapScale(p);if(!scale)return null;
   return Math.hypot(b.x-a.x,b.y-a.y)*scale;
 }
 export function meshLoss(p,e,q){
