@@ -1,13 +1,15 @@
 import { defaultSizing, defaultNpsh, defaultNetwork, solveSizing, solveNpsh, solveNetwork } from './engineering-solvers.js';
 import { getInstallation, applyInstallationDiameter } from './installation.js';
 import { solveInstallation } from './installation-solver.js';
+import { loadProject, saveProject } from './project-store.js';
+import { downloadReport } from './pdf-report.js';
 
 const esc = x => String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n = x => Number(x).toLocaleString('fr-FR',{maximumSignificantDigits:5});
 const titles = {dimensionnement:'Dimensionnement des conduites',npsh:'Aspiration et NPSH',reseau:'Réseau ramifié'};
 const defaults = {dimensionnement:defaultSizing,npsh:defaultNpsh,reseau:defaultNetwork};
 const solvers = {dimensionnement:solveSizing,npsh:solveNpsh,reseau:solveNetwork};
-const projects = Object.fromEntries(Object.entries(defaults).map(([k,f])=>[k,f()]));
+const projects = Object.fromEntries(Object.entries(defaults).map(([k,f])=>[k,loadProject(k,f,solvers[k])]));
 const field = (key,label,value,unit='') => `<label class="plant-field"><span>${label}</span><div><input type="number" step="any" data-eng="${key}" value="${esc(value)}"><span>${unit}</span></div></label>`;
 const fluids = p => field('rho','Masse volumique ρ',p.rho,'kg/m³')+field('nu','Viscosité cinématique ν',p.nu,'10⁻⁶ m²/s');
 const pipeFields = p => field('flow','Débit',p.flow,'L/s')+field('length','Longueur',p.length,'m')+field('roughness','Rugosité ε',p.roughness,'mm')+field('sumK','Somme des coefficients K',p.sumK);
@@ -35,6 +37,9 @@ export function mountEngineering(root,kind,navigate) {
   ${kind==='reseau'?'<section class="software-panel"><h2>Tronçons et demandes</h2><p>Parent : SOURCE ou identifiant d’un autre nœud. La demande est le prélèvement local, pas le débit du tronçon.</p><div id="engNodes"></div><button id="engAdd">+ Nœud</button></section>':`<section class="software-panel"><h2>Lien avec l’installation en série</h2><label class="plant-field"><span>Tronçon à reprendre${kind==='npsh'?' — choisir uniquement une aspiration réelle':''}</span><select id="engTarget">${getInstallation().sections.map((s,i)=>`<option value="${i}">T${i+1} · ${esc(s.name)}</option>`).join('')}</select></label><button id="engLoadPipe">Reprendre les données de ce tronçon</button><p class="plant-help">Le transfert reprend le débit calculé, le liquide, la géométrie et les K. ${kind==='npsh'?'Les cotes, pressions et le NPSHR restent à renseigner.':'Les critères et la liste de diamètres restent inchangés.'}</p></section>`}
   <section id="engResults" aria-live="polite"></section><details class="software-panel plant-note" open><summary>Hypothèses, méthode et limites</summary><p>${notes[kind]}</p><p>Pertes : Darcy–Weisbach + ΣK V²/(2g), λ = 64/Re en laminaire et Colebrook–White à partir de Re = 2 000 (transition indicative jusqu’à 4 000).</p><p>Références : <a href="https://www.epa.gov/water-research/epanet" target="_blank" rel="noopener">EPA — modèles de réseaux</a> ; <a href="https://www.ksb.com/en-global/centrifugal-pump-lexicon/n" target="_blank" rel="noopener">KSB — NPSH</a>. Ce module utilise son propre solveur, pas EPANET.</p></details></div></div></section>`;
   root.querySelector('#engBack').onclick=()=>navigate('LOSSES_COLEBROOK_01');
+  const studioButton=document.createElement('button');studioButton.textContent='Atelier graphique · réseaux maillés';studioButton.onclick=()=>navigate('atelier');root.querySelector('.eng-tabs').append(studioButton);
+  const pdfButton=document.createElement('button');pdfButton.textContent='Rapport PDF';pdfButton.id='engPDF';pdfButton.onclick=()=>{try{downloadReport(titles[kind],p,solvers[kind](p),[notes[kind],'Unites : Q en L/s ; longueurs/cotes/pertes en m ; diametres et rugosites en mm ; nu en 10^-6 m2/s ; rho en kg/m3 ; pressions absolues en kPa pour NPSH.']);message('Rapport PDF généré.');}catch(e){message(e.message);}};root.querySelector('.plant-tools').append(pdfButton);
+  const savedStatus=document.createElement('p');savedStatus.className='plant-help';savedStatus.id='engAutosave';root.querySelector('.plant-head').after(savedStatus);
   root.querySelectorAll('[data-eng-tab]').forEach(b=>b.onclick=()=>navigate(b.dataset.engTab));
   root.querySelectorAll('[data-eng]').forEach(el=>el.oninput=()=>{p[el.dataset.eng]=el.valueAsNumber;update();});
   root.querySelector('#engDiameters')?.addEventListener('input',e=>{p.diameters=e.target.value.split(/[;\s]+/).filter(Boolean).map(x=>Number(x.replace(',','.')));update();});
@@ -60,13 +65,14 @@ export function mountEngineering(root,kind,navigate) {
     const box=root.querySelector('#engResults');
     try{
       const r=solvers[kind](p);
+      root.querySelector('#engAutosave').textContent=saveProject(kind,p)?'Dernier calcul valide sauvegardé automatiquement sur cet appareil. Exporter le JSON pour une copie externe.':'Stockage local indisponible : exporter le JSON avant de fermer.';
       if(kind==='dimensionnement'){
         box.innerHTML=verdict(!!r.selected,r.selected?`Diamètre proposé : ${n(r.selected.diameter)} mm intérieur`:'Aucun diamètre de la liste ne satisfait les deux critères.')+regimeNote(r.rows)+`<section class="software-panel"><h2>Comparaison des diamètres</h2>${table(['D intérieur (mm)','V (m/s)','Re','Pertes (m)','P dissipée (kW)','Critères'],r.rows.map(x=>[n(x.diameter),n(x.V),n(x.Re),n(x.total),n(x.power),x.accepted?'Satisfaits':'Non satisfaits']))}${r.selected?'<button id="engApply">Appliquer le diamètre proposé au tronçon sélectionné</button>':''}</section>`;
         box.querySelector('#engApply')?.addEventListener('click',()=>{try{const i=Number(root.querySelector('#engTarget').value);applyInstallationDiameter(i,r.selected.diameter);message(`Diamètre ${n(r.selected.diameter)} mm appliqué à T${i+1}. Recalculer l’installation et enregistrer son JSON pour conserver ce changement.`);}catch(e){message(e.message);}});
       }
       if(kind==='npsh')box.innerHTML=`<div class="plant-metrics">${metric('NPSH disponible',r.available,'m')}${metric('NPSH requis',p.required,'m')}${metric('Réserve disponible − requis',r.reserve,'m')}${metric('Cote pompe maximale selon critère',r.maxPumpZ,'m')}</div>`+verdict(r.accepted,r.accepted?'Critère NPSHA ≥ NPSHR + marge satisfait — validation fabricant nécessaire.':'Critère NPSH non satisfait : revoir l’aspiration ou le choix de pompe.')+regimeNote([r.loss])+`<section class="software-panel"><h2>Bilan d’aspiration</h2>${table(['Terme','Valeur'],[['(p surface − p vapeur)/(ρg)',`${n(r.pressureHead)} m`],['z surface − z pompe',`${n(p.surfaceZ-p.pumpZ)} m`],['Pertes aspiration',`${n(r.loss.total)} m`],['Vitesse aspiration',`${n(r.loss.V)} m/s`],['Marge imposée',`${n(p.margin)} m`]])}</section>`;
       if(kind==='reseau')box.innerHTML=`<div class="plant-metrics">${metric('Débit fourni par SOURCE',r.totalFlow,'L/s')}${metric('Charge source minimale selon critères',r.minSourceHead,'m')}${metric('Déficit de charge source',Math.max(0,r.minSourceHead-p.sourceHead),'m')}${metric('Résidu de continuité',r.continuityResidual,'L/s')}</div>`+verdict(r.accepted,r.accepted?'Pressions nodales minimales satisfaites aux demandes imposées.':'Pression insuffisante : les demandes imposées ne sont pas validées.')+regimeNote(r.rows.map(x=>x.loss))+`<section class="software-panel"><h2>Arborescence et bilan nodal</h2><p>Chaque ligne représente un tronçon parent → nœud, et la pression à son extrémité.</p>${table(['Parent → nœud','Q (L/s)','V (m/s)','Perte (m)','H (m)','p/(ρg) (m)','p relative (bar)','Critère'],r.rows.map(x=>[`${'↳ '.repeat(x.depth)}${esc(x.parent)} → ${esc(x.id)}`,n(x.flow),n(x.loss.V),n(x.loss.total),n(x.head),n(x.pressureHead),n(x.pressureBar),x.accepted?'Satisfait':'Insuffisant']))}</section>`;
-    }catch(e){box.innerHTML=`<div class="calc-error" role="alert"><strong>Calcul suspendu</strong><p>${esc(e.message)}</p></div>`;}
+    }catch(e){root.querySelector('#engAutosave').textContent='Saisie invalide : dernière sauvegarde valide conservée.';box.innerHTML=`<div class="calc-error" role="alert"><strong>Calcul suspendu</strong><p>${esc(e.message)}</p></div>`;}
   }
   update();
 }

@@ -5,6 +5,7 @@ import { warmups } from "./warmups.js";
 import { hasWebGLView } from "./diagrams3d-families.js";
 import { mountInstallation } from "./installation.js";
 import { mountEngineering } from "./engineering.js";
+import { mountStudio } from "./network-studio.js";
 
 const app = document.querySelector("#app");
 const state = { catalog: null, exercise: null, mode: "learn", data: {}, attempts: {}, warmup: {}, timer: null, seconds: 0, installPrompt: null, diagramMode: "2D", webglToken: 0, calculatorId: null, calculatorData: {} };
@@ -178,6 +179,11 @@ function formatEngineering(value) {
 }
 
 function calculatorPage(requestedId = state.calculatorId) {
+  if(requestedId === 'atelier') {
+    closeMoodyReader(); closeDiagramFullscreen(); closePdfViewer(); disposeWebGLView(); stopTimer();
+    state.exercise=null;state.calculatorId='atelier';mountStudio(app,calculatorPage);
+    history.replaceState({},'', '#calculateur/atelier');return;
+  }
   if (requestedId === 'installation') return installationPage();
   if (['dimensionnement','npsh','reseau'].includes(requestedId)) {
     closeMoodyReader(); closeDiagramFullscreen(); closePdfViewer(); disposeWebGLView(); stopTimer();
@@ -205,6 +211,7 @@ function calculatorPage(requestedId = state.calculatorId) {
       <button class="software-study" data-calculator="dimensionnement">Dimensionnement des conduites</button>
       <button class="software-study" data-calculator="npsh">Aspiration et NPSH</button>
       <button class="software-study" data-calculator="reseau">Réseau ramifié</button>
+      <button class="software-study" data-calculator="atelier">Atelier graphique · réseaux maillés</button>
       <button class="software-study" id="studyMode">← Retour aux exercices</button>
     </aside>
     <section class="software-main">
