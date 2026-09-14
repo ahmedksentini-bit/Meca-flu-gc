@@ -453,7 +453,11 @@ function closeDiagramFullscreen() {
   document.querySelector("#diagramZoomOverlay")?.remove();
 }
 
+let pdfObservers = [];
+
 function closePdfViewer() {
+  pdfObservers.forEach(observer => observer.disconnect());
+  pdfObservers = [];
   const el = document.querySelector("#pdfOverlay");
   if (!el) return;
   el.remove();
@@ -514,20 +518,68 @@ async function openPdfViewer(event) {
     const pdfjsLib = await import("../vendor/pdfjs/pdf.min.mjs");
     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("../vendor/pdfjs/pdf.worker.min.mjs", import.meta.url).href;
     const pdf = await pdfjsLib.getDocument(href).promise;
-    const cssWidth = pagesEl.clientWidth || window.innerWidth;
+    const cover = (await pdf.getPage(1)).getViewport({ scale: 1 });
+    const frames = [];
     for (let n = 1; n <= pdf.numPages; n++) {
-      const page = await pdf.getPage(n);
-      const base = page.getViewport({ scale: 1 });
-      const scale = cssWidth / base.width;
-      const viewport = page.getViewport({ scale: scale * (window.devicePixelRatio || 1) });
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.floor(viewport.width);
-      canvas.height = Math.floor(viewport.height);
-      canvas.className = "pdf-page";
-      pagesEl.appendChild(canvas);
-      await page.render({ canvasContext: canvas.getContext("2d", { alpha: false }), viewport }).promise;
-      if (status) status.textContent = `${n} / ${pdf.numPages}`;
+      const frame = document.createElement("div");
+      frame.className = "pdf-page";
+      frame.dataset.page = String(n);
+      frame.style.aspectRatio = `${cover.width} / ${cover.height}`;
+      pagesEl.appendChild(frame);
+      frames.push(frame);
     }
+    if (status) status.textContent = `1 / ${pdf.numPages}`;
+    const renderFrame = async frame => {
+      if (frame.dataset.state) return;
+      frame.dataset.state = "busy";
+      try {
+        const page = await pdf.getPage(Number(frame.dataset.page));
+        const base = page.getViewport({ scale: 1 });
+        const cssWidth = frame.clientWidth || pagesEl.clientWidth || window.innerWidth;
+        const viewport = page.getViewport({ scale: (cssWidth / base.width) * Math.min(window.devicePixelRatio || 1, 2) });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        const context = canvas.getContext("2d", { alpha: false });
+        if (!context) throw new Error("canvas indisponible");
+        await page.render({ canvasContext: context, viewport }).promise;
+        if (!frame.isConnected || !frame.dataset.near) {
+          canvas.width = 0;
+          canvas.height = 0;
+          frame.dataset.state = "";
+          return;
+        }
+        frame.replaceChildren(canvas);
+        frame.style.aspectRatio = "";
+        frame.dataset.state = "done";
+      } catch {
+        frame.dataset.state = "";
+      }
+    };
+    const releaseFrame = frame => {
+      const canvas = frame.firstElementChild;
+      if (frame.dataset.state !== "done" || !canvas) return;
+      frame.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
+      canvas.width = 0;
+      canvas.height = 0;
+      frame.replaceChildren();
+      frame.dataset.state = "";
+    };
+    // Seules les pages proches de l’écran sont dessinées : un polycopié de 133 pages
+    // rendu d’un seul tenant épuise la mémoire canvas des mobiles et reste blanc.
+    const painter = new IntersectionObserver(entries => entries.forEach(entry => {
+      const frame = entry.target;
+      frame.dataset.near = entry.isIntersecting ? "1" : "";
+      if (entry.isIntersecting) renderFrame(frame);
+      else releaseFrame(frame);
+    }), { root: pagesEl, rootMargin: "150% 0px" });
+    const counter = new IntersectionObserver(entries => {
+      entries.forEach(entry => { entry.target.dataset.seen = entry.isIntersecting ? "1" : ""; });
+      const seen = frames.filter(frame => frame.dataset.seen).map(frame => Number(frame.dataset.page));
+      if (status && seen.length) status.textContent = `${Math.min(...seen)} / ${pdf.numPages}`;
+    }, { root: pagesEl });
+    pdfObservers = [painter, counter];
+    frames.forEach(frame => { painter.observe(frame); counter.observe(frame); });
   } catch {
     if (status) status.textContent = "";
     pagesEl.innerHTML = `<p class="pdf-fallback">Impossible d’afficher le polycopié ici. <a href="${href}" download>Télécharger le PDF</a></p>`;
