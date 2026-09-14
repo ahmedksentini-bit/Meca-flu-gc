@@ -1,6 +1,8 @@
 import { defaultInstallation, solveInstallation, validateInstallation, installationLosses, pumpHead } from './installation-solver.js';
+import {loadProject,saveProject} from './project-store.js';
+import {downloadReport} from './pdf-report.js';
 
-let project = defaultInstallation();
+let project = loadProject('installation',defaultInstallation,validateInstallation);
 export const getInstallation = () => structuredClone(project);
 export function applyInstallationDiameter(index, diameter) {
   const next = structuredClone(project);
@@ -8,6 +10,7 @@ export function applyInstallationDiameter(index, diameter) {
   next.sections[index].diameter = diameter;
   validateInstallation(next);
   project = next;
+  saveProject('installation',project);
 }
 const esc = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n = x => Number(x).toLocaleString('fr-FR', {maximumSignificantDigits: 5});
@@ -34,6 +37,7 @@ export function mountInstallation(root, onBack) {
     <h3>Pompe</h3><label class="plant-check"><input id="plantPump" type="checkbox" ${project.pump?'checked':''}> Pompe présente</label><div id="plantPumpFields">${input('Hauteur à débit nul H₀','h0',project.h0,'m')}${input('Coefficient k','k',project.k,'m/(L/s)²')}${input('Rendement pompe η','efficiency',project.efficiency,'0–1')}<p class="plant-help">Hₚ = H₀ − kQ², avec Q en L/s. Courbe simplifiée ; domaine Hₚ ≥ 0.</p></div></aside>
     <div class="plant-work"><section class="software-panel"><div class="plant-section-head"><div><h2>Composition de l’installation</h2><p>Les accessoires utilisent la vitesse de leur tronçon.</p></div><button id="plantAdd" class="primary">+ Tronçon</button></div><div class="plant-chain" aria-label="Sens de circulation">Réservoir A <span>→</span> ${project.pump?'Pompe <span>→</span> ':''}${project.sections.map((s,i)=>`<b>T${i+1}</b><span>→</span>`).join('')} Réservoir B</div><div id="plantSections"></div></section><section id="plantResults" aria-live="polite"></section></div></div></section>`;
   root.querySelector('#plantBack').onclick = () => {root.classList.remove('plant-root'); onBack();};
+  const pdfButton=document.createElement('button');pdfButton.textContent='Rapport PDF';pdfButton.onclick=()=>{try{downloadReport(project.name,project,solveInstallation(project),['Installation permanente en serie entre reservoirs. Q en L/s, D et epsilon en mm, nu en 10^-6 m2/s, rho en kg/m3, hauteurs en m et puissances en kW.','Courbe pompe indicative H0-kQ2. K et proprietes a confirmer. NPSH, transitoires et tenue mecanique non verifies ici.']);root.querySelector('#plantMessage').textContent='Rapport PDF généré.';}catch(e){root.querySelector('#plantMessage').textContent=e.message;}};root.querySelector('.plant-tools').append(pdfButton);
   root.querySelector('#plantAdd').onclick = () => { if(project.sections.length>=30)return; project.sections.push({name:`Tronçon ${project.sections.length+1}`,length:50,diameter:100,roughness:0.05,accessories:[]}); mountInstallation(root,onBack); };
   root.querySelectorAll('[data-project]').forEach(el => el.addEventListener('input', () => {project[el.dataset.project]=el.type==='number'?el.valueAsNumber:el.value; update(root);}));
   root.querySelector('#plantMode').onchange = e => {project.mode=e.target.value; update(root);};
@@ -65,6 +69,7 @@ function update(root) {
   const box=root.querySelector('#plantResults');
   try {
     const r=solveInstallation(project);
+    root.querySelector('#plantMessage').textContent=saveProject('installation',project)?'Projet sauvegardé automatiquement sur cet appareil.':'Stockage local indisponible : exporter le JSON.';
     let qMax=Math.max(1,r.flow*1.5); if(project.pump)qMax=Math.max(qMax,Math.sqrt(project.h0/project.k));
     // Cap the chart to the physically meaningful pump domain when present.
     if(project.pump)qMax=Math.sqrt(project.h0/project.k)||1;
