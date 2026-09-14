@@ -3,12 +3,12 @@ import {materials,fittings,source,insideDiameter,parsePumpCSV,validatePipeCatalo
 import {loadProject,saveProject,listProjects} from './project-store.js';
 import {downloadReport} from './pdf-report.js';
 import {putImage,getImage,deleteImage} from './basemap-store.js';
-import {tilesFor,tileUrl,parseLatLon,pan,viewToLatLon,latLonToView,metresPerPixel,defaultTiles} from './geo.js';
+import {tilesFor,tileUrl,parseLatLon,pan,zoomAt,viewToLatLon,latLonToView,metresPerPixel,defaultTiles} from './geo.js';
 const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n=x=>Number(x).toLocaleString('fr-FR',{maximumSignificantDigits:5});
 let project=loadProject('studio:autosave',defaultMesh,validateMesh),selected={type:'node',id:project.nodes[0].id},mode='select',connectFrom=null,history=[];
 let catalog=loadProject('catalog',()=>null,validatePipeCatalog);
-let basemapUrl=null,calibration=[];
+let basemapUrl=null,calibration=[],pendingType=null;
 const note='Régime permanent, liquide incompressible, conduites pleines. Solveur nodal Newton amorti interne ; continuité < 10^-6 L/s et énergie < 10^-5 m. Darcy-Colebrook, interpolation linéaire de lambda entre Re 2000 et 4000 (indicative, différente d’EPANET). PDA : demande proportionnelle à la racine de la pression normalisée entre pmin et pfull. Réservoirs à charge constante ; pompes unidirectionnelles ; vannes représentées par K et fermeture, sans régulateur automatique. Pas de transitoires, qualité d’eau ou niveau variable des réservoirs. Dessin topologique : la longueur hydraulique est saisie séparément. Profils entre cotes nodales linéaires ; ajouter explicitement chaque point haut. Les K sont agrégés par liaison, leur position réelle n’est pas résolue. Fond cartographique : les tuiles proviennent du fournisseur indiqué et leur mention de source doit rester affichée ; la position des nœuds est celle que vous pointez sur l’image, sa précision est celle de l’orthorectification du fournisseur. Fond de plan : l’échelle est isotrope et la longueur lue est HORIZONTALE — elle ignore la pente, les coudes et le profil de tranchée, donc sous-estime la conduite réelle ; elle est proposée, jamais imposée. Une image satellite ne porte aucune altimétrie : les cotes z restent à saisir. Validation indépendante requise avant dimensionnement réel.';
 const field=(key,label,value,unit='',type='number')=>`<label class="plant-field"><span>${label}</span><div><input data-property="${key}" type="${type}" step="any" value="${esc(value)}"><span>${unit}</span></div></label>`;
 const table=(headers,rows)=>`<div class="plant-table-wrap"><table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -17,11 +17,11 @@ export function mountStudio(root,navigate){
   let result=null,drag=null;
   root.innerHTML=`<section class="plant-app studio"><header class="plant-head"><div><button class="back" id="studioBack">← Bureau de calcul</button><p class="plant-kicker">RÉSEAUX MAILLÉS · ÉDITEUR GRAPHIQUE</p><h1>Atelier hydraulique</h1><p>Réservoirs, conduites, pompes et vannes · calcul des débits et pressions</p></div><div class="plant-tools"><button id="studioPDF">Rapport PDF</button><button id="studioExport">Exporter JSON</button><label class="plant-import ghost">Importer JSON<input id="studioImport" type="file" accept=".json"></label></div></header>
   <section class="software-panel studio-project"><label>Projet <input id="studioName" maxlength="120" value="${esc(project.name)}"></label><button id="studioSave">Enregistrer une copie nommée</button><label>Projets locaux <select id="studioSaved"></select></label><button id="studioLoad">Ouvrir</button><button id="studioExample">Exemple de boucle</button><span id="studioStatus" role="status"></span></section>
-  <div class="studio-layout"><section class="software-panel"><div class="studio-toolbar"><button data-mode="select">Sélection / déplacer</button><button data-mode="connect">Relier 2 nœuds</button><button id="studioNode">+ Jonction</button><button id="studioReservoir">+ Réservoir</button><button id="studioUndo">Annuler</button><button id="studioDelete">Retirer la sélection</button></div><p id="studioHint">Cliquez un élément pour modifier ses propriétés. Déplacez les nœuds à la souris ou avec X/Y.</p><svg id="studioGraph" viewBox="0 0 800 440" role="group" aria-label="Éditeur du réseau"></svg><p class="plant-help" id="studioAttrib"></p><p class="plant-help">Les flèches indiquent le sens de référence ; un débit négatif indique le sens inverse. Sans fond de plan, le dessin n’est pas à l’échelle.</p>
+  <div class="studio-layout"><section class="software-panel"><div class="studio-toolbar"><button data-mode="select">Sélection / déplacer</button><button data-mode="connect">Relier 2 nœuds</button><button id="studioNode">+ Jonction</button><button id="studioReservoir">+ Réservoir</button><button id="studioUndo">Annuler</button><button id="studioDelete">Retirer la sélection</button></div><p id="studioHint">Cliquer un élément pour le modifier. Avec une carte : glisser le fond pour se déplacer, molette pour zoomer, « + Jonction » puis clic pour poser un nœud.</p><svg id="studioGraph" viewBox="0 0 800 440" role="group" aria-label="Éditeur du réseau"></svg><p class="plant-help" id="studioAttrib"></p><p class="plant-help">Les flèches indiquent le sens de référence ; un débit négatif indique le sens inverse. Sans fond de plan, le dessin n’est pas à l’échelle.</p>
   <section class="studio-basemap"><h3>Fond de plan</h3>
-  <h4>Vue satellite</h4><p class="plant-help">Indiquer le site : la carte se place, les nœuds prennent de vraies coordonnées et les longueurs se calculent d’elles-mêmes.</p>
+  <h4>Vue satellite</h4><p class="plant-help">Ouvrir la carte, zoomer à la molette, glisser le fond pour se déplacer, puis poser les nœuds au clic. Les longueurs se calculent d’elles-mêmes.</p>
   <label>Coordonnées du site<input id="geoCoords" placeholder="34.7406, 10.7603 — ou une adresse Google Maps collée"></label>
-  <div class="studio-basemap-actions"><button id="geoPlace">Placer la carte</button><button data-mode="carte" id="geoMove">Déplacer la carte</button><button id="geoOut">Zoom −</button><button id="geoIn">Zoom +</button><button id="geoCentre">Recentrer sur le réseau</button><button id="geoClear">Retirer la carte</button></div>
+  <div class="studio-basemap-actions"><button id="geoOpen">Ouvrir la carte</button><button id="geoPlace">Aller aux coordonnées</button><button id="geoOut">Zoom −</button><button id="geoIn">Zoom +</button><button id="geoCentre">Recentrer sur le réseau</button><button id="geoClear">Retirer la carte</button></div>
   <label class="plant-check"><input id="geoAuto" type="checkbox"> Reprendre automatiquement les longueurs depuis la carte</label>
   <details><summary>Autre fournisseur de tuiles</summary><label>Adresse XYZ<input id="geoUrl" maxlength="500" placeholder="https://…/{z}/{x}/{y}.png"></label><label>Mention de source<input id="geoAttrib" maxlength="300"></label><button id="geoProvider">Appliquer ce fournisseur</button><p class="plant-help">Vérifier les conditions d’utilisation du service retenu ; la mention de source est obligatoire.</p></details>
   <p id="geoStatus" class="plant-help"></p>
@@ -50,10 +50,24 @@ export function mountStudio(root,navigate){
   root.querySelector('#studioExport').onclick=()=>{try{validateMesh(project);const url=URL.createObjectURL(new Blob([JSON.stringify(project,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='mecaflu-reseau-maille.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Projet exporté.');}catch(e){status(e.message);}};
   root.querySelector('#studioImport').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.size>500000)throw Error('Maximum 500 Ko.');const data=JSON.parse(await f.text());validateMesh(data);remember();project=data;selected={type:'node',id:project.nodes[0].id};mountStudio(root,navigate);}catch(error){status(error.message);}};
   root.querySelector('#studioPDF').onclick=()=>{try{const r=solveMesh(project);downloadReport(project.name,project,r,[note,'Unites : q, flow et demandes en L/s ; H, pressure, gain, loss en m de liquide ; diametre/rugosite en mm ; nu en 10^-6 m2/s.','Sources : '+source]);status('Rapport PDF généré.');}catch(e){status('Rapport suspendu : '+e.message);}};
-  root.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;connectFrom=null;if(mode==='calibrate')calibration=[];root.querySelector('#studioHint').textContent=mode==='connect'?'Cliquer le nœud de départ puis le nœud d’arrivée.':mode==='calibrate'?'Cliquer deux points du plan dont vous connaissez la distance réelle.':mode==='carte'?'Glisser pour déplacer la carte ; les nœuds suivent le terrain.':'Cliquer pour sélectionner ; déplacer à la souris ou saisir X/Y.';graph();});
+  root.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;connectFrom=null;if(mode==='calibrate')calibration=[];root.querySelector('#studioHint').textContent=mode==='connect'?'Cliquer le nœud de départ puis le nœud d’arrivée.':mode==='calibrate'?'Cliquer deux points du plan dont vous connaissez la distance réelle.':'Cliquer pour sélectionner ; glisser le fond déplace la carte, la molette zoome.';graph();});
   function unique(prefix,items){let i=1;while(items.some(x=>x.id===prefix+i))i++;return prefix+i;}
-  function addNode(type){if(project.nodes.length>=30){status('Maximum 30 nœuds.');return;}remember();const id=unique(type==='reservoir'?'R':'N',project.nodes);project.nodes.push({id,type,head:50,z:0,demand:type==='reservoir'?0:1,x:100+(project.nodes.length%5)*120,y:60+Math.floor(project.nodes.length/5)*55});selected={type:'node',id};update();inspector();}
-  root.querySelector('#studioNode').onclick=()=>addNode('junction');root.querySelector('#studioReservoir').onclick=()=>addNode('reservoir');
+  function addNode(type,at){
+    if(project.nodes.length>=30){status('Maximum 30 nœuds.');return;}
+    remember();const id=unique(type==='reservoir'?'R':'N',project.nodes);
+    const pos=at||{x:100+(project.nodes.length%5)*120,y:60+Math.floor(project.nodes.length/5)*55};
+    const node={id,type,head:50,z:0,demand:type==='reservoir'?0:1,x:pos.x,y:pos.y};
+    ancrer(node);project.nodes.push(node);
+    selected={type:'node',id};update();inspector();
+  }
+  // Sur fond cartographique, le noeud se pose la ou l on clique plutot qu a une place calculee.
+  const demanderNoeud=type=>{
+    if(!project.geo){addNode(type);return;}
+    pendingType=type;mode='placer';
+    root.querySelector('#studioHint').textContent='Cliquer sur la carte à l’endroit exact du nœud.';
+    status(`Cliquer sur la carte pour poser ${type==='reservoir'?'le réservoir':'la jonction'}.`);
+  };
+  root.querySelector('#studioNode').onclick=()=>demanderNoeud('junction');root.querySelector('#studioReservoir').onclick=()=>demanderNoeud('reservoir');
   root.querySelector('#studioDelete').onclick=()=>{if(!selected)return;remember();if(selected.type==='edge')project.edges=project.edges.filter(e=>e.id!==selected.id);else {if(project.nodes.length<=2){history.pop();status('Conserver au moins 2 nœuds.');return;}project.nodes=project.nodes.filter(n=>n.id!==selected.id);project.edges=project.edges.filter(e=>e.from!==selected.id&&e.to!==selected.id);}selected={type:'node',id:project.nodes[0].id};update();inspector();};
   function chooseNode(id){
     if(mode==='connect'){if(!connectFrom){connectFrom=id;status(`Départ ${id} choisi : sélectionner l’arrivée.`);return;}if(connectFrom===id){status('Choisir un autre nœud.');return;}if(project.edges.length>=60){status('Maximum 60 liaisons.');return;}remember();const edge={...defaultMesh().edges[0],id:unique('L',project.edges),from:connectFrom,to:id};project.edges.push(edge);selected={type:'edge',id:edge.id};connectFrom=null;mode='select';root.querySelector('#studioHint').textContent='Liaison créée. Modifier sa longueur, son diamètre et son type.';update();inspector();return;}
@@ -62,17 +76,33 @@ export function mountStudio(root,navigate){
   const svg=root.querySelector('#studioGraph');
   const svgPoint=e=>{const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const loc=pt.matrixTransform(svg.getScreenCTM().inverse());return {x:Math.max(0,Math.min(800,Math.round(loc.x))),y:Math.max(0,Math.min(440,Math.round(loc.y)))};};
   svg.addEventListener('click',e=>{
+    if(mode==='placer'&&pendingType){const pt=svgPoint(e),type=pendingType;pendingType=null;mode='select';root.querySelector('#studioHint').textContent='Cliquer pour sélectionner ; glisser le fond déplace la carte.';addNode(type,pt);return;}
     if(mode==='calibrate'){const pt=svgPoint(e);if(calibration.length>=2)calibration=[];calibration.push(pt);status(calibration.length<2?'Point A placé : cliquer le point B.':'Points A et B placés : saisir leur distance réelle puis valider l’échelle.');graph();return;}
     const node=e.target.closest('[data-graph-node]'),edge=e.target.closest('[data-graph-edge]');if(node)chooseNode(node.dataset.graphNode);else if(edge){selected={type:'edge',id:edge.dataset.graphEdge};graph();inspector();}});
   svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));}});
   let mapDrag=null;
   svg.addEventListener('pointerdown',e=>{
-    if(mode==='carte'&&project.geo){remember();mapDrag=svgPoint(e);svg.setPointerCapture(e.pointerId);return;}
-    const el=e.target.closest('[data-graph-node]');if(!el||mode!=='select')return;remember();drag=project.nodes.find(n=>n.id===el.dataset.graphNode);svg.setPointerCapture(e.pointerId);});
+    if(mode!=='select')return;
+    const el=e.target.closest('[data-graph-node]');
+    if(el){remember();drag=project.nodes.find(n=>n.id===el.dataset.graphNode);svg.setPointerCapture(e.pointerId);return;}
+    if(project.geo){remember();mapDrag=svgPoint(e);svg.setPointerCapture(e.pointerId);}});
+  // La molette zoome sur le point vise ; la rafale est regroupee en une seule etape annulable.
+  let wheelTimer=null,wheelAvant=null;
+  svg.addEventListener('wheel',e=>{
+    if(!project.geo||mode!=='select')return;
+    e.preventDefault();
+    const zoom=Math.max(1,Math.min(21,project.geo.zoom+(e.deltaY<0?1:-1)));
+    if(zoom===project.geo.zoom)return;
+    if(!wheelTimer)wheelAvant=structuredClone(project);
+    const pt=svgPoint(e);
+    try{applyGeo(zoomAt(project.geo,zoom,pt.x,pt.y));geoStatus();}catch(err){status(err.message);return;}
+    clearTimeout(wheelTimer);
+    wheelTimer=setTimeout(()=>{wheelTimer=null;history.push(wheelAvant);if(history.length>30)history.shift();update();inspector();},250);
+  },{passive:false});
   svg.addEventListener('pointermove',e=>{
     if(mapDrag){const pt=svgPoint(e);try{applyGeo(pan(project.geo,mapDrag.x-pt.x,mapDrag.y-pt.y));mapDrag=pt;}catch{mapDrag=null;}return;}
     if(!drag)return;const point=svg.createSVGPoint();point.x=e.clientX;point.y=e.clientY;const loc=point.matrixTransform(svg.getScreenCTM().inverse());drag.x=Math.max(20,Math.min(780,Math.round(loc.x)));drag.y=Math.max(20,Math.min(420,Math.round(loc.y)));graph();});
-  svg.addEventListener('pointerup',()=>{if(mapDrag){mapDrag=null;geoStatus();update();inspector();return;}if(drag){selected={type:'node',id:drag.id};drag=null;persist();inspector();}});
+  svg.addEventListener('pointerup',()=>{if(mapDrag){mapDrag=null;geoStatus();update();inspector();return;}if(drag){ancrer(drag);selected={type:'node',id:drag.id};drag=null;update();inspector();}});
   svg.addEventListener('pointercancel',()=>{mapDrag=null;drag=null;persist();});
   function calibrationMarks(){
     const pts=calibration.length?calibration:project.basemap?[project.basemap.a,project.basemap.b]:[];
@@ -88,7 +118,7 @@ export function mountStudio(root,navigate){
     const box=root.querySelector('#studioInspector'),isNode=selected?.type==='node',item=(isNode?project.nodes:project.edges).find(x=>x.id===selected?.id);if(!item){box.innerHTML='Sélectionner un élément.';return;}
     const mesure=isNode?null:planLength(project,item);
     box.innerHTML=`<h3>${isNode?'Nœud':'Liaison'} ${esc(item.id)}</h3>`+(isNode?`<p>${item.type==='reservoir'?'Réservoir à charge constante':'Jonction de distribution'}</p>${field('z','Cote du nœud',item.z,'m')}${item.type==='reservoir'?field('head','Charge imposée H',item.head,'m'):field('demand','Demande nominale',item.demand,'L/s')}${field('x','Position graphique X',item.x)}${field('y','Position graphique Y',item.y)}`:`<p>${esc(item.from)} → ${esc(item.to)}</p><label class="plant-field">Type<select id="edgeType">${[['pipe','Conduite'],['pump','Pompe'],['valve','Vanne (K)']].map(([k,t])=>`<option value="${k}" ${item.type===k?'selected':''}>${t}</option>`).join('')}</select></label><label><input id="edgeClosed" type="checkbox" ${item.closed?'checked':''}> Liaison fermée</label>${project.geo&&project.geo.autoLength?`<label class="plant-field"><span>Longueur hydraulique</span><div><input value="${n(item.length)}" readonly><span>m</span></div></label><p class="plant-help">Reprise automatique depuis la carte ; décocher l’option pour saisir à la main.</p>`:field('length','Longueur hydraulique',item.length,'m')}${field('diameter','Diamètre intérieur',item.diameter,'mm')}${field('roughness','Rugosité',item.roughness,'mm')}${field('sumK','Somme K',item.sumK)}${mesure!==null?`<p class="plant-help">Longueur horizontale mesurée sur le plan : <b>${n(mesure)} m</b> — hors pente, coudes et profil de tranchée. <button id="applyMeasured">Reprendre cette longueur</button></p>`:''}${item.type==='pump'?`${field('h0','H0 (courbe simplifiée)',item.h0,'m')}${field('k','k (Q en L/s)',item.k,'m/(L/s)²')}<p>Pompe : ${item.curve?esc(item.curve.name)+' — '+esc(item.curve.source):'Exemple paramétrique H = H0 − kQ², non fabricant'}. La conduite et les K ci-dessus restent en série avec la pompe.</p><button id="clearCurve">Utiliser H0 − kQ²</button><details><summary>Importer une courbe fabricant</summary><label>Nom et conditions (vitesse, roue)<input id="curveName" maxlength="120"></label><label>Source / référence fabricant<input id="curveSource" maxlength="500"></label><label>CSV Q;H (L/s ; m)<textarea id="curveCSV" rows="5" placeholder="Q;H"></textarea></label><button id="applyCurve">Valider la courbe</button></details>`:''}<details open><summary>Bibliothèque technique</summary><label>Matériau neuf (EPA)<select id="materialSelect">${materials.map((m,i)=>`<option value="${i}">${esc(m.name)} · ε ${n(m.roughness)} mm</option>`).join('')}</select></label><button id="applyMaterial">Appliquer la rugosité</button><label>Accessoire (EPA)<select id="fittingSelect">${fittings.map((f,i)=>`<option value="${i}">${esc(f.name)} · K ${n(f.k)}</option>`).join('')}</select></label><button id="applyFitting">Ajouter son K</button><p class="plant-help">Valeurs indicatives pour matériel neuf ; confirmer géométrie, état et fabricant.</p><label>D extérieur (mm)<input id="outsideD" type="number" value="110"></label><label>Épaisseur réelle (mm)<input id="wallThickness" type="number" value="6.6" step="any"></label><button id="applyThickness">Calculer D intérieur = Dext − 2e</button><label class="plant-import">Importer catalogue JSON<input id="catalogImport" type="file" accept=".json"></label>${catalog?`<p>${esc(catalog.name)} · ${esc(catalog.source)}</p><label>Série / section<select id="catalogPipe">${catalog.pipes.map((s,i)=>`<option value="${i}">${esc(s.series)} · ${n(insideDiameter(s.outside,s.thickness))} mm intérieur</option>`).join('')}</select></label><button id="applyCatalog">Appliquer la section</button>`:''}<p class="plant-help">Format : {name, source, pipes:[{series, outside, thickness, roughness}]} ; dimensions en mm. Importer les valeurs réelles du fabricant, pas un DN assimilé au diamètre intérieur.</p></details>`);
-    box.querySelectorAll('[data-property]').forEach(el=>el.oninput=()=>{remember();item[el.dataset.property]=el.type==='number'?el.valueAsNumber:el.value;update();});
+    box.querySelectorAll('[data-property]').forEach(el=>el.oninput=()=>{remember();item[el.dataset.property]=el.type==='number'?el.valueAsNumber:el.value;if(isNode&&(el.dataset.property==='x'||el.dataset.property==='y'))ancrer(item);update();});
     box.querySelector('#edgeType')?.addEventListener('change',e=>{remember();item.type=e.target.value;inspector();update();});box.querySelector('#edgeClosed')?.addEventListener('change',e=>{remember();item.closed=e.target.checked;update();});
     const action=(id,fn)=>box.querySelector(id)?.addEventListener('click',()=>{try{remember();fn();update();inspector();}catch(e){status(e.message);}});
     action('#applyMaterial',()=>item.roughness=materials[Number(box.querySelector('#materialSelect').value)].roughness);
@@ -115,13 +145,16 @@ export function mountStudio(root,navigate){
   // Les noeuds sont ancres au terrain : tout changement de carte les replace sur
   // leurs coordonnees d origine, et l operation est refusee plutot que de les tronquer.
   function applyGeo(next){
-    if(project.geo){
-      const ancres=project.nodes.map(node=>viewToLatLon(project.geo,node.x,node.y));
-      const places=project.nodes.map((node,i)=>{const v=latLonToView(next,ancres[i].lat,ancres[i].lon);return {x:Math.round(v.x),y:Math.round(v.y)};});
-      project.nodes.forEach((node,i)=>{node.x=places[i].x;node.y=places[i].y;});
-    }
+    // Seuls les nœuds poses sur la carte portent des coordonnees : eux suivent le sol.
+    // Ceux qui n ont pas encore ete places restent a l ecran pendant la navigation.
+    project.nodes.forEach(node=>{
+      if(node.lat===undefined)return;
+      const v=latLonToView(next,node.lat,node.lon);
+      node.x=Math.round(v.x);node.y=Math.round(v.y);
+    });
     project.geo=next;graph();
   }
+  const ancrer=node=>{if(!project.geo)return;const g=viewToLatLon(project.geo,node.x,node.y);node.lat=g.lat;node.lon=g.lon;};
   function geoStatus(){
     const el=root.querySelector('#geoStatus'),attrib=root.querySelector('#studioAttrib');
     if(!project.geo){el.textContent='Aucun fond cartographique : le dessin reste topologique.';attrib.textContent='';root.querySelector('#geoAuto').checked=false;return;}
@@ -151,6 +184,18 @@ export function mountStudio(root,navigate){
     remember();applyGeo({...project.geo,zoom});geoStatus();update();inspector();
     status(`Zoom ${zoom}.`);
   }catch(e){status(e.message);}};
+  root.querySelector('#geoOpen').onclick=()=>{
+    try{
+      const ancien=project.geo;
+      const next={lat:20,lon:5,zoom:2,url:ancien?ancien.url:defaultTiles.url,
+        attribution:ancien?ancien.attribution:defaultTiles.attribution,autoLength:ancien?ancien.autoLength:true};
+      validateMesh({...project,geo:next});
+      remember();
+      if(ancien)applyGeo(next); else {project.geo=next;graph();}
+      geoStatus();update();inspector();
+      status('Carte ouverte sur le monde : zoomer à la molette jusqu’au site, puis poser les nœuds.');
+    }catch(e){status(e.message);}
+  };
   root.querySelector('#geoCentre').onclick=()=>{
     try{
       if(!project.geo)throw Error('Placer d’abord la carte.');

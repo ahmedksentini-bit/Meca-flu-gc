@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {lonToWorldX,latToWorldY,worldXToLon,worldYToLat,metresPerPixel,haversine,
-        viewToLatLon,latLonToView,geoDistance,pan,tilesFor,tileUrl,parseLatLon} from '../src/geo.js';
+        viewToLatLon,latLonToView,geoDistance,pan,zoomAt,tilesFor,tileUrl,parseLatLon} from '../src/geo.js';
 const near=(a,b,t)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b} (tolérance ${t})`);
 const SFAX={lat:34.7406,lon:10.7603,zoom:17,url:'https://exemple/{z}/{y}/{x}',attribution:'test'};
 
@@ -88,4 +88,17 @@ test('Coordinates are read from a pair or from a Google Maps address',()=>{
   assert.equal(parseLatLon('34.74, 10.76').zoom,undefined);
   for(const bad of ['','texte sans chiffre','91.2, 10',' -200, 10','abc,def'])
     assert.throws(()=>parseLatLon(bad),undefined,`aurait dû refuser : ${bad}`);
+});
+
+test('Zooming keeps the ground point under the cursor in place',()=>{
+  for(const [x,y] of [[400,220],[120,90],[700,400]]) for(const dz of [1,-1,3]){
+    const cible=viewToLatLon(SFAX,x,y);
+    const apres=zoomAt(SFAX,SFAX.zoom+dz,x,y);
+    const v=latLonToView(apres,cible.lat,cible.lon);
+    near(v.x,x,1e-6); near(v.y,y,1e-6);
+    assert.equal(apres.zoom,SFAX.zoom+dz);
+  }
+  // zoomer au centre revient a un simple changement d echelle
+  const c=zoomAt(SFAX,SFAX.zoom+2,400,220);
+  near(c.lat,SFAX.lat,1e-9); near(c.lon,SFAX.lon,1e-9);
 });

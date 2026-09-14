@@ -24,7 +24,9 @@ Accessible depuis le Bureau de calcul ou `#calculateur/installation` : réseau e
 
 ### Vue satellite géoréférencée
 
-L'atelier graphique accepte un fond cartographique en tuiles. Coller les coordonnées du site — « latitude, longitude » ou une adresse Google Maps — et la carte se place : chaque nœud porte dès lors de vraies coordonnées et **les longueurs des tronçons se calculent d'elles-mêmes**, en distance orthodromique.
+L'atelier graphique embarque une carte manipulable. « Ouvrir la carte » affiche le monde entier ; la molette zoome sur le point visé, glisser le fond déplace la vue, et « + Jonction » ou « + Réservoir » suivis d'un clic posent le nœud à l'endroit exact désigné. « Aller aux coordonnées » accepte aussi une saisie précise — « latitude, longitude » ou une adresse Google Maps collée.
+
+Un nœud posé sur la carte porte ses coordonnées réelles et **les longueurs des tronçons se calculent d'elles-mêmes**, en distance orthodromique. Seuls les nœuds effectivement posés suivent le terrain lors d'un zoom ou d'un déplacement ; ceux qui ne l'ont pas encore été restent à l'écran, ce qui permet de naviguer jusqu'au site sans disperser un schéma existant.
 
 Le fournisseur par défaut est Esri World Imagery, sans clé d'API, dont la mention de source reste affichée sous le schéma. N'importe quel service de tuiles XYZ peut lui être substitué, avec sa propre mention ; vérifier ses conditions d'utilisation. Les tuiles exigent une connexion : le reste de l'application fonctionne hors ligne, pas le fond de carte.
 
