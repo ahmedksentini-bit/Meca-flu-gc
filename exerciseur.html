@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Exerciseur — Mécanique des fluides — ENIS Sfax</title>
+<meta name="description" content="Exercices de mécanique des fluides à valeurs aléatoires, avec correction détaillée">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF1F2;--surface:#fff;--ink:#0F1E28;--ink2:#4C616C;
+  --eau:#0B5B72;--eau2:#3E93AB;--pale:#D6E6EA;--brique:#A8492A;--vert:#1E6E4E;
+  --rule:#C6D5DA;
+  --serif:"Newsreader",Georgia,serif;--disp:"Instrument Serif",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.55}
+header{background:var(--surface);border-bottom:1px solid var(--rule);padding:1.6rem 1.2rem 0;
+  background-image:repeating-linear-gradient(to right,transparent 0 23px,rgba(11,91,114,.06) 23px 24px),
+                   repeating-linear-gradient(to bottom,transparent 0 23px,rgba(11,91,114,.06) 23px 24px)}
+.wrap{max-width:860px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--eau);margin:0 0 .5rem}
+h1{font-family:var(--disp);font-weight:400;font-size:clamp(2rem,5.5vw,3rem);margin:0 0 .3rem;letter-spacing:-.01em}
+header p.sous{color:var(--ink2);margin:0 0 1.2rem;font-size:1.02rem}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap}
+.tab{background:none;border:1px solid var(--rule);border-bottom:none;border-radius:3px 3px 0 0;
+  padding:.55rem 1rem;font-family:var(--mono);font-size:12px;letter-spacing:.05em;color:var(--ink2);
+  cursor:pointer;position:relative;top:1px}
+.tab.actif{background:var(--paper);color:var(--eau);border-color:var(--rule);font-weight:500}
+main{max-width:860px;margin:0 auto;padding:1.6rem 1.2rem 5rem}
+h2{font-family:var(--disp);font-weight:400;font-size:1.5rem;margin:0 0 .8rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.6rem}
+.chip{background:var(--surface);border:1px solid var(--rule);border-radius:2px;padding:.35rem .7rem;
+  font-family:var(--mono);font-size:11.5px;color:var(--ink2);cursor:pointer}
+.chip.on{background:var(--pale);border-color:var(--eau2);color:var(--eau)}
+.aide{font-family:var(--mono);font-size:11px;color:var(--ink2);margin:0 0 1.4rem}
+.carte{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--eau);border-radius:2px;padding:1.2rem;margin-bottom:1.4rem}
+.tete{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap;margin-bottom:.6rem}
+.badge{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  background:var(--pale);color:var(--eau);padding:.2rem .5rem;border-radius:2px}
+.tete h3{font-family:var(--disp);font-weight:400;font-size:1.28rem;margin:0}
+.enonce{font-size:1.06rem;margin:0 0 1.1rem}
+.reponses{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:.8rem;margin-bottom:1rem}
+.rep{background:#F7FAFA;border:1px solid var(--rule);border-radius:2px;padding:.6rem .7rem}
+.rep.juste{border-color:var(--vert);background:#F1F8F4}
+.rep.faux{border-color:var(--brique);background:#FBF4F1}
+.rep label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--ink2);margin-bottom:.35rem}
+.ligne{display:flex;align-items:center;gap:.5rem}
+input[type=text]{flex:1;min-width:0;font-family:var(--mono);font-size:16px;padding:.45rem .5rem;
+  border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink)}
+input[type=text]:focus,button:focus-visible,select:focus-visible{outline:2px solid var(--eau2);outline-offset:1px}
+.unit{font-family:var(--mono);font-size:12px;color:var(--ink2);white-space:nowrap}
+.verdict{font-family:var(--mono);font-size:11px;margin:.35rem 0 0;min-height:1em}
+.verdict.ok{color:var(--vert)}.verdict.ko{color:var(--brique)}.verdict.neutre{color:var(--ink2)}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;padding:.6rem 1.05rem;cursor:pointer;
+  border:1px solid var(--rule);background:var(--surface);color:var(--ink);border-radius:2px}
+.btn:hover{background:var(--pale)}
+.btn.primaire{background:var(--eau);border-color:var(--eau);color:#fff}
+.btn.primaire:hover{background:#0a4c5f}
+.correction{margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--rule)}
+.correction h4{font-family:var(--disp);font-weight:400;font-size:1.15rem;margin:0 0 .5rem;color:var(--eau)}
+.correction ol{padding-left:1.3rem;margin:0 0 .9rem}
+.correction li{margin-bottom:.55rem}
+.valeurs{display:flex;flex-wrap:wrap;gap:.5rem}
+.valeurs span{background:var(--pale);border-radius:2px;padding:.35rem .6rem;font-family:var(--mono);font-size:12.5px;color:var(--eau)}
+.score{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:.5rem;margin-bottom:1.2rem}
+.score div{background:var(--surface);border:1px solid var(--rule);border-radius:2px;padding:.5rem .6rem;text-align:center}
+.score span{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.score b{font-family:var(--mono);font-size:19px;font-weight:500;color:var(--eau)}
+.reglages{display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.2rem}
+.reglages label{font-family:var(--mono);font-size:11.5px;color:var(--ink2);display:block;margin-bottom:.3rem}
+select{font-family:var(--mono);font-size:14px;padding:.45rem;border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink)}
+.coche{display:flex;align-items:center;gap:.45rem;font-family:var(--mono);font-size:12px;color:var(--ink2)}
+#feuille{background:var(--surface);border:1px solid var(--rule);border-radius:2px;padding:1.6rem}
+#feuille:empty{display:none}
+.entete-td{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-bottom:2px solid var(--eau);
+  padding-bottom:.8rem;margin-bottom:1.4rem;font-size:.95rem}
+.entete-td .dt{text-align:right;color:var(--ink2);font-family:var(--mono);font-size:12px}
+.exo-td{margin-bottom:1.6rem;break-inside:avoid}
+.exo-td h4{font-family:var(--disp);font-weight:400;font-size:1.16rem;margin:0 0 .4rem}
+.chref{font-family:var(--mono);font-size:11px;color:var(--ink2);letter-spacing:.03em}
+.dem{font-family:var(--mono);font-size:11.5px;color:var(--ink2);margin:.4rem 0 0}
+.espace{height:5.5rem;border-bottom:1px dotted var(--rule)}
+.corrige{border-top:2px solid var(--eau);margin-top:2.2rem;padding-top:1.2rem;break-before:page}
+.corrige h3{font-family:var(--disp);font-weight:400;font-size:1.5rem;margin:0 0 1rem;color:var(--eau)}
+.corrige .espace{display:none}
+.res{background:var(--pale);padding:.5rem .7rem;border-radius:2px;font-size:.95rem}
+footer{border-top:1px solid var(--rule);padding:2rem 1.2rem 3rem;text-align:center;
+  font-family:var(--mono);font-size:11.5px;color:var(--ink2)}
+@media print{
+  header,.tabs,.chips,.aide,.reglages,footer,.btn,.score{display:none!important}
+  body{background:#fff;font-size:12pt}main{padding:0}#feuille{border:none;padding:0}
+  .espace{height:6.5rem}
+}
+@media (max-width:560px){.reponses{grid-template-columns:1fr}}
+
+</style>
+<script>
+window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] },
+  chtml:{ scale:0.98 }, options:{ renderActions:{ addMenu:[] } } };
+</script>
+<script id="MathJax-script" async src="vendor/mathjax/tex-chtml.js"></script>
+</head>
+<body>
+<a href="./" style="position:sticky;top:0;z-index:99;display:block;padding:9px 14px;background:#082f49;color:#e0f2fe;font:700 13px/1.4 system-ui,sans-serif;text-decoration:none">← Retour à MécaFlu GC</a>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">ENIS Sfax · Génie civil · Semestre 1</p>
+    <h1>Exerciseur — Mécanique des fluides</h1>
+    <p class="sous">Chaque exercice est tiré au hasard : les valeurs changent à chaque fois, la correction est détaillée étape par étape.</p>
+    <div class="tabs">
+      <button class="tab actif" data-vue="v-train">Entraînement</button>
+      <button class="tab" data-vue="v-td">Feuille de TD</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="vue" id="v-train">
+    <div class="chips" id="filtres"></div>
+    <p class="aide" id="dispo"></p>
+    <div class="score">
+      <div><span>Exercices</span><b id="sc-tot">0</b></div>
+      <div><span>Réussis</span><b id="sc-bons">0</b></div>
+      <div><span>Réussite</span><b id="sc-pct">—</b></div>
+      <div><span>Série</span><b id="sc-serie">0</b></div>
+      <div><span>Essais ratés</span><b id="sc-essais">0</b></div>
+    </div>
+    <div class="carte" id="exo"></div>
+    <div class="actions">
+      <button class="btn" id="nouveau">Nouvel exercice</button>
+      <button class="btn" id="raz">Remettre le score à zéro</button>
+    </div>
+  </section>
+
+  <section class="vue" id="v-td" hidden>
+    <h2>Générer une feuille d’exercices</h2>
+    <div class="chips" id="filtres2"></div>
+    <div class="reglages">
+      <div><label for="nbExos">Nombre d’exercices</label>
+        <select id="nbExos"><option>3</option><option selected>5</option><option>8</option><option>10</option><option>15</option></select></div>
+      <label class="coche"><input type="checkbox" id="avecCorr" checked> inclure le corrigé</label>
+      <button class="btn primaire" id="generer">Générer</button>
+      <button class="btn" id="imprimer" hidden>Imprimer / PDF</button>
+    </div>
+    <div id="feuille"></div>
+  </section>
+</main>
+
+<footer>École Nationale d’Ingénieurs de Sfax — Dr. Ahmed Ksentini<br>
+Tolérance de correction : 2 à 6 % selon la grandeur. Tout est calculé dans le navigateur, hors ligne.</footer>
+
+<script>
+/* ============================================================
+   Moteur d'exercices paramétriques — Mécanique des fluides
+   Chaque générateur renvoie :
+   { ch, titre, enonce, champs:[{lab,val,unit,tol}], sol:[étapes] }
+   ============================================================ */
+"use strict";
+const G = 9.81, RHO = 1000, PATM = 101325, NU = 1e-6;
+
+/* utilitaires ------------------------------------------------ */
+const R = (a, b, p = 0) => { const v = a + Math.random() * (b - a); const k = Math.pow(10, p); return Math.round(v * k) / k; };
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const n = (v, d = 2) => {
+  if (!isFinite(v)) return '—';
+  let s = Math.abs(v) >= 1e5 || (Math.abs(v) < 1e-3 && v !== 0) ? v.toExponential(2) : v.toFixed(d);
+  return s.replace('.', ',');
+};
+const colebrook = (Re, rr) => {
+  if (Re < 2000) return 64 / Re;
+  let l = 0.02;
+  for (let i = 0; i < 60; i++) l = Math.pow(-2 * Math.log10(rr / 3.71 + 2.51 / (Re * Math.sqrt(l))), -2);
+  return l;
+};
+
+/* ============================================================ */
+const GENS = [
+
+/* ---------- Chapitre 1 ---------- */
+{ ch: 1, titre: "Masse volumique et poids volumique", f() {
+  const V = R(2, 12, 1), P = R(15, 95, 0);
+  const rho = P * 1000 / (G * V), gam = rho * G / 1000, d = rho / 1000;
+  return { enonce: `Un volume de ${n(V,1)} m³ d'un liquide pèse ${n(P,0)} kN. Calculer sa masse volumique, son poids volumique et sa densité.`,
+    champs: [{ lab: "Masse volumique ρ", val: rho, unit: "kg/m³", tol: 0.02 },
+             { lab: "Poids volumique γ", val: gam, unit: "kN/m³", tol: 0.02 },
+             { lab: "Densité d", val: d, unit: "—", tol: 0.02 }],
+    sol: [`Masse : \\(m = P/g = ${n(P*1000,0)}/9{,}81 = ${n(P*1000/G,0)}\\) kg`,
+          `\\(\\rho = m/V = ${n(P*1000/G,0)}/${n(V,1)} = ${n(rho,0)}\\) kg/m³`,
+          `\\(\\gamma = \\rho g = ${n(rho,0)}\\times 9{,}81 = ${n(gam*1000,0)}\\) N/m³ \\(= ${n(gam,2)}\\) kN/m³`,
+          `\\(d = \\rho/\\rho_{eau} = ${n(d,3)}\\)`] };
+}},
+
+{ ch: 1, titre: "Viscosité : plaque en mouvement", f() {
+  const e = R(0.4, 3, 1), mu = R(0.05, 0.9, 2), S = R(0.3, 2.5, 1), U = R(0.2, 2.5, 1);
+  const tau = mu * U / (e / 1000), F = tau * S;
+  return { enonce: `Une plaque de surface ${n(S,1)} m² glisse à ${n(U,1)} m/s sur un film d'huile d'épaisseur ${n(e,1)} mm et de viscosité dynamique μ = ${n(mu,2)} Pa·s. Calculer la contrainte de cisaillement et la force de traction.`,
+    champs: [{ lab: "Contrainte τ", val: tau, unit: "Pa", tol: 0.02 },
+             { lab: "Force F", val: F, unit: "N", tol: 0.02 }],
+    sol: [`Profil linéaire : \\(\\tau = \\mu\\dfrac{U}{e} = ${n(mu,2)}\\times\\dfrac{${n(U,1)}}{${n(e/1000,4)}} = ${n(tau,1)}\\) Pa`,
+          `\\(F = \\tau S = ${n(tau,1)}\\times ${n(S,1)} = ${n(F,1)}\\) N`] };
+}},
+
+{ ch: 1, titre: "Capillarité — loi de Jurin", f() {
+  const d = R(0.2, 3, 1), sig = 0.073;
+  const h = 4 * sig / (RHO * G * d / 1000);
+  return { enonce: `De l'eau (σ = 0,073 N/m, θ ≈ 0) monte par capillarité dans un tube de diamètre ${n(d,1)} mm. Calculer la hauteur d'ascension.`,
+    champs: [{ lab: "Hauteur h", val: h * 1000, unit: "mm", tol: 0.03 }],
+    sol: [`Loi de Jurin : \\(h = \\dfrac{4\\sigma\\cos\\theta}{\\rho g d}\\)`,
+          `\\(h = \\dfrac{4\\times 0{,}073}{1000\\times 9{,}81\\times ${n(d/1000,4)}} = ${n(h,4)}\\) m \\(= ${n(h*1000,1)}\\) mm`] };
+}},
+
+/* ---------- Chapitre 2 ---------- */
+{ ch: 2, titre: "Pression relative et absolue", f() {
+  const h = R(3, 45, 1), rho = pick([1000, 1025]);
+  const pr = rho * G * h, pa = pr + PATM;
+  return { enonce: `Un plongeur descend à ${n(h,1)} m de profondeur dans ${rho===1025?"de l'eau de mer (ρ = 1025 kg/m³)":"de l'eau douce"}. Calculer la pression relative puis la pression absolue (p_atm = 101,3 kPa).`,
+    champs: [{ lab: "Pression relative", val: pr / 1000, unit: "kPa", tol: 0.02 },
+             { lab: "Pression absolue", val: pa / 1000, unit: "kPa", tol: 0.02 }],
+    sol: [`\\(p_{rel} = \\rho g h = ${rho}\\times 9{,}81\\times ${n(h,1)} = ${n(pr,0)}\\) Pa \\(= ${n(pr/1000,1)}\\) kPa`,
+          `\\(p_{abs} = p_{rel}+p_{atm} = ${n(pr/1000,1)}+101{,}3 = ${n(pa/1000,1)}\\) kPa`] };
+}},
+
+{ ch: 2, titre: "Manomètre en U au mercure", f() {
+  const dh = R(80, 700, 0), z = R(100, 900, 0);
+  const p = 13600 * G * dh / 1000 - RHO * G * z / 1000;
+  return { enonce: `Un manomètre en U au mercure (d = 13,6) est branché sur une conduite d'eau. La dénivellation du mercure vaut ${n(dh,0)} mm et le centre de la conduite est situé ${n(z,0)} mm au-dessus du ménisque bas. Calculer la pression relative au centre de la conduite.`,
+    champs: [{ lab: "Pression relative", val: p / 1000, unit: "kPa", tol: 0.02 },
+             { lab: "En mCE", val: p / (RHO * G), unit: "mCE", tol: 0.03 }],
+    sol: [`Cheminement manométrique : \\(p = \\rho_{Hg}g\\,\\Delta h - \\rho_e g\\,z\\)`,
+          `\\(p = 13600\\times 9{,}81\\times ${n(dh/1000,3)} - 1000\\times 9{,}81\\times ${n(z/1000,3)}\\)`,
+          `\\(p = ${n(13600*G*dh/1000,0)} - ${n(RHO*G*z/1000,0)} = ${n(p,0)}\\) Pa \\(= ${n(p/1000,2)}\\) kPa`,
+          `En mètres de colonne d'eau : \\(p/\\rho g = ${n(p/(RHO*G),2)}\\) mCE`] };
+}},
+
+{ ch: 2, titre: "Poussée sur une vanne rectangulaire", f() {
+  const b = R(0.8, 4, 1), a = R(0.6, 3, 1), hs = R(0.5, 8, 1);
+  const hG = hs + a / 2, S = a * b, F = RHO * G * hG * S;
+  const hC = hG + (b * a * a * a / 12) / (hG * S);
+  return { enonce: `Une vanne rectangulaire verticale de largeur ${n(b,1)} m et de hauteur ${n(a,1)} m ferme une ouverture ; son arête supérieure est à ${n(hs,1)} m sous la surface libre. Calculer la poussée hydrostatique et la profondeur de son centre de poussée.`,
+    champs: [{ lab: "Poussée F", val: F / 1000, unit: "kN", tol: 0.02 },
+             { lab: "Profondeur de C", val: hC, unit: "m", tol: 0.02 }],
+    sol: [`\\(h_G = ${n(hs,1)}+${n(a,1)}/2 = ${n(hG,2)}\\) m ; \\(S = ${n(a,1)}\\times${n(b,1)} = ${n(S,2)}\\) m²`,
+          `\\(F = \\rho g h_G S = 9810\\times ${n(hG,2)}\\times ${n(S,2)} = ${n(F,0)}\\) N \\(= ${n(F/1000,1)}\\) kN`,
+          `\\(I_G = \\dfrac{b a^3}{12} = ${n(b*a*a*a/12,4)}\\) m⁴`,
+          `\\(h_C = h_G+\\dfrac{I_G}{h_G S} = ${n(hG,2)}+${n((b*a*a*a/12)/(hG*S),4)} = ${n(hC,3)}\\) m`] };
+}},
+
+{ ch: 2, titre: "Poussée sur un mur de retenue", f() {
+  const H = R(1.5, 9, 1);
+  const F = 0.5 * RHO * G * H * H, M = F * H / 3;
+  return { enonce: `Un mur vertical retient de l'eau sur une hauteur H = ${n(H,1)} m. Par mètre linéaire de mur, calculer la poussée hydrostatique, sa position au-dessus du pied et le moment de renversement au pied.`,
+    champs: [{ lab: "Poussée F", val: F / 1000, unit: "kN/m", tol: 0.02 },
+             { lab: "Position au-dessus du pied", val: H / 3, unit: "m", tol: 0.02 },
+             { lab: "Moment de renversement", val: M / 1000, unit: "kN·m/m", tol: 0.03 }],
+    sol: [`\\(F = \\tfrac12\\rho g H^2 = 0{,}5\\times 9810\\times ${n(H,1)}^2 = ${n(F,0)}\\) N/m`,
+          `Point d'application : au tiers inférieur, \\(H/3 = ${n(H/3,2)}\\) m`,
+          `\\(M = F\\times H/3 = ${n(F/1000,1)}\\times ${n(H/3,2)} = ${n(M/1000,1)}\\) kN·m/m`] };
+}},
+
+{ ch: 2, titre: "Flottaison d'une barge", f() {
+  const L = R(6, 20, 0), B = R(2.5, 8, 1), rho = pick([1000, 1025]);
+  const Tt = R(0.5, 2.2, 2);
+  const m = Math.round(rho * L * B * Tt / 1000);
+  const T = m * 1000 / (rho * L * B), CM = (L * B * B * B / 12) / (L * B * T);
+  return { enonce: `Une barge rectangulaire de ${n(L,0)} m sur ${n(B,1)} m et de masse ${n(m,0)} t flotte dans ${rho===1025?"de l'eau de mer (1025 kg/m³)":"de l'eau douce"}. Calculer le tirant d'eau et la distance métacentrique CM = I/V.`,
+    champs: [{ lab: "Tirant d'eau T", val: T, unit: "m", tol: 0.02 },
+             { lab: "CM = I/V", val: CM, unit: "m", tol: 0.03 }],
+    sol: [`Équilibre : \\(\\rho g (L B T) = m g\\) d'où \\(T = \\dfrac{m}{\\rho L B} = \\dfrac{${n(m*1000,0)}}{${rho}\\times${n(L,0)}\\times${n(B,1)}} = ${n(T,3)}\\) m`,
+          `\\(I = \\dfrac{L B^3}{12} = ${n(L*B*B*B/12,2)}\\) m⁴ ; \\(V = L B T = ${n(L*B*T,2)}\\) m³`,
+          `\\(\\overline{CM} = I/V = ${n(CM,3)}\\) m`] };
+}},
+
+/* ---------- Chapitre 3 ---------- */
+{ ch: 3, titre: "Continuité dans une conduite", f() {
+  const D = R(80, 500, 0), Ut = R(0.5, 2.5, 2);
+  const Q = Math.round(Ut * Math.PI * Math.pow(D / 1000, 2) / 4 * 1000);
+  const U = (Q / 1000) / (Math.PI * Math.pow(D / 1000, 2) / 4);
+  const D2 = Math.sqrt(4 * (Q / 1000) / (Math.PI * 1.0));
+  return { enonce: `Une conduite de diamètre ${n(D,0)} mm transporte ${n(Q,0)} L/s. Calculer la vitesse moyenne, puis le diamètre qu'il faudrait pour ramener cette vitesse à 1,00 m/s.`,
+    champs: [{ lab: "Vitesse U", val: U, unit: "m/s", tol: 0.02 },
+             { lab: "Diamètre pour 1 m/s", val: D2 * 1000, unit: "mm", tol: 0.02 }],
+    sol: [`\\(S = \\pi D^2/4 = ${n(Math.PI*Math.pow(D/1000,2)/4,4)}\\) m²`,
+          `\\(U = Q/S = ${n(Q/1000,4)}/${n(Math.PI*Math.pow(D/1000,2)/4,4)} = ${n(U,2)}\\) m/s`,
+          `Pour \\(U=1\\) m/s : \\(D = \\sqrt{4Q/\\pi U} = ${n(D2,3)}\\) m \\(= ${n(D2*1000,0)}\\) mm`] };
+}},
+
+{ ch: 3, titre: "Loi des nœuds", f() {
+  const Q1 = R(20, 150, 0), Q2 = R(10, 80, 0), Q4 = R(5, 40, 0), D3 = R(150, 400, 0);
+  const Q3 = Q1 + Q2 - Q4, U3 = (Q3 / 1000) / (Math.PI * Math.pow(D3 / 1000, 2) / 4);
+  return { enonce: `À un nœud arrivent deux conduites apportant ${n(Q1,0)} L/s et ${n(Q2,0)} L/s. Un branchement soutire ${n(Q4,0)} L/s. Le reste part dans une conduite de diamètre ${n(D3,0)} mm. Calculer le débit et la vitesse dans cette conduite.`,
+    champs: [{ lab: "Débit Q₃", val: Q3, unit: "L/s", tol: 0.02 },
+             { lab: "Vitesse U₃", val: U3, unit: "m/s", tol: 0.02 }],
+    sol: [`Loi des nœuds : \\(Q_3 = Q_1+Q_2-Q_4 = ${n(Q1,0)}+${n(Q2,0)}-${n(Q4,0)} = ${n(Q3,0)}\\) L/s`,
+          `\\(S_3 = \\pi D^2/4 = ${n(Math.PI*Math.pow(D3/1000,2)/4,4)}\\) m²`,
+          `\\(U_3 = ${n(Q3/1000,4)}/${n(Math.PI*Math.pow(D3/1000,2)/4,4)} = ${n(U3,2)}\\) m/s`] };
+}},
+
+/* ---------- Chapitre 4 ---------- */
+{ ch: 4, titre: "Bernoulli — conduite de section variable", f() {
+  const D1 = R(150, 400, 0), U1t = R(0.6, 2.2, 2), p1 = R(150, 500, 0);
+  const D2 = Math.round(D1 * R(0.45, 0.75, 2));
+  const Q = Math.round(U1t * Math.PI * Math.pow(D1 / 1000, 2) / 4 * 1000);
+  const S1 = Math.PI * Math.pow(D1 / 1000, 2) / 4, S2 = Math.PI * Math.pow(D2 / 1000, 2) / 4;
+  const V1 = (Q / 1000) / S1, V2 = (Q / 1000) / S2;
+  const p2 = p1 * 1000 - 0.5 * RHO * (V2 * V2 - V1 * V1);
+  return { enonce: `Une conduite horizontale passe du diamètre ${n(D1,0)} mm au diamètre ${n(D2,0)} mm. Elle transporte ${n(Q,0)} L/s d'eau et la pression relative en amont vaut ${n(p1,0)} kPa. Fluide parfait : calculer les deux vitesses et la pression en aval.`,
+    champs: [{ lab: "Vitesse V₁", val: V1, unit: "m/s", tol: 0.02 },
+             { lab: "Vitesse V₂", val: V2, unit: "m/s", tol: 0.02 },
+             { lab: "Pression p₂", val: p2 / 1000, unit: "kPa", tol: 0.03 }],
+    sol: [`\\(V_1 = Q/S_1 = ${n(V1,2)}\\) m/s ; \\(V_2 = Q/S_2 = ${n(V2,2)}\\) m/s`,
+          `Bernoulli (horizontal) : \\(p_2 = p_1-\\tfrac12\\rho(V_2^2-V_1^2)\\)`,
+          `\\(p_2 = ${n(p1*1000,0)}-0{,}5\\times1000\\times(${n(V2*V2,2)}-${n(V1*V1,2)}) = ${n(p2,0)}\\) Pa \\(= ${n(p2/1000,1)}\\) kPa`] };
+}},
+
+{ ch: 4, titre: "Vidange par un orifice (Torricelli)", f() {
+  const h = R(1, 9, 1), d = R(20, 120, 0), Cd = pick([0.61, 0.62, 0.60]);
+  const V = Math.sqrt(2 * G * h), s = Math.PI * Math.pow(d / 1000, 2) / 4, Q = Cd * s * V;
+  return { enonce: `Un réservoir se vide par un orifice en mince paroi de diamètre ${n(d,0)} mm situé ${n(h,1)} m sous la surface libre (C_d = ${n(Cd,2)}). Calculer la vitesse théorique de sortie et le débit réel.`,
+    champs: [{ lab: "Vitesse théorique V", val: V, unit: "m/s", tol: 0.02 },
+             { lab: "Débit Q", val: Q * 1000, unit: "L/s", tol: 0.03 }],
+    sol: [`\\(V = \\sqrt{2gh} = \\sqrt{2\\times9{,}81\\times${n(h,1)}} = ${n(V,2)}\\) m/s`,
+          `\\(s = \\pi d^2/4 = ${n(s,5)}\\) m²`,
+          `\\(Q = C_d\\,s\\,V = ${n(Cd,2)}\\times${n(s,5)}\\times${n(V,2)} = ${n(Q,5)}\\) m³/s \\(= ${n(Q*1000,2)}\\) L/s`] };
+}},
+
+{ ch: 4, titre: "Débitmètre venturi", f() {
+  const D1 = R(150, 400, 0), r = R(0.4, 0.6, 2), dp = R(8, 60, 0), Cq = 0.97;
+  const D2 = Math.round(D1 * r);
+  const S1 = Math.PI * Math.pow(D1 / 1000, 2) / 4, S2 = Math.PI * Math.pow(D2 / 1000, 2) / 4;
+  const Q = Cq * S2 * Math.sqrt(2 * dp * 1000 / (RHO * (1 - Math.pow(S2 / S1, 2))));
+  return { enonce: `Un venturi (C_q = 0,97) monté sur une conduite horizontale de ${n(D1,0)} mm présente un col de ${n(D2,0)} mm. La chute de pression mesurée entre l'amont et le col vaut ${n(dp,0)} kPa. Calculer le débit.`,
+    champs: [{ lab: "Débit Q", val: Q * 1000, unit: "L/s", tol: 0.03 }],
+    sol: [`\\(S_1 = ${n(S1,4)}\\) m² ; \\(S_2 = ${n(S2,4)}\\) m² ; \\(S_2/S_1 = ${n(S2/S1,3)}\\)`,
+          `\\(Q = C_q S_2\\sqrt{\\dfrac{2\\Delta p}{\\rho\\,(1-(S_2/S_1)^2)}}\\)`,
+          `\\(Q = ${n(Cq,2)}\\times${n(S2,4)}\\times\\sqrt{\\dfrac{2\\times${n(dp*1000,0)}}{1000\\times${n(1-Math.pow(S2/S1,2),3)}}} = ${n(Q,4)}\\) m³/s \\(= ${n(Q*1000,1)}\\) L/s`] };
+}},
+
+{ ch: 4, titre: "Puissance d'une turbine", f() {
+  const Q = R(0.5, 8, 1), H = R(8, 90, 0), eta = R(0.80, 0.92, 2);
+  const P = eta * RHO * G * Q * H;
+  return { enonce: `Une turbine reçoit ${n(Q,1)} m³/s sous une chute nette de ${n(H,0)} m ; son rendement global vaut ${n(eta,2)}. Calculer la puissance hydraulique disponible et la puissance produite.`,
+    champs: [{ lab: "Puissance hydraulique", val: RHO * G * Q * H / 1000, unit: "kW", tol: 0.02 },
+             { lab: "Puissance produite", val: P / 1000, unit: "kW", tol: 0.02 }],
+    sol: [`\\(P_h = \\rho g Q H = 9810\\times${n(Q,1)}\\times${n(H,0)} = ${n(RHO*G*Q*H,0)}\\) W \\(= ${n(RHO*G*Q*H/1000,1)}\\) kW`,
+          `\\(P = \\eta P_h = ${n(eta,2)}\\times${n(RHO*G*Q*H/1000,1)} = ${n(P/1000,1)}\\) kW`] };
+}},
+
+/* ---------- Chapitre 5 ---------- */
+{ ch: 5, titre: "Jet sur une plaque fixe", f() {
+  const d = R(20, 90, 0), V = R(8, 35, 1), ang = pick([90, 180, 135]);
+  const s = Math.PI * Math.pow(d / 1000, 2) / 4, Q = s * V;
+  const F = ang === 90 ? RHO * Q * V : (ang === 180 ? 2 * RHO * Q * V
+        : RHO * Q * V * Math.sqrt(Math.pow(1 + Math.cos(Math.PI * (180 - ang) / 180), 2) + Math.pow(Math.sin(Math.PI * (180 - ang) / 180), 2)));
+  const txt = ang === 90 ? "une plaque plane perpendiculaire" : (ang === 180 ? "un auget qui le renvoie à 180°" : "un auget qui le dévie de 135°");
+  return { enonce: `Un jet d'eau de diamètre ${n(d,0)} mm et de vitesse ${n(V,1)} m/s frappe ${txt}. Calculer le débit et la force exercée sur l'obstacle.`,
+    champs: [{ lab: "Débit Q", val: Q * 1000, unit: "L/s", tol: 0.03 },
+             { lab: "Force F", val: F, unit: "N", tol: 0.03 }],
+    sol: [`\\(s = \\pi d^2/4 = ${n(s,5)}\\) m² ; \\(Q = sV = ${n(Q,4)}\\) m³/s`,
+          ang === 90 ? `Déviation à 90° : \\(F = \\rho Q V = 1000\\times${n(Q,4)}\\times${n(V,1)} = ${n(F,0)}\\) N`
+          : (ang === 180 ? `Déviation à 180° : \\(F = 2\\rho Q V = ${n(F,0)}\\) N`
+          : `Déviation à 135° : \\(F = \\rho QV\\sqrt{(1+\\cos45°)^2+\\sin^2 45°} = ${n(F,0)}\\) N`)] };
+}},
+
+{ ch: 5, titre: "Effort sur un coude à 90°", f() {
+  const D = R(150, 500, 0), Vt = R(0.8, 2.5, 2), p = R(100, 500, 0);
+  const S = Math.PI * Math.pow(D / 1000, 2) / 4;
+  const Q = Math.round(Vt * S * 1000), V = (Q / 1000) / S;
+  const Fx = p * 1000 * S + RHO * (Q / 1000) * V;
+  const Fr = Fx * Math.SQRT2;
+  return { enonce: `Un coude horizontal à 90°, de diamètre constant ${n(D,0)} mm, transite ${n(Q,0)} L/s sous une pression relative de ${n(p,0)} kPa (supposée uniforme). Calculer la composante de l'effort d'ancrage selon chaque direction, puis sa résultante.`,
+    champs: [{ lab: "Composante (par direction)", val: Fx / 1000, unit: "kN", tol: 0.03 },
+             { lab: "Résultante", val: Fr / 1000, unit: "kN", tol: 0.03 }],
+    sol: [`\\(S = ${n(S,4)}\\) m² ; \\(V = Q/S = ${n(V,2)}\\) m/s`,
+          `Sur chaque branche : \\(pS + \\rho QV = ${n(p*1000*S,0)} + ${n(RHO*(Q/1000)*V,0)} = ${n(Fx,0)}\\) N`,
+          `Les deux composantes étant perpendiculaires : \\(F = ${n(Fx/1000,1)}\\sqrt2 = ${n(Fr/1000,1)}\\) kN, dirigée à 45° vers l'extérieur du coude`] };
+}},
+
+/* ---------- Chapitre 6 ---------- */
+{ ch: 6, titre: "Nombre de Reynolds et régime", f() {
+  const D = R(20, 400, 0), U = R(0.05, 3, 2), nu = pick([1e-6, 1e-5, 4e-5, 1e-4]);
+  const Re = U * (D / 1000) / nu;
+  const reg = Re < 2000 ? "laminaire" : (Re < 4000 ? "transition" : "turbulent");
+  return { enonce: `Un fluide de viscosité cinématique ν = ${nu.toExponential(0).replace('e-','·10⁻')} m²/s circule à ${n(U,2)} m/s dans une conduite de ${n(D,0)} mm. Calculer le nombre de Reynolds et préciser le régime.`,
+    champs: [{ lab: "Reynolds Re", val: Re, unit: "—", tol: 0.03 }],
+    sol: [`\\(Re = \\dfrac{UD}{\\nu} = \\dfrac{${n(U,2)}\\times${n(D/1000,3)}}{${nu.toExponential(0)}} = ${n(Re,0)}\\)`,
+          `Seuils : \\(Re<2000\\) laminaire, \\(2000<Re<4000\\) transition, \\(Re>4000\\) turbulent → régime **${reg}**`] };
+}},
+
+{ ch: 6, titre: "Perte de charge en régime laminaire", f() {
+  const D = R(20, 80, 0), L = R(20, 300, 0);
+  const nu = pick([4e-5, 8e-5, 1.2e-4]), rho = R(850, 920, 0);
+  const S = Math.PI * Math.pow(D / 1000, 2) / 4;
+  const Umax = 1700 * nu / (D / 1000);
+  const Q = Math.max(0.1, Math.round(R(0.35, 0.9, 2) * Umax * S * 1000 * 10) / 10);
+  const U = (Q / 1000) / S;
+  const Re = U * (D / 1000) / nu, lam = 64 / Re;
+  const dH = lam * L / (D / 1000) * U * U / (2 * G), dp = rho * G * dH;
+  return { enonce: `Une huile (ρ = ${n(rho,0)} kg/m³, ν = ${nu.toExponential(0)} m²/s) circule à ${n(Q,1)} L/s dans une conduite de ${n(D,0)} mm de diamètre et ${n(L,0)} m de longueur. Vérifier le régime, puis calculer la perte de charge et la chute de pression.`,
+    champs: [{ lab: "Reynolds Re", val: Re, unit: "—", tol: 0.03 },
+             { lab: "Perte de charge ΔH", val: dH, unit: "m", tol: 0.04 },
+             { lab: "Chute de pression Δp", val: dp / 1000, unit: "kPa", tol: 0.04 }],
+    sol: [`\\(U = Q/S = ${n(U,2)}\\) m/s ; \\(Re = ${n(Re,0)}\\) → laminaire (si < 2000)`,
+          `\\(\\lambda = 64/Re = ${n(lam,4)}\\)`,
+          `\\(\\Delta H = \\lambda\\dfrac{L}{D}\\dfrac{U^2}{2g} = ${n(lam,4)}\\times\\dfrac{${n(L,0)}}{${n(D/1000,3)}}\\times${n(U*U/(2*G),4)} = ${n(dH,2)}\\) m`,
+          `\\(\\Delta p = \\rho g\\Delta H = ${n(dp/1000,1)}\\) kPa`] };
+}},
+
+{ ch: 6, titre: "Perte de charge en régime turbulent (Colebrook)", f() {
+  const D = R(100, 500, 0), L = R(200, 4000, 0), Ut = R(0.6, 2.4, 2);
+  const eps = pick([0.0015, 0.05, 0.1, 1]);
+  const S = Math.PI * Math.pow(D / 1000, 2) / 4;
+  const Q = Math.round(Ut * S * 1000), U = (Q / 1000) / S;
+  const Re = U * (D / 1000) / NU, rr = (eps / 1000) / (D / 1000), lam = colebrook(Re, rr);
+  const dH = lam * L / (D / 1000) * U * U / (2 * G);
+  return { enonce: `De l'eau (ν = 10⁻⁶ m²/s) circule à ${n(Q,0)} L/s dans une conduite de ${n(D,0)} mm de diamètre et ${n(L,0)} m de longueur, de rugosité ε = ${n(eps,4)} mm. Calculer la vitesse, le Reynolds, le coefficient λ et la perte de charge linéaire.`,
+    champs: [{ lab: "Vitesse U", val: U, unit: "m/s", tol: 0.02 },
+             { lab: "Reynolds Re", val: Re, unit: "—", tol: 0.03 },
+             { lab: "Coefficient λ", val: lam, unit: "—", tol: 0.06 },
+             { lab: "Perte ΔH", val: dH, unit: "m", tol: 0.06 }],
+    sol: [`\\(U = Q/S = ${n(U,2)}\\) m/s ; \\(Re = ${Re.toExponential(2)}\\) → turbulent`,
+          `\\(\\varepsilon/D = ${rr.toExponential(2)}\\)`,
+          `Colebrook (ou Swamee–Jain / Moody) : \\(\\lambda = ${n(lam,4)}\\)`,
+          `\\(\\Delta H = \\lambda\\dfrac{L}{D}\\dfrac{U^2}{2g} = ${n(dH,2)}\\) m`] };
+}},
+
+{ ch: 6, titre: "Station de pompage : HMT et puissance", f() {
+  const Q = R(10, 120, 0), Hg = R(10, 70, 0), dH = R(2, 25, 1), eta = R(0.62, 0.82, 2);
+  const HMT = Hg + dH, P = RHO * G * (Q / 1000) * HMT / eta;
+  return { enonce: `Une pompe doit relever ${n(Q,0)} L/s sur une hauteur géométrique de ${n(Hg,0)} m ; les pertes de charge totales valent ${n(dH,1)} m et le rendement du groupe est de ${n(eta,2)}. Calculer la HMT et la puissance absorbée.`,
+    champs: [{ lab: "HMT", val: HMT, unit: "m", tol: 0.02 },
+             { lab: "Puissance absorbée", val: P / 1000, unit: "kW", tol: 0.03 }],
+    sol: [`\\(HMT = H_g+\\sum\\Delta H = ${n(Hg,0)}+${n(dH,1)} = ${n(HMT,1)}\\) m`,
+          `\\(P = \\dfrac{\\rho g Q\\,HMT}{\\eta} = \\dfrac{9810\\times${n(Q/1000,3)}\\times${n(HMT,1)}}{${n(eta,2)}} = ${n(P,0)}\\) W \\(= ${n(P/1000,1)}\\) kW`] };
+}},
+
+/* ---------- Chapitre 7 ---------- */
+{ ch: 7, titre: "Modèle réduit en similitude de Froude", f() {
+  const lam = pick([20, 25, 30, 40, 50, 60]), Qp = R(200, 2500, 0), Fm = R(20, 150, 0), Vm = R(0.8, 3, 1);
+  const Qm = Qp / Math.pow(lam, 2.5), Fp = Fm * Math.pow(lam, 3), Vp = Vm * Math.sqrt(lam);
+  return { enonce: `Un évacuateur de crues devant transiter ${n(Qp,0)} m³/s est étudié sur un modèle au 1/${lam} en similitude de Froude. Sur le modèle on mesure une vitesse de ${n(Vm,1)} m/s et une force de ${n(Fm,0)} N. Calculer le débit à installer sur le modèle, ainsi que la vitesse et la force correspondantes sur le prototype.`,
+    champs: [{ lab: "Débit du modèle", val: Qm * 1000, unit: "L/s", tol: 0.03 },
+             { lab: "Vitesse prototype", val: Vp, unit: "m/s", tol: 0.02 },
+             { lab: "Force prototype", val: Fp / 1000, unit: "kN", tol: 0.03 }],
+    sol: [`\\(Q_m = Q_p/\\lambda^{5/2} = ${n(Qp,0)}/${lam}^{2{,}5} = ${n(Qm,4)}\\) m³/s \\(= ${n(Qm*1000,1)}\\) L/s`,
+          `\\(V_p = V_m\\sqrt{\\lambda} = ${n(Vm,1)}\\times${n(Math.sqrt(lam),2)} = ${n(Vp,2)}\\) m/s`,
+          `\\(F_p = F_m\\lambda^3 = ${n(Fm,0)}\\times${lam}^3 = ${n(Fp,0)}\\) N \\(= ${n(Fp/1000,1)}\\) kN`] };
+}},
+
+/* ---------- Chapitre 8 ---------- */
+{ ch: 8, titre: "Canal rectangulaire — Manning-Strickler", f() {
+  const b = R(1, 6, 1), h = R(0.3, 2.2, 2), i = R(0.0003, 0.01, 4), K = pick([30, 40, 50, 60, 70, 85]);
+  const S = b * h, Pm = b + 2 * h, Rh = S / Pm;
+  const U = K * Math.pow(Rh, 2 / 3) * Math.sqrt(i), Q = U * S, Fr = U / Math.sqrt(G * h);
+  return { enonce: `Un canal rectangulaire de largeur ${n(b,1)} m, de pente ${n(i*1000,2)} ‰ et de coefficient de Strickler K = ${K} m^⅓/s, transporte l'eau sur une profondeur de ${n(h,2)} m. Calculer le rayon hydraulique, le débit, la vitesse et le nombre de Froude.`,
+    champs: [{ lab: "Rayon hydraulique", val: Rh, unit: "m", tol: 0.02 },
+             { lab: "Vitesse U", val: U, unit: "m/s", tol: 0.03 },
+             { lab: "Débit Q", val: Q, unit: "m³/s", tol: 0.03 },
+             { lab: "Froude Fr", val: Fr, unit: "—", tol: 0.03 }],
+    sol: [`\\(S = bh = ${n(S,3)}\\) m² ; \\(P_m = b+2h = ${n(Pm,2)}\\) m ; \\(R_h = ${n(Rh,3)}\\) m`,
+          `\\(U = K R_h^{2/3}\\sqrt i = ${K}\\times${n(Math.pow(Rh,2/3),3)}\\times${n(Math.sqrt(i),4)} = ${n(U,2)}\\) m/s`,
+          `\\(Q = US = ${n(Q,3)}\\) m³/s`,
+          `\\(Fr = U/\\sqrt{gh} = ${n(Fr,2)}\\) → régime ${Fr < 1 ? "fluvial" : "torrentiel"}`] };
+}},
+
+{ ch: 8, titre: "Ressaut hydraulique — hauteurs conjuguées", f() {
+  const h1 = R(0.15, 0.6, 2), Fr1t = R(1.8, 6, 1);
+  const q = Math.round(Fr1t * Math.sqrt(G * h1) * h1 * 10) / 10;
+  const U1 = q / h1, Fr1 = U1 / Math.sqrt(G * h1);
+  const h2 = h1 / 2 * (Math.sqrt(1 + 8 * Fr1 * Fr1) - 1);
+  const dE = Math.pow(h2 - h1, 3) / (4 * h1 * h2);
+  return { enonce: `Dans un canal rectangulaire, le débit par unité de largeur vaut q = ${n(q,1)} m²/s et la profondeur amont (torrentielle) est h₁ = ${n(h1,2)} m. Calculer le Froude amont, la profondeur conjuguée h₂ et la perte d'énergie dans le ressaut.`,
+    champs: [{ lab: "Froude Fr₁", val: Fr1, unit: "—", tol: 0.03 },
+             { lab: "Profondeur h₂", val: h2, unit: "m", tol: 0.03 },
+             { lab: "Perte d'énergie ΔE", val: dE, unit: "m", tol: 0.05 }],
+    sol: [`\\(U_1 = q/h_1 = ${n(U1,2)}\\) m/s ; \\(Fr_1 = U_1/\\sqrt{gh_1} = ${n(Fr1,2)}\\)`,
+          `\\(h_2 = \\dfrac{h_1}{2}\\left(\\sqrt{1+8Fr_1^2}-1\\right) = ${n(h2,3)}\\) m`,
+          `\\(\\Delta E = \\dfrac{(h_2-h_1)^3}{4h_1h_2} = ${n(dE,3)}\\) m`] };
+}},
+];
+
+
+
+</script>
+<script>
+/* ---------------- état ---------------- */
+const CH = { 1: "Propriétés des fluides", 2: "Hydrostatique", 3: "Cinématique", 4: "Fluide parfait — Bernoulli", 5: "Quantité de mouvement", 6: "Fluides réels — pertes de charge", 7: "Similitude", 8: "Surface libre" };
+let filtre = new Set(Object.keys(CH).map(Number));
+let courant = null, score = { tot: 0, bons: 0, serie: 0, best: 0, essais: 0 };
+
+const $ = s => document.querySelector(s);
+const num = v => {
+  if (typeof v !== 'string') return NaN;
+  const t = v.trim().replace(/\s/g, '').replace(',', '.').replace(/[^0-9.eE+\-]/g, '');
+  return t === '' ? NaN : parseFloat(t);
+};
+const fmt = v => {
+  if (Math.abs(v) >= 1e5 || (Math.abs(v) < 1e-3 && v !== 0)) return v.toExponential(3).replace('.', ',');
+  const d = Math.abs(v) >= 100 ? 1 : (Math.abs(v) >= 10 ? 2 : 3);
+  return v.toFixed(d).replace('.', ',');
+};
+const typeset = el => { if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]).catch(() => {}); };
+
+/* ---------------- filtres ---------------- */
+function buildFiltres() {
+  const boxes = [document.getElementById('filtres'), document.getElementById('filtres2')].filter(Boolean);
+  const maj = () => {
+    const nb = GENS.filter(g => filtre.has(g.ch)).length;
+    const d = document.getElementById('dispo');
+    if (d) d.textContent = nb + ' type' + (nb > 1 ? 's' : '') + ' d\u2019exercices s\u00e9lectionn\u00e9s sur ' + GENS.length;
+    boxes.forEach(b => [...b.children].forEach(btn => btn.classList.toggle('on', filtre.has(+btn.dataset.ch))));
+  };
+  Object.entries(CH).forEach(([k, v]) => {
+    boxes.forEach(box => {
+      const b = document.createElement('button');
+      b.className = 'chip on'; b.dataset.ch = k; b.textContent = 'Ch. ' + k + ' \u2014 ' + v;
+      b.onclick = () => {
+        const num = +k;
+        if (filtre.has(num)) { if (filtre.size === 1) return; filtre.delete(num); }
+        else filtre.add(num);
+        maj();
+      };
+      box.appendChild(b);
+    });
+  });
+  maj();
+}
+
+/* ---------------- entraînement ---------------- */
+function nouvelExo() {
+  const pool = GENS.filter(g => filtre.has(g.ch));
+  const g = pool[Math.floor(Math.random() * pool.length)];
+  const e = g.f();
+  courant = { g, e, resolu: false };
+  const z = $('#exo');
+  z.innerHTML = `
+    <div class="tete"><span class="badge">Chapitre ${g.ch}</span><h3>${g.titre}</h3></div>
+    <p class="enonce">${e.enonce}</p>
+    <div class="reponses">${e.champs.map((c, i) => `
+      <div class="rep" id="rep${i}">
+        <label for="in${i}">${c.lab}</label>
+        <div class="ligne"><input id="in${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="valeur"><span class="unit">${c.unit}</span></div>
+        <p class="verdict" id="v${i}"></p>
+      </div>`).join('')}
+    </div>
+    <div class="actions">
+      <button class="btn primaire" id="valider">Vérifier</button>
+      <button class="btn" id="voir">Voir la correction</button>
+      <button class="btn" id="suivant">Exercice suivant</button>
+    </div>
+    <div class="correction" id="corr" hidden></div>`;
+  $('#valider').onclick = verifier;
+  $('#voir').onclick = () => montrerCorrection(false);
+  $('#suivant').onclick = nouvelExo;
+  z.querySelectorAll('input').forEach((inp, i) => inp.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); const n = z.querySelector('#in' + (i + 1)); n ? n.focus() : verifier(); }
+  }));
+  $('#in0') && $('#in0').focus();
+  typeset(z);
+  majScore();
+}
+
+function verifier() {
+  if (!courant || courant.resolu) return;
+  const { e } = courant;
+  let tousBons = true;
+  e.champs.forEach((c, i) => {
+    const v = num($('#in' + i).value), vd = $('#v' + i), rep = $('#rep' + i);
+    rep.classList.remove('juste', 'faux');
+    if (isNaN(v)) { vd.textContent = 'saisissez une valeur'; vd.className = 'verdict neutre'; tousBons = false; return; }
+    const ecart = Math.abs(v - c.val) / Math.abs(c.val);
+    if (ecart <= c.tol) {
+      vd.textContent = '✓ correct'; vd.className = 'verdict ok'; rep.classList.add('juste');
+    } else {
+      const fac = v / c.val;
+      let indice = '';
+      if (Math.abs(Math.log10(Math.abs(fac))) > 0.7 && Math.abs(Math.log10(Math.abs(fac)) % 1) < 0.12) indice = ' — erreur de puissance de 10 (unités ?)';
+      else if (ecart < 0.25) indice = ' — proche : arrondis intermédiaires ?';
+      vd.textContent = '✗ à revoir' + indice; vd.className = 'verdict ko'; rep.classList.add('faux');
+      tousBons = false;
+    }
+  });
+  if (!tousBons) score.essais++;
+  if (tousBons) {
+    courant.resolu = true;
+    score.tot++; score.bons++; score.serie++; score.best = Math.max(score.best, score.serie);
+    montrerCorrection(true);
+  }
+  majScore();
+}
+
+function montrerCorrection(reussi) {
+  const { e } = courant;
+  if (!courant.resolu && !reussi) { score.tot++; score.serie = 0; courant.resolu = true; }
+  const c = $('#corr');
+  c.hidden = false;
+  c.innerHTML = `<h4>${reussi ? 'Correct — démarche détaillée' : 'Correction'}</h4>
+    <ol>${e.sol.map(s => '<li>' + s + '</li>').join('')}</ol>
+    <div class="valeurs">${e.champs.map(x => `<span><b>${x.lab}</b> = ${fmt(x.val)} ${x.unit}</span>`).join('')}</div>`;
+  typeset(c);
+  majScore();
+  if (c.scrollIntoView) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function majScore() {
+  $('#sc-tot').textContent = score.tot;
+  $('#sc-bons').textContent = score.bons;
+  $('#sc-pct').textContent = score.tot ? Math.round(100 * score.bons / score.tot) + '%' : '—';
+  $('#sc-serie').textContent = score.serie + (score.best > 2 ? ' (record ' + score.best + ')' : '');
+  const e = $('#sc-essais'); if (e) e.textContent = score.essais;
+}
+
+/* ---------------- feuille de TD ---------------- */
+function genererFeuille() {
+  const nb = +$('#nbExos').value;
+  const avecCorr = $('#avecCorr').checked;
+  const pool = GENS.filter(g => filtre.has(g.ch));
+  const tirés = [];
+  const restants = [...pool];
+  for (let i = 0; i < nb; i++) {
+    if (!restants.length) restants.push(...pool);
+    const k = Math.floor(Math.random() * restants.length);
+    const g = restants.splice(k, 1)[0];
+    tirés.push({ g, e: g.f() });
+  }
+  const d = new Date().toLocaleDateString('fr-FR');
+  const z = $('#feuille');
+  z.innerHTML = `
+    <div class="entete-td">
+      <div><strong>ENIS Sfax — Génie civil, semestre 1</strong><br>Mécanique des fluides — feuille d’exercices</div>
+      <div class="dt">${d}<br>Nom : ............................</div>
+    </div>
+    ${tirés.map((t, i) => `
+      <div class="exo-td">
+        <h4>Exercice ${i + 1} <span class="chref">(chapitre ${t.g.ch} — ${t.g.titre})</span></h4>
+        <p>${t.e.enonce}</p>
+        <p class="dem">Réponses attendues : ${t.e.champs.map(c => c.lab + ' (' + c.unit + ')').join(' ; ')}</p>
+        <div class="espace"></div>
+      </div>`).join('')}
+    ${avecCorr ? `<div class="corrige">
+      <h3>Corrigé</h3>
+      ${tirés.map((t, i) => `<div class="exo-td"><h4>Exercice ${i + 1}</h4>
+        <ol>${t.e.sol.map(s => '<li>' + s + '</li>').join('')}</ol>
+        <p class="res">${t.e.champs.map(c => c.lab + ' = <b>' + fmt(c.val) + ' ' + c.unit + '</b>').join(' &nbsp;·&nbsp; ')}</p></div>`).join('')}
+    </div>` : ''}`;
+  typeset(z);
+  $('#imprimer').hidden = false;
+}
+
+/* ---------------- onglets ---------------- */
+function onglets() {
+  document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('actif', x === t));
+    document.querySelectorAll('.vue').forEach(v => v.hidden = v.id !== t.dataset.vue);
+  });
+}
+
+/* ---------------- init ---------------- */
+buildFiltres();
+onglets();
+nouvelExo();
+$('#nouveau').onclick = nouvelExo;
+$('#generer').onclick = genererFeuille;
+$('#imprimer').onclick = () => window.print();
+$('#raz').onclick = () => { score = { tot: 0, bons: 0, serie: 0, best: 0, essais: 0 }; majScore(); };
+
+</script>
+</body>
+</html>
