@@ -5,7 +5,7 @@ ASSETS.push('./engineering.css', './src/engineering.js', './src/engineering-solv
 // Les equations doivent rester lisibles hors connexion ; cours.html (3,4 Mo) et
 // exerciseur.html sont mis en cache a la premiere visite, pas a l installation.
 ASSETS.push('./vendor/mathjax/tex-chtml.js');
-ASSETS.push('./studio.css','./src/mesh-solver.js','./src/network-studio.js','./src/technical-library.js','./src/project-store.js','./src/pdf-report.js','./src/basemap-store.js');
+ASSETS.push('./src/geo.js','./studio.css','./src/mesh-solver.js','./src/network-studio.js','./src/technical-library.js','./src/project-store.js','./src/pdf-report.js','./src/basemap-store.js');
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => { if (event.request.method !== "GET") return; event.respondWith(fetch(event.request).then(response => { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); return response; }).catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))); });
