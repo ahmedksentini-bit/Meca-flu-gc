@@ -1,0 +1,14 @@
+# Cloudflare Pages: scripts, styles, data and the polycopié are revalidated on
+# every visit — they change content under the same URL (no hash in the name).
+# A 304 answers when nothing changed. (The zone-wide browser cache TTL set in
+# Cloudflare may override this file: the service worker revalidates anyway.)
+/src/*
+  Cache-Control: public, max-age=0, must-revalidate
+/data/*
+  Cache-Control: public, max-age=0, must-revalidate
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+/docs/*
+  Cache-Control: public, max-age=0, must-revalidate
+/sw.js
+  Cache-Control: no-cache
