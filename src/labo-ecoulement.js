@@ -1,0 +1,452 @@
+// Laboratoire virtuel — écoulements en charge (chapitres 3, 4 et 6).
+//
+// Prolonge le moteur hydrostatique (labo-physique.js) : les conduites relient
+// réservoirs, sorties à l'air libre, pompes et raccords en « chaînes » série ;
+// chaque chaîne est résolue en régime quasi permanent par Bernoulli généralisé,
+//   H_amont − H_aval + H_pompe(Q) = Σ pertes(Q),
+// en fluide parfait (seule l'énergie cinétique de sortie est perdue) ou réel
+// (Darcy–Weisbach, λ de Colebrook, pertes singulières). Les niveaux évoluent
+// ensuite dans le temps (vidange, remplissage) par bilan de volume.
+import * as P from './labo-physique.js';
+import { darcyFriction } from './solvers.js';
+
+const aire = D => Math.PI * D * D / 4;
+const fini = v => typeof v === 'number' && Number.isFinite(v);
+export const MODES = { illustratif: 'Illustratif (équilibre rapide)', parfait: 'Fluide parfait (ch. 4)', reel: 'Fluide réel (ch. 6)' };
+export const KS = { entree: 0.5, sortie: 1, venturi: 0.15 };
+
+// Vanne à opercule : K croît très vite à la fermeture (table usuelle 1 ; 5,7 ; 28 ; 120
+// pour 1, 3/4, 1/2, 1/4 d'ouverture, rapportée à K = 0,2 en pleine ouverture).
+const COURBE_VANNE = [[1, 1], [0.75, 5.75], [0.5, 28], [0.25, 120], [0.1, 900]];
+export function kVanne(v) {
+  // une vanne posée sans réglage d'ouverture est grande ouverte
+  const ouv = fini(v.ouverture) ? v.ouverture : 1;
+  if (!v.ouverte || !(ouv > 0)) return Infinity;
+  const a = Math.min(1, ouv), K0 = fini(v.Kv) ? v.Kv : 0.2;
+  let r;
+  if (a >= 1) r = 1;
+  else if (a < 0.1) r = 900 * (0.1 / a) ** 2;
+  else for (let i = 1; i < COURBE_VANNE.length; i++) {
+    const [a1, k1] = COURBE_VANNE[i - 1], [a2, k2] = COURBE_VANNE[i];
+    if (a >= a2) { const u = (a - a2) / (a1 - a2); r = Math.exp(Math.log(k2) + u * (Math.log(k1) - Math.log(k2))); break; }
+  }
+  return K0 + 0.2 * (r - 1);
+}
+
+// Débitmètre de Venturi (ex. 4.5) et tube de Pitot double (ex. 4.4).
+export function debitVenturi({ dh, D1, d, Cq = 0.98, rho = 1000, rhoM = 13600, g = P.G }) {
+  const dp = (rhoM - rho) * g * dh, S1 = aire(D1), S2 = aire(d);
+  return Cq * S2 * Math.sqrt(2 * dp / (rho * (1 - (S2 / S1) ** 2)));
+}
+export const vitessePitot = ({ dh, rho = 1000, rhoM = 13600, g = P.G }) => Math.sqrt(2 * (rhoM - rho) * g * dh / rho);
+
+// ---------- chaînes de conduites ----------
+const autrePort = (el, port) => (el.type === 'pompe' ? (port === 'asp' ? 'ref' : 'asp') : el.type === 'raccord' ? (port === 'a' ? 'b' : 'a') : null);
+const terminal = el => !el || el.type === 'reservoir' || el.type === 'exutoire';
+export function chaines(scene, idx = P.indexer(scene)) {
+  const conduites = scene.elements.filter(e => e.type === 'conduite');
+  const parPort = new Map();
+  for (const c of conduites) for (const k of ['a', 'b']) {
+    const cle = `${c[k].el}:${c[k].port}`;
+    if (!parPort.has(cle)) parPort.set(cle, []);
+    parPort.get(cle).push({ c, bout: k });
+  }
+  const vus = new Set(), res = [];
+  for (const c0 of conduites) {
+    if (vus.has(c0.id)) continue;
+    // On remonte côté « a » jusqu'à un réservoir, une sortie ou un port libre.
+    let c = c0, bout = 'a', complet = true;
+    for (let g = 0; g < 100; g++) {
+      const q = c[bout], el = idx.get(q.el);
+      if (terminal(el)) break;
+      const ap = autrePort(el, q.port), suiv = (parPort.get(`${el.id}:${ap}`) || []).find(o => o.c !== c);
+      if (!suiv) { complet = false; break; }
+      c = suiv.c; bout = suiv.bout === 'a' ? 'b' : 'a';
+    }
+    // Puis on parcourt la chaîne dans l'autre sens.
+    const items = [];
+    let entree = bout, Y = null;
+    const X = c[entree];
+    for (let g = 0; g < 100; g++) {
+      if (vus.has(c.id)) { complet = false; break; }
+      vus.add(c.id);
+      const sortie = entree === 'a' ? 'b' : 'a';
+      items.push({ type: 'conduite', c, sens: entree === 'a' ? 1 : -1 });
+      const q = c[sortie], el = idx.get(q.el);
+      if (terminal(el)) { Y = q; break; }
+      const ap = autrePort(el, q.port);
+      items.push({ type: el.type, el, entre: q.port });
+      const suiv = (parPort.get(`${el.id}:${ap}`) || []).find(o => o.c !== c);
+      if (!suiv) { complet = false; break; }
+      c = suiv.c; entree = suiv.bout;
+    }
+    if (!terminal(idx.get(X.el))) complet = false;
+    res.push({ id: items.filter(i => i.type === 'conduite').map(i => i.c.id).join('+'), X, Y, items, complet: complet && !!Y });
+  }
+  return res;
+}
+
+// Charge d'un bout de chaîne pour un liquide de masse volumique rho.
+function bout(scene, A, q) {
+  const el = A.idx.get(q.el);
+  if (el.type === 'exutoire') return { type: 'sortie', el, z: el.z, p: 0, couche: null, libre: true };
+  const e = A.etats.get(el.id), Pt = P.resoudre(scene, q, A.idx);
+  const n = P.coucheA(e, Pt.z);
+  return { type: 'reservoir', el, e, x: Pt.x, z: Pt.z, port: Pt, p: P.pressionDans(e, Pt.z, A.ctx), couche: n, libre: !n };
+}
+
+// Résolution d'une chaîne : débit, pertes détaillées et profil de charge.
+function resoudreChaine(ch, scene, A, mode) {
+  const { ctx } = A, g = ctx.g;
+  const sol = { ch, Q: 0, dir: 1, raison: null };
+  if (!ch.complet) { sol.raison = 'Chaîne ouverte : un appareil n’est raccordé que d’un côté.'; return sol; }
+  const X = bout(scene, A, ch.X), Y = bout(scene, A, ch.Y);
+  for (const dir of [1, -1]) {
+    const S = dir > 0 ? X : Y, Dt = dir > 0 ? Y : X;
+    if (S.type !== 'reservoir' || !S.couche) continue;
+    const ordre = dir > 0 ? ch.items : ch.items.slice().reverse();
+    const fluide = S.couche.fluide, rho = S.couche.rho, f = ctx.fl(fluide), nu = f.mu / rho;
+    // Pompes : actives dans leur sens, clapet anti-retour sinon.
+    const pompes = ordre.filter(i => i.type === 'pompe').map(i => ({ el: i.el, actif: i.el.marche !== false && (dir > 0 ? i.entre === 'asp' : i.entre === 'ref') }));
+    if (pompes.some(p => !p.actif)) continue;
+    const tuyaux = ordre.filter(i => i.type === 'conduite').map(i => {
+      const c = i.c, vannes = P.vannesDe(scene, c), tr = A.conduites.get(c.id)?.tr;
+      return { c, sens: i.sens * dir, D: c.D, L: fini(c.Lreel) ? c.Lreel : (tr ? tr.L : 1), Lt: tr ? tr.L : 1, tr,
+        Kv: vannes.reduce((t, v) => t + kVanne(v), 0), vannes,
+        venturis: scene.elements.filter(e => e.type === 'venturi' && e.conduite === c.id) };
+    });
+    if (tuyaux.some(t => !Number.isFinite(t.Kv))) continue; // vanne fermée
+    const raccords = [];
+    ordre.forEach((it, k) => {
+      if (it.type !== 'raccord') return;
+      const avant = ordre.slice(0, k).reverse().find(o => o.type === 'conduite'), apres = ordre.slice(k + 1).find(o => o.type === 'conduite');
+      raccords.push({ el: it.el, D1: avant.c.D, D2: apres.c.D, iAvant: tuyaux.findIndex(t => t.c === avant.c) });
+    });
+    const sortieNoyee = Dt.type === 'reservoir' && !!Dt.couche;
+    const Hs = S.z + S.p / (rho * g);
+    const Hd = Dt.type === 'sortie' ? Dt.z : Dt.z + Dt.p / (rho * g);
+    // Pertes pour un débit Q (et leur détail quand on le demande).
+    const pertes = (Q, detail = false) => {
+      let total = 0;
+      const det = tuyaux.map((t, i) => {
+        const V = Q / aire(t.D), hv = V * V / (2 * g);
+        const d = { V, hv, Re: V * t.D / nu, lambda: 0, hf: 0, hK: 0, he: 0, hvannes: 0, hventuri: 0 };
+        if (mode === 'reel') {
+          d.lambda = fini(t.c.lambda) ? t.c.lambda : (Q > 0 ? darcyFriction(d.Re, (fini(t.c.rugo) ? t.c.rugo : 0.1) / 1000 / t.D) : 0);
+          d.hf = d.lambda * t.L / t.D * hv;
+          d.hK = (t.c.K || 0) * hv;
+          d.hvannes = t.Kv * hv;
+          if (i === 0 && t.c.Kauto !== false) d.he = KS.entree * hv;
+          for (const v of t.venturis) { const Vc = Q / aire(v.d); d.hventuri += KS.venturi * (Vc - V) ** 2 / (2 * g); }
+        }
+        total += d.hf + d.hK + d.hvannes + d.he + d.hventuri;
+        return d;
+      });
+      const rac = raccords.map(r => {
+        const V1 = Q / aire(r.D1), V2 = Q / aire(r.D2);
+        let h = 0;
+        if (mode === 'reel') h = r.D2 >= r.D1 ? (V1 - V2) ** 2 / (2 * g) : 0.5 * (1 - (r.D2 / r.D1) ** 2) * V2 * V2 / (2 * g);
+        total += h;
+        return { ...r, V1, V2, h };
+      });
+      const dl = det[det.length - 1];
+      // Énergie cinétique de sortie : toujours perdue à l'air libre ; dans un
+      // réservoir, perte de Borda (K = 1), incluse dans ΣK si l'utilisateur la saisit.
+      const derniere = tuyaux[tuyaux.length - 1];
+      const ks = mode === 'parfait' || !sortieNoyee || derniere.c.Kauto !== false ? 1 : 0;
+      const hs = ks * dl.hv;
+      total += hs;
+      return detail ? { total, det, rac, hs } : total;
+    };
+    const hPompes = Q => pompes.reduce((t, p) => t + (p.el.mode === 'courbe' ? p.el.H0 - p.el.k * Q * Q : 0), 0);
+    const imposee = pompes.find(p => p.el.mode === 'debit');
+    let Q;
+    if (imposee) Q = Math.max(0, imposee.el.Q);
+    else {
+      const F = Q => Hs - Hd + hPompes(Q) - pertes(Q);
+      if (!(F(1e-9) > 1e-6)) continue;
+      let hi = aire(Math.min(...tuyaux.map(t => t.D))) * Math.sqrt(2 * g * Math.max(1, Math.abs(Hs - Hd) + pompes.reduce((t, p) => t + p.el.H0, 0)));
+      for (let k = 0; k < 60 && F(hi) > 0; k++) hi *= 2;
+      let lo = 0;
+      for (let k = 0; k < 70; k++) { const m = (lo + hi) / 2; if (F(m) > 0) lo = m; else hi = m; }
+      Q = (lo + hi) / 2;
+    }
+    if (!(Q > 0)) continue;
+    const det = pertes(Q, true);
+    const Hcourbes = hPompes(Q);
+    const hmtImposee = imposee ? det.total - (Hs - Hd) - Hcourbes : 0;
+    Object.assign(sol, { Q, dir, ordre, S, Dt, Hs, Hd, fluide, rho, nu, tuyaux, raccords: det.rac, det: det.det, hs: det.hs, total: det.total, sortieNoyee,
+      pompes: pompes.map(p => {
+        const H = p.el.mode === 'courbe' ? p.el.H0 - p.el.k * Q * Q : hmtImposee;
+        return { el: p.el, H, Ph: rho * g * Q * H, Pabs: rho * g * Q * H / p.el.eta };
+      }) });
+    profil(sol, mode, g);
+    return sol;
+  }
+  return sol;
+}
+
+// Profil de charge H le long de la chaîne : pertes linéaires réparties, pertes
+// locales aux vannes, au venturi, aux raccords ; saut de charge à la pompe.
+function profil(sol, mode, g) {
+  let H = sol.Hs;
+  sol.parTuyau = new Map();
+  let iT = 0;
+  for (const it of sol.ordre) {
+    if (it.type === 'pompe') { H += sol.pompes.find(p => p.el === it.el).H; continue; }
+    if (it.type === 'raccord') { const r = sol.raccords.find(k => k.el === it.el); r.Hav = H; H -= r.h; r.Hap = H; continue; }
+    if (it.type !== 'conduite') continue;
+    const t = sol.tuyaux[iT], d = sol.det[iT];
+    iT++;
+    // u : abscisse réduite dans le sens de l'écoulement ; t = u ou 1 − u.
+    const vers = u => (t.sens > 0 ? u : 1 - u);
+    const evts = [];
+    for (const v of t.vannes) evts.push({ u: t.sens > 0 ? v.t : 1 - v.t, dH: mode === 'reel' ? kVanne(v) * d.hv : 0, vanne: v });
+    for (const v of t.venturis) evts.push({ u: t.sens > 0 ? v.t : 1 - v.t, dH: mode === 'reel' ? KS.venturi * (sol.Q / aire(v.d) - d.V) ** 2 / (2 * g) : 0, venturi: v });
+    evts.sort((a, b) => a.u - b.u);
+    const pente = d.hf + d.hK; // réparties sur la longueur
+    const pts = [];
+    H -= d.he;
+    pts.push({ u: 0, H: H + d.he }, { u: 0, H });
+    let u0 = 0;
+    for (const e of evts) {
+      H -= pente * (e.u - u0); u0 = e.u;
+      pts.push({ u: e.u, H }); H -= e.dH; pts.push({ u: e.u, H });
+      e.H = H;
+    }
+    H -= pente * (1 - u0);
+    pts.push({ u: 1, H });
+    // La perte de sortie (énergie cinétique du jet) se dessine après le dernier point.
+    const hsExit = iT === sol.tuyaux.length ? sol.hs : 0;
+    const points = pts.map(p => ({ t: vers(p.u), H: p.H }));
+    if (t.sens < 0) points.reverse();
+    // demi-largeur (en t) de la zone du col d'un venturi
+    const cols = t.venturis.map(v => ({ t: v.t, dt: 0.3 / Math.max(t.Lt, 0.6), hv: (sol.Q / aire(v.d)) ** 2 / (2 * g) }));
+    sol.parTuyau.set(t.c.id, { t, d, points, cols, evts, Hfin: H, hsExit, sortieT: vers(1) });
+  }
+}
+
+// Charge et hauteur dynamique en un point d'une conduite en écoulement.
+export function chargeEn(pt, t) {
+  const pts = pt.points;
+  let H = pts[0].H;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    if (t >= a.t - 1e-12 && t <= b.t + 1e-12) { H = b.t - a.t > 1e-12 ? a.H + (b.H - a.H) * (t - a.t) / (b.t - a.t) : (t <= a.t ? a.H : b.H); break; }
+  }
+  let hv = pt.d.hv;
+  for (const c of pt.cols) hv += (c.hv - pt.d.hv) * Math.max(0, 1 - Math.abs(t - c.t) / c.dt);
+  return { H, hv };
+}
+
+// ---------- orifices, sorties libres et jets ----------
+function trajectoire(scene, A, x0, z0, vx, vz, exclu = null) {
+  const g = A.ctx.g, zSol = fini(scene.env.zSol) ? scene.env.zSol : 0;
+  const pts = [{ x: x0, z: z0 }];
+  let cible = null, x = x0, z = z0, t = 0;
+  const dt = 0.01;
+  for (let i = 0; i < 4000; i++) {
+    t += dt;
+    const xn = x0 + vx * t, zn = z0 + vz * t - g * t * t / 2;
+    // entrée par le haut d'un réservoir ouvert
+    if (!cible) for (const r of scene.elements) {
+      if (r.type !== 'reservoir' || r.ferme || r === exclu) continue;
+      const zt = r.z + r.H;
+      if (z >= zt && zn < zt) {
+        const xc = x + (xn - x) * (z - zt) / (z - zn);
+        if (xc > r.x && xc < r.x + P.largeurA(r, r.H)) cible = r;
+      }
+    }
+    if (cible) {
+      const zl = A.etats.get(cible.id).zL;
+      if (zn <= zl) { pts.push({ x: xn, z: zl }); return { pts, cible, x: xn, z: zl }; }
+    } else if (zn <= zSol) {
+      const xs = x + (xn - x) * (z - zSol) / (z - zn);
+      pts.push({ x: xs, z: zSol });
+      return { pts, cible: null, x: xs, z: zSol, portee: xs - x0, chute: z0 - zSol };
+    }
+    if (i % 3 === 0) pts.push({ x: xn, z: zn });
+    x = xn; z = zn;
+  }
+  return { pts, cible: null, x, z };
+}
+function etatOrifice(o, scene, A) {
+  const r = A.idx.get(o.reservoir), e = A.etats.get(o.reservoir), g = A.ctx.g;
+  const R = P.repereParoi(r, o.paroi), pos = { x: R.ox + o.s * R.dx, z: R.oz + o.s * R.dz };
+  const n = P.coucheA(e, pos.z), p = P.pressionDans(e, pos.z, A.ctx);
+  const res = { o, r, pos, n: { x: R.nx, z: R.nz }, h: n ? p / (n.rho * g) : 0, Q: 0, V: 0, fluide: n ? n.fluide : null };
+  if (!o.ouvert || !n || !(res.h > 0)) return res;
+  const Vth = Math.sqrt(2 * g * res.h);
+  Object.assign(res, { Vth, V: o.Cv * Vth, Q: o.Cd * aire(o.d) * Vth, rho: n.rho });
+  res.jet = trajectoire(scene, A, pos.x, pos.z, res.V * R.nx, res.V * R.nz, r);
+  return res;
+}
+
+// ---------- analyse complète ----------
+export function appliquerEcoulement(scene, A) {
+  const mode = scene.env.ecoulement, g = A.ctx.g;
+  const E = { mode, chaines: [], parConduite: new Map(), orifices: new Map(), sorties: new Map(), robinets: new Map(), venturis: new Map(), transferts: [], jets: [] };
+  A.ecoulement = E;
+  A.alertesEcoulement = [];
+  for (const ch of chaines(scene, A.idx)) {
+    const sol = resoudreChaine(ch, scene, A, mode);
+    E.chaines.push(sol);
+    if (!ch.complet) A.alertesEcoulement.push({ id: ch.items[0]?.c.id, niveau: 'info', texte: `${ch.id} : ${sol.raison}` });
+    if (!(sol.Q > 0)) continue;
+    for (const [id, pt] of sol.parTuyau) {
+      E.parConduite.set(id, { sol, ...pt });
+      const ec = A.conduites.get(id);
+      if (!ec) continue;
+      // Les prises lisent désormais la ligne piézométrique (statique) ou la ligne de charge (Pitot).
+      const z = t => P.pointSurTrace(ec.tr, t).z;
+      ec.q = sol.Q * pt.t.sens; ec.sens = pt.t.sens; ec.ecoulement = true;
+      ec.troncons = [{ t0: 0, t1: 1, fluide: sol.fluide, cote: null }];
+      ec.en = t => { const c = chargeEn(pt, t); return { p: sol.rho * g * (c.H - c.hv - z(t)), fluide: sol.fluide, z: z(t) }; };
+      ec.enTotal = t => { const c = chargeEn(pt, t); return { p: sol.rho * g * (c.H - z(t)), fluide: sol.fluide, z: z(t) }; };
+      ec.deltas = pt.t.vannes.map(v => {
+        const e = pt.evts.find(k => k.vanne === v);
+        return { id: v.id, dp: sol.rho * g * (e ? e.dH : 0), z: z(v.t), ecoulement: true };
+      });
+      let pire = null;
+      for (let i = 0; i <= 120; i++) {
+        const q = ec.en(i / 120), pabs = q.p + A.ctx.patm;
+        if (!pire || pabs < pire.pabs) pire = { t: i / 120, pabs, fluide: sol.fluide, z: q.z, p: q.p };
+      }
+      ec.pire = pire;
+    }
+    // Sortie à l'air libre : jet dans l'axe du dernier tronçon.
+    if (sol.Dt.type === 'sortie' || !sol.sortieNoyee) {
+      const der = sol.tuyaux[sol.tuyaux.length - 1], ec = A.conduites.get(der.c.id);
+      const pts = ec.tr.pts, fin = der.sens > 0 ? pts[pts.length - 1] : pts[0], av = der.sens > 0 ? pts[pts.length - 2] : pts[1];
+      const lg = Math.hypot(fin.x - av.x, fin.z - av.z) || 1, V = sol.Q / aire(der.D);
+      const jet = trajectoire(scene, A, fin.x, fin.z, V * (fin.x - av.x) / lg, V * (fin.z - av.z) / lg, sol.Dt.type === 'reservoir' ? null : null);
+      // Une sortie au-dessus d'un réservoir le remplit ; sinon le liquide part au sol.
+      const dst = sol.Dt.type === 'reservoir' ? sol.Dt.el : jet.cible;
+      E.jets.push({ de: sol.Dt.type === 'sortie' ? sol.Dt.el.id : der.c.id, pts: sol.Dt.type === 'reservoir' ? [] : jet.pts, fluide: sol.fluide, Q: sol.Q, V, portee: jet.portee });
+      if (sol.Dt.type === 'sortie') E.sorties.set(sol.Dt.el.id, { V, Q: sol.Q, jet, sol });
+      E.transferts.push({ src: sol.S.el, port: sol.S.port, fluide: sol.fluide, Q: sol.Q, dst, sol });
+    } else E.transferts.push({ src: sol.S.el, port: sol.S.port, fluide: sol.fluide, Q: sol.Q, dst: sol.Dt.el, sol, H: sol.Hs - sol.Hd });
+    // Cavitation : la colonne se rompt si la pression absolue tombe sous p_v.
+    for (const [id] of sol.parTuyau) {
+      const ec = A.conduites.get(id), pv = A.ctx.fl(sol.fluide).pv;
+      if (ec && ec.pire && ec.pire.pabs < pv) A.alertesEcoulement.push({ id, niveau: 'alerte', texte: `${id} : pression absolue ${P.nombre(ec.pire.pabs / 1000, 2)} kPa < p<sub>v</sub> à z = ${P.nombre(ec.pire.z, 2)} m — la veine se rompt (cavitation, désamorçage).` });
+    }
+  }
+  // Venturis : chute de pression au col (Bernoulli entre l'entrée et le col) et
+  // lecture du manomètre différentiel intégré.
+  for (const v of scene.elements) {
+    if (v.type !== 'venturi') continue;
+    const c = A.idx.get(v.conduite), pc = E.parConduite.get(v.conduite), ec = A.conduites.get(v.conduite);
+    if (!c || !ec) continue;
+    const Q = pc ? pc.sol.Q : 0, rho = pc ? pc.sol.rho : A.ctx.rho(ec.en(v.t).fluide) || 1000, rhoM = A.ctx.rho(v.fluideM);
+    const V1 = Q / aire(c.D), V2 = Q / aire(v.d), dp = rho / 2 * (V2 * V2 - V1 * V1), dh = dp / ((rhoM - rho) * g);
+    const p1 = ec.en(v.t).p;
+    E.venturis.set(v.id, { v, Q, V1, V2, dp, dh, p1, p2: p1 - dp, Qmes: Q > 0 ? debitVenturi({ dh, D1: c.D, d: v.d, Cq: v.Cq, rho, rhoM, g }) : 0, rho, rhoM });
+    if (pc && p1 - dp + A.ctx.patm < A.ctx.fl(pc.sol.fluide).pv)
+      A.alertesEcoulement.push({ id: v.id, niveau: 'alerte', texte: `${v.id} : la pression absolue au col tombe sous p<sub>v</sub> — cavitation au col du venturi.` });
+  }
+  for (const o of scene.elements) {
+    if (o.type !== 'orifice' || !A.idx.get(o.reservoir)) continue;
+    const st = etatOrifice(o, scene, A);
+    E.orifices.set(o.id, st);
+    if (st.Q > 0) {
+      E.jets.push({ de: o.id, pts: st.jet.pts, fluide: st.fluide, Q: st.Q, V: st.V, portee: st.jet.portee });
+      E.transferts.push({ src: st.r, port: { z: st.pos.z, x: st.pos.x }, fluide: st.fluide, Q: st.Q, dst: st.jet.cible, orifice: o });
+    }
+  }
+  for (const b of scene.elements) {
+    if (b.type !== 'robinet') continue;
+    const st = { b, Q: b.ouvert ? b.Q : 0 };
+    if (st.Q > 0) {
+      st.jet = trajectoire(scene, A, b.x, b.z, 0, -0.3);
+      E.jets.push({ de: b.id, pts: st.jet.pts, fluide: b.fluide, Q: st.Q, V: 0.3 });
+      E.transferts.push({ src: null, fluide: b.fluide, Q: st.Q, dst: st.jet.cible, robinet: b });
+    }
+    E.robinets.set(b.id, st);
+  }
+  return E;
+}
+export function analyserTout(scene) {
+  const mode = scene.env.ecoulement || 'illustratif';
+  if (mode === 'illustratif') {
+    const A = P.analyser(scene);
+    if (scene.elements.some(e => ['orifice', 'pompe', 'exutoire', 'robinet', 'raccord', 'venturi'].includes(e.type)))
+      A.alertes.push({ id: '', niveau: 'info', texte: 'Mode illustratif : orifices, pompes et sorties libres sont inactifs. Choisissez « fluide parfait » ou « fluide réel » pour simuler l’écoulement.' });
+    return A;
+  }
+  return P.analyser(scene, { apresConduites: A => appliquerEcoulement(scene, A) });
+}
+
+// ---------- évolution dans le temps ----------
+function analyseLegere(scene) {
+  const ctx = P.contexte(scene), idx = P.indexer(scene), etats = new Map(), conduites = new Map();
+  for (const r of scene.elements) if (r.type === 'reservoir') etats.set(r.id, P.etatAvecFlotteurs(scene, r, ctx));
+  for (const c of scene.elements) if (c.type === 'conduite') { const ec = P.etatConduite(c, scene, ctx, etats, idx); if (ec) conduites.set(c.id, ec); }
+  const A = { ctx, idx, etats, conduites };
+  appliquerEcoulement(scene, A);
+  return A;
+}
+// Avance la simulation de « duree » secondes (temps simulé) ; renvoie vrai tant
+// qu'un débit circule. Le pas interne limite la variation de niveau.
+export function integrer(scene, duree, { dzMax = null, pasMax = 400 } = {}) {
+  let reste = duree, actif = false;
+  scene._t = scene._t || 0;
+  for (let n = 0; n < pasMax && reste > 1e-9; n++) {
+    const A = analyseLegere(scene), E = A.ecoulement;
+    const tr = E.transferts.filter(t => t.Q > 0);
+    if (!tr.length) break;
+    actif = true;
+    // Pas admissible : variation de niveau limitée dans chaque réservoir concerné.
+    const net = new Map();
+    for (const t of tr) {
+      if (t.src && !t.src.constant) net.set(t.src, (net.get(t.src) || 0) - t.Q);
+      if (t.dst && !t.dst.constant) net.set(t.dst, (net.get(t.dst) || 0) + t.Q);
+    }
+    let dt = reste;
+    for (const [r, q] of net) {
+      const e = A.etats.get(r.id), S = r.b * P.largeurA(r, Math.min(e.sL, r.H));
+      const lim = dzMax != null ? dzMax : Math.max(0.002, 0.004 * r.H);
+      if (Math.abs(q) > 1e-12) dt = Math.min(dt, lim * S / Math.abs(q));
+    }
+    // Entre deux réservoirs, on ne dépasse pas l'égalité des charges.
+    for (const t of tr) {
+      if (!t.src || !t.dst || !(t.H > 0)) continue;
+      const Sa = t.src.constant ? Infinity : t.src.b * P.largeurA(t.src, A.etats.get(t.src.id).sL);
+      const Sb = t.dst.constant ? Infinity : t.dst.b * P.largeurA(t.dst, Math.min(A.etats.get(t.dst.id).sL, t.dst.H));
+      const k = 1 / Sa + 1 / Sb;
+      if (k > 0) dt = Math.min(dt, 0.3 * t.H / (k * t.Q));
+    }
+    dt = Math.max(dt, duree / pasMax);
+    for (const t of tr) {
+      let dV = t.Q * dt;
+      if (t.src) {
+        // Pas plus que le liquide situé au-dessus du piquage.
+        const e = A.etats.get(t.src.id), n = P.coucheA(e, t.port.z);
+        if (!n) continue;
+        if (!t.src.constant) {
+          const dispo = P.volumeSous(t.src, n.s1, e.obs) - P.volumeSous(t.src, t.port.z - t.src.z, e.obs);
+          dV = Math.min(dV, Math.max(0, dispo));
+        }
+        P.retirerFluide(t.src, A.ctx, t.fluide, dV);
+      }
+      if (t.dst) P.ajouterFluide(scene, t.dst, A.ctx, t.fluide, dV);
+      else scene._perdu = (scene._perdu || 0) + dV;
+    }
+    reste -= dt;
+    scene._t += dt;
+  }
+  if (!actif) {
+    // Rien ne coule : le temps avance quand même (chronomètre).
+    scene._t += Math.max(0, reste);
+  }
+  return actif;
+}
+export function avancer(scene, dt) {
+  const mode = scene.env.ecoulement || 'illustratif';
+  if (mode === 'illustratif') return P.avancer(scene, dt);
+  return integrer(scene, dt * (fini(scene.env.vitesse) ? scene.env.vitesse : 1));
+}
+export function equilibrer(scene) {
+  if ((scene.env.ecoulement || 'illustratif') === 'illustratif') return P.equilibrer(scene);
+  return { converge: true };
+}

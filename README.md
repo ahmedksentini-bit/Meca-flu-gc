@@ -16,7 +16,7 @@ Application web statique et PWA d’exercices de mécanique des fluides pour le 
 
 Le **Bureau de calcul** complète le parcours pédagogique avec une interface de logiciel : saisie directe des données, recalcul instantané, schéma physique, résultats et note de calcul pour les conduites, le pompage, Bernoulli, l’hydrostatique et les écoulements à surface libre.
 
-### Laboratoire virtuel (chapitres 1 et 2)
+### Laboratoire virtuel (chapitres 1, 2, 3, 4 et 6)
 
 `labo.html` est un banc d’hydrostatique à monter soi-même : réservoirs ouverts, fermés (ciel à pression imposée ou gaz piégé isotherme) ou à paroi inclinée, couches de liquides non miscibles (eau, eau de mer, huile, essence, glycérine, tétrachlorure, mercure, liquide personnalisé), conduites et vannes, piézomètres, manomètres à cadran, tubes en U simples, différentiels ou renversés, vannes planes (rectangle, cercle, triangle ; charnière ou levage en glissières avec frottement) et flotteurs, pleins ou caissons creux ballastables. Un réservoir peut garder un niveau imposé (mer, nappe, grande retenue) et se représenter comme un terrain saturé.
 
@@ -24,7 +24,11 @@ Les éléments se glissent depuis la palette et s’accrochent aux piquages des 
 
 Dix-sept expériences guidées reprennent les exercices 2.1, 2.2, 2.4, 2.5, 2.6, 2.8 et 2.9, les problèmes S.1 (vanne de chasse et effort de levage) et S.6 (batardeau flottant ballasté), la remontée de nappe sous un réservoir enterré et plusieurs paragraphes des chapitres 1 et 2 ; seize d’entre elles sont intégrées au cours comme figures dynamiques (`<div class="labo-widget" data-labo="…">`, montées à l’approche de l’écran). La page conserve l’expérience en cours dans le navigateur ; export et import JSON (200 Ko maximum).
 
-Hypothèses affichées dans l’interface : fluides au repos, liquides incompressibles et non miscibles, poids des gaz négligé, gaz piégé isotherme, appareils de volume négligeable, conduites amorcées. Le transitoire des vases communicants est illustratif (relaxation vers l’équilibre), pas un calcul d’écoulement.
+Hypothèses affichées dans l’interface : fluides au repos, liquides incompressibles et non miscibles, poids des gaz négligé, gaz piégé isotherme, appareils de volume négligeable, conduites amorcées. En mode « illustratif », le transitoire des vases communicants est une relaxation vers l’équilibre, pas un calcul d’écoulement.
+
+**Écoulements en charge.** Le sélecteur de modèle passe en **fluide parfait** (chapitre 4) ou en **fluide réel** (chapitre 6). Les conduites relient alors réservoirs, sorties à l’air libre, pompes et changements de section en chaînes série, résolues en régime quasi permanent par Bernoulli généralisé : H<sub>amont</sub> + H<sub>pompe</sub>(Q) = H<sub>aval</sub> + Σ pertes(Q). En fluide réel, les pertes linéaires suivent Darcy–Weisbach (λ = 64/Re ou Colebrook à partir de la rugosité, ou λ imposé, sur la longueur dessinée ou une longueur de calcul) ; les pertes singulières comptent l’entrée (0,5), la sortie (1), ΣK, la vanne selon son ouverture, le venturi et les raccords (Borda, rétrécissement). La palette « Écoulement » ajoute orifices en mince paroi (Torricelli, C<sub>d</sub>, C<sub>v</sub>, jet balistique qui tombe au sol ou dans un réservoir), sorties libres, pompes (débit imposé ou courbe H₀ − kQ², rendement, clapet), changements de section, venturis à manomètre différentiel, tubes de Pitot simples et doubles, et robinets d’apport. Les niveaux évoluent dans le temps par bilan de volume, avec chronomètre, pause et accélération (× 1 à × 300) ; les lignes de charge et piézométrique se tracent le long du circuit, et l’inspecteur déroule le bilan terme à terme (V, Re, λ, h<sub>f</sub>, singularités, HMT, puissances, alertes de cavitation).
+
+Onze expériences d’écoulement reprennent les exercices 3.5, 4.1 à 4.7, 6.4, 6.6 et 6.7, avec les valeurs des corrigés (`tests/labo-ecoulement.test.mjs`) ; elles sont intégrées au cours comme figures dynamiques, figées lorsqu’elles sortent de l’écran.
 
 ### Installation hydraulique
 
@@ -62,7 +66,7 @@ La longueur lue est **horizontale** : elle ignore la pente, les coudes et le pro
 - `src/diagrams.js` : figures de cours, une par situation physique ;
 - `src/mesh-solver.js`, `src/network-studio.js` : réseaux maillés et atelier graphique ;
 - `src/geo.js` : projection Web Mercator, distances orthodromiques et pavage en tuiles ;
-- `src/labo-physique.js` (moteur hydrostatique), `src/labo-dessin.js` (rendu SVG), `src/labo-scenarios.js` (expériences guidées), `src/labo.js` (interface), `src/labo-embed.js` et `labo.css` : laboratoire virtuel ;
+- `src/labo-physique.js` (moteur hydrostatique), `src/labo-ecoulement.js` (écoulements en charge), `src/labo-dessin.js` (rendu SVG), `src/labo-scenarios.js` (expériences guidées), `src/labo.js` (interface), `src/labo-embed.js` et `labo.css` : laboratoire virtuel ;
 - `src/technical-library.js`, `src/project-store.js`, `src/pdf-report.js`, `src/basemap-store.js` : bibliothèque technique, sauvegarde locale, notes PDF et fonds de plan ;
 - `sw.js` et `manifest.webmanifest` : installation et fonctionnement hors connexion ;
 - `tests/` : contrôles numériques des solveurs.
