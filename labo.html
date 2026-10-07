@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Laboratoire virtuel — Hydrostatique — ENIS Sfax</title>
+<meta name="description" content="Laboratoire virtuel d’hydrostatique : réservoirs, fluides, piézomètres, tubes en U, manomètres, vannes, poussées et flotteurs.">
+<meta name="theme-color" content="#0B5B72">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="labo.css">
+<style>
+:root{--paper:#EDF1F2;--surface:#fff;--ink:#0F1E28;--ink2:#4C616C;--eau:#0B5B72;--rule:#C6D5DA;--brique:#A8492A;
+  --serif:"Newsreader",Georgia,serif;--disp:"Instrument Serif",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.55}
+.retour{position:sticky;top:0;z-index:99;display:block;padding:9px 14px;background:#082f49;color:#e0f2fe;font:700 13px/1.4 system-ui,sans-serif;text-decoration:none}
+header{padding:1rem 1.2rem .8rem;border-bottom:1px solid var(--rule);background:
+  repeating-linear-gradient(to right,transparent 0 23px,rgba(11,91,114,.06) 23px 24px),
+  repeating-linear-gradient(to bottom,transparent 0 23px,rgba(11,91,114,.06) 23px 24px),var(--surface)}
+.wrap{max-width:1500px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--eau);margin:0 0 .4rem}
+h1{font-family:var(--disp);font-weight:400;font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.05;margin:0 0 .3rem;letter-spacing:-.01em}
+header p.sous{margin:0;color:var(--ink2);max-width:70rem;font-size:16px}
+header nav{margin-top:.7rem;display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-family:var(--mono);font-size:12px}
+header nav a{color:var(--eau)}
+main{padding:.8rem 1.2rem 2.5rem}
+.labo{max-width:1500px;margin:0 auto}
+footer{padding:1.2rem;border-top:1px solid var(--rule);font-family:var(--mono);font-size:11.5px;color:var(--ink2);text-align:center}
+@media(max-width:700px){header{padding:1rem .9rem}main{padding:.6rem .5rem 2rem}}
+</style>
+</head>
+<body>
+<a class="retour" href="./">← Retour à MécaFlu GC</a>
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Chapitres 1 et 2 · Propriétés des fluides et hydrostatique</p>
+    <h1>Laboratoire virtuel</h1>
+    <p class="sous">Construisez un montage : réservoirs ouverts ou sous pression, couches de liquides, conduites et vannes, piézomètres, tubes en U et manomètres, vannes planes et flotteurs. Les niveaux s’équilibrent sous vos yeux ; chaque appareil affiche sa lecture et le calcul qui la justifie.</p>
+    <nav><a href="cours.html#s-statique-des-fluides-hydrostatique">Cours — chapitre 2</a><a href="cours.html#s-propriétés-physiques-des-fluides">Cours — chapitre 1</a><a href="exerciseur.html">Exerciseur</a></nav>
+  </div>
+</header>
+<main>
+  <div id="labo"><noscript>Le laboratoire nécessite JavaScript.</noscript></div>
+</main>
+<footer>Laboratoire virtuel — Mécanique des fluides, Génie civil S1 — ENIS Sfax · Dr. Ahmed Ksentini<br>Calculs exécutés dans le navigateur ; l’expérience en cours est conservée sur cet appareil.</footer>
+<script type="module">
+import { monterLabo } from './src/labo.js';
+monterLabo(document.getElementById('labo'));
+</script>
+</body>
+</html>

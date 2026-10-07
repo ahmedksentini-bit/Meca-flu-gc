@@ -16,6 +16,16 @@ Application web statique et PWA d’exercices de mécanique des fluides pour le 
 
 Le **Bureau de calcul** complète le parcours pédagogique avec une interface de logiciel : saisie directe des données, recalcul instantané, schéma physique, résultats et note de calcul pour les conduites, le pompage, Bernoulli, l’hydrostatique et les écoulements à surface libre.
 
+### Laboratoire virtuel (chapitres 1 et 2)
+
+`labo.html` est un banc d’hydrostatique à monter soi-même : réservoirs ouverts, fermés (ciel à pression imposée ou gaz piégé isotherme) ou à paroi inclinée, couches de liquides non miscibles (eau, eau de mer, huile, essence, glycérine, tétrachlorure, mercure, liquide personnalisé), conduites et vannes, piézomètres, manomètres à cadran, tubes en U simples, différentiels ou renversés, vannes planes (rectangle, cercle, triangle) et flotteurs.
+
+Les éléments se glissent depuis la palette et s’accrochent aux piquages des parois (tous les 25 cm), aux conduites, aux parois et aux cotes rondes, avec un repère magnétique. Un clic sur une palette ajoute l’élément à un emplacement par défaut (clavier et tactile). Une conduite neuve arrive vanne fermée ; à l’ouverture, les niveaux s’équilibrent sous les yeux (vases communicants, conservation du volume, stratification). La surface libre se tire à la main, la sonde donne p, p<sub>abs</sub> et la charge en tout point, et l’inspecteur détaille chaque calcul : cheminement de proche en proche, plan de charge, F = p<sub>G</sub>S, centre de poussée y<sub>C</sub> = y<sub>G</sub> + I<sub>G</sub>/(y<sub>G</sub>S), diagramme des pressions, tirant d’eau, métacentre, couple à la gîte, remontée capillaire de Jurin, alertes de vaporisation.
+
+Quatorze expériences guidées reprennent les exercices 2.1, 2.2, 2.4, 2.5, 2.6, 2.8 et 2.9 et plusieurs paragraphes des chapitres 1 et 2 ; treize d’entre elles sont intégrées au cours comme figures dynamiques (`<div class="labo-widget" data-labo="…">`, montées à l’approche de l’écran). La page conserve l’expérience en cours dans le navigateur ; export et import JSON (200 Ko maximum).
+
+Hypothèses affichées dans l’interface : fluides au repos, liquides incompressibles et non miscibles, poids des gaz négligé, gaz piégé isotherme, appareils de volume négligeable, conduites amorcées. Le transitoire des vases communicants est illustratif (relaxation vers l’équilibre), pas un calcul d’écoulement.
+
 ### Installation hydraulique
 
 Accessible depuis le Bureau de calcul ou `#calculateur/installation` : réseau en série entre deux réservoirs ouverts, 1 à 30 tronçons, accessoires par tronçon et pompe facultative. Deux modes : hauteur requise à débit imposé ou débit obtenu par intersection pompe/gravité–réseau. Le module affiche les pertes détaillées, les courbes et la puissance, contrôle les données et signale les régimes de transition. Les projets s’exportent et s’importent en JSON ; la note peut être imprimée depuis le navigateur.
@@ -52,6 +62,7 @@ La longueur lue est **horizontale** : elle ignore la pente, les coudes et le pro
 - `src/diagrams.js` : figures de cours, une par situation physique ;
 - `src/mesh-solver.js`, `src/network-studio.js` : réseaux maillés et atelier graphique ;
 - `src/geo.js` : projection Web Mercator, distances orthodromiques et pavage en tuiles ;
+- `src/labo-physique.js` (moteur hydrostatique), `src/labo-dessin.js` (rendu SVG), `src/labo-scenarios.js` (expériences guidées), `src/labo.js` (interface), `src/labo-embed.js` et `labo.css` : laboratoire virtuel ;
 - `src/technical-library.js`, `src/project-store.js`, `src/pdf-report.js`, `src/basemap-store.js` : bibliothèque technique, sauvegarde locale, notes PDF et fonds de plan ;
 - `sw.js` et `manifest.webmanifest` : installation et fonctionnement hors connexion ;
 - `tests/` : contrôles numériques des solveurs.
