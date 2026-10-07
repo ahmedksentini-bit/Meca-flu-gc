@@ -287,3 +287,17 @@
 /* Dans le cours, glisser sur le fond fait défiler la page ; seuls les éléments manipulables captent le doigt. */
 .labo-integre .lb-scene{touch-action:pan-y}
 .labo-integre .lb-svg [data-h]{touch-action:none}
+/* Terrain saturé, caissons creux, vanne levante */
+.lb-sol-sec{fill:#EADFC6;pointer-events:none}
+.lb-liq-sol{opacity:.62}
+.lb-paroi-sol{fill:none;stroke:#8B7B5E;stroke-width:1.2;stroke-dasharray:6 4}
+.lb-terrain{stroke:#6B5A3E;stroke-width:3}
+.lb-terrain-h{stroke:#6B5A3E;stroke-width:1.2}
+.lb-cavite{fill:#F7F9FA;stroke:rgba(15,30,40,.35);stroke-width:.8;pointer-events:none}
+.lb-ballast{stroke:#24799A;stroke-width:1;opacity:.95;pointer-events:none}
+.lb-levage{color:#6B4BB0}
+.lb-fl.lb-levage{stroke-width:2.6}
+.lb-levaget{fill:#6B4BB0;font-weight:500}
+.lb-coche{display:flex;gap:.45rem;align-items:flex-start;margin:.35rem 0;font-size:13px;color:var(--lb-ink);cursor:pointer}
+.lb-coche input{margin-top:.2rem}
+.lb-cloison{fill:none;stroke:#5B6872;stroke-width:1.6;pointer-events:none}

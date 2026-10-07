@@ -415,6 +415,7 @@ export function monterLabo(racine, opts = {}) {
     const c = r.couches.find(k => k.fluide === fluide);
     if (c) c.V += dV; else r.couches.push({ fluide, V: dV });
     r.couches = P.trierCouches(r.couches, A.ctx);
+    if (r.constant) r.hc = Math.min(r.H, e.sL + h);
     P.calerGaz(r, A.ctx, L.scene);
     return true;
   }
@@ -645,6 +646,7 @@ export function monterLabo(racine, opts = {}) {
         const hauts = hauteursCouches(el);
         hauts[d.i].h = Math.max(0, zc - n.z0);
         el.couches = P.trierCouches(P.couchesDepuisHauteurs(el, hauts), L.A.ctx);
+        if (el.constant) el.hc = Math.min(el.H, hauts.reduce((t, c) => t + c.h, 0));
         P.calerGaz(el, L.A.ctx, L.scene);
         d.ui.aimant = { x: el.x + P.largeurA(el, zc - el.z), z: zc, texte: `z = ${NB(zc, 2)} m · ${L.A.ctx.fl(n.fluide).nom.toLowerCase()} ${NB(zc - n.z0, 2)} m` };
         if (a.cible && a.cible.texte) d.ui.guides.push({ z: zc, x: el.x, texte: a.cible.texte });
@@ -945,7 +947,9 @@ export function monterLabo(racine, opts = {}) {
           return `<div class="lb-couche"><i style="background:${L.A.ctx.fl(n.fluide).couleur}"></i><select data-k="couche:${i}:fluide" aria-label="Fluide de la couche">${fluidesOpt.map(([v, t]) => `<option value="${v}"${v === n.fluide ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select><input type="number" step="0.05" min="0" data-k="couche:${i}:h" value="${+(n.s1 - n.s0).toFixed(3)}" aria-label="Épaisseur (m)"><em>m</em><button type="button" data-k="couche:${i}:suppr" aria-label="Retirer la couche">×</button></div>`;
         }).join('') || '<p class="lb-note">Réservoir vide : déposez un fluide ou ajoutez une couche.</p>'}</div>
           <label class="lb-champ"><span>Ajouter</span><select data-k="ajoutCouche"><option value="">— fluide —</option>${fluidesOpt.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></label>
-          <p class="lb-note">Les liquides non miscibles se rangent par densité, le plus lourd au fond.</p></fieldset>`;
+          <p class="lb-note">Les liquides non miscibles se rangent par densité, le plus lourd au fond.</p>
+          <label class="lb-coche"><input type="checkbox" data-k="constant"${el.constant ? ' checked' : ''}> Niveau maintenu constant (mer, nappe, grande retenue)</label>
+          ${sel_('aspect', 'Représentation', el.aspect || 'liquide', [['liquide', 'réservoir de liquide'], ['sol', 'terrain saturé (nappe)']])}</fieldset>`;
         h += `<fieldset><legend>Ciel</legend><div class="lb-seg" role="group"><button type="button" data-k="ferme" data-v="0" aria-pressed="${!el.ferme}">ouvert</button><button type="button" data-k="ferme" data-v="1" aria-pressed="${el.ferme}">fermé</button></div>`;
         if (el.ferme) h += sel_('mode', 'Gaz', el.ciel.mode, [['impose', 'pression imposée (détendeur)'], ['piege', 'gaz piégé (p·V constant)']]) + num('p0', 'p₀ relative', el.ciel.mode === 'piege' ? e.pCiel / 1000 : el.ciel.p / 1000, 'kPa', { pas: 1, min: -100, dec: 2 });
         h += `</fieldset>`;
@@ -982,14 +986,28 @@ export function monterLabo(racine, opts = {}) {
         h += num('a', el.forme === 'cercle' ? 'Diamètre D' : 'Hauteur a (le long de la paroi)', el.a, 'm', { min: 0.05 });
         if (el.forme !== 'cercle') h += num('l', 'Largeur l', el.l, 'm', { min: 0.05 });
         h += num('s', el.paroi === 'f' ? 'Centre depuis la gauche' : 'Centre depuis le pied (le long de la paroi)', el.s, 'm', { min: el.a / 2, max: Lw - el.a / 2 });
-        h += sel_('charniere', 'Charnière', el.charniere, [['aucune', 'aucune'], ['haut', 'arête haute'], ['bas', 'arête basse']]) + '</div>';
+        h += sel_('charniere', 'Manœuvre', el.charniere, [['aucune', 'non étudiée'], ['haut', 'charnière en haut'], ['bas', 'charnière en bas'], ['glissieres', 'levante en glissières']]);
+        if (el.charniere === 'glissieres') h += num('f', 'Frottement f', el.f ?? 0.25, '', { pas: 0.01, min: 0, dec: 2 }) + num('poids', 'Poids propre', (el.poids ?? 0) / 1000, 'kN', { pas: 0.5, min: 0, dec: 2 });
+        h += '</div>';
         h += `<div class="lb-sorties">${sortie('S', 'Surface S')}${sortie('hG', 'Profondeur de G')}${sortie('pG', 'Pression en G')}${sortie('F', 'Résultante F')}${sortie('ecart', 'C sous G')}${sortie('hC', 'Profondeur de C')}${sortie('FH', 'F<sub>H</sub> / F<sub>V</sub>')}${sortie('M', 'Moment / effort de manœuvre')}</div>`;
         break;
       }
       case 'flotteur':
-        h += `<div class="lb-grille2">${num('l', 'Largeur l (dans le plan)', el.l, 'm', { min: 0.05 })}${num('h', 'Hauteur', el.h, 'm', { min: 0.05 })}${num('b', 'Longueur b', el.b, 'm', { min: 0.05 })}${num('m', 'Masse', el.m, 'kg', { pas: 10, min: 0.01, dec: 1 })}${num('dens', 'Masse vol. moyenne', el.m / (el.l * el.h * el.b), 'kg/m³', { pas: 10, dec: 0 })}${num('zG', 'G au-dessus du fond', el.zG, 'm', { min: 0 })}</div>`;
+        h += `<div class="lb-grille2">${num('l', 'Largeur l (dans le plan)', el.l, 'm', { min: 0.05 })}${num('h', 'Hauteur', el.h, 'm', { min: 0.05 })}${num('b', 'Longueur b', el.b, 'm', { min: 0.05 })}${num('m', el.creux ? 'Masse à vide' : 'Masse', el.m, 'kg', { pas: 10, min: 0.01, dec: 1 })}${num('dens', 'Masse vol. moyenne', el.m / (el.l * el.h * el.b), 'kg/m³', { pas: 10, dec: 0 })}${num('zG', 'G au-dessus du fond', el.zG, 'm', { min: 0 })}</div>`;
         h += `<label class="lb-champ lb-large"><span>Gîte θ</span><input type="range" min="-30" max="30" step="1" data-k="gite" value="${el.gite}"><em data-o="giteV">${NB(el.gite, 0)}°</em></label>`;
-        h += `<div class="lb-sorties">${sortie('P', 'Poids P')}${sortie('FA', 'Poussée F<sub>A</sub>')}${sortie('T', 'Tirant d’eau')}${sortie('CM', 'CM = I/V')}${sortie('GM', 'GM')}${sortie('etat', 'Équilibre')}${sortie('couple', 'Couple à θ')}</div>`;
+        {
+          const lest = P.lestFlotteur(el, L.A.ctx);
+          h += `<fieldset><legend>Caisson creux et ballast</legend><label class="lb-coche"><input type="checkbox" data-k="creux"${el.creux ? ' checked' : ''}> Caisson creux (ballastable)</label>`;
+          if (el.creux) {
+            h += num('e', 'Épaisseur des parois', el.e ?? 0.03, 'm', { pas: 0.01, min: 0, dec: 3 });
+            h += `<label class="lb-champ lb-large"><span>Ballast</span><input type="range" min="0" max="${+lest.Vmax.toFixed(3)}" step="${+(lest.Vmax / 400).toFixed(4)}" data-k="ballast" value="${+(el.ballast || 0).toFixed(3)}"><em>m³</em></label>`;
+            h += num('ballast', 'Volume de ballast', el.ballast || 0, 'm³', { pas: 1, min: 0, max: +lest.Vmax.toFixed(3), dec: 2 });
+            h += sel_('ballastFluide', 'Liquide de ballast', el.ballastFluide || 'eau', fluidesOpt);
+            h += num('cloisons', 'Compartiments (sur la largeur)', el.cloisons || 1, '', { pas: 1, min: 1, max: 12, dec: 0 });
+          }
+          h += `</fieldset>`;
+        }
+        h += `<div class="lb-sorties">${sortie('P', 'Poids P')}${sortie('FA', 'Poussée F<sub>A</sub>')}${sortie('T', 'Tirant d’eau')}${sortie('Fs', 'Sécurité au soulèvement P/F<sub>A</sub>')}${el.creux ? sortie('hb', 'Ballast') : ''}${sortie('CM', 'CM = I/V')}${sortie('GM', 'GM')}${sortie('etat', 'Équilibre')}${sortie('couple', 'Couple à θ')}</div>`;
         break;
     }
     h += `<details class="lb-etapes-d" open><summary>Calcul détaillé</summary><ol class="lb-etapes" data-o="etapes"></ol></details>`;
@@ -1009,7 +1027,7 @@ export function monterLabo(racine, opts = {}) {
   }
   function majInspecteur() {
     const el = L.sel ? elt(L.sel) : null;
-    const cle = el ? `${el.id}|${el.type}|${el.type === 'reservoir' ? `${el.ferme}|${el.ciel.mode}|${L.A.etats.get(el.id).niveaux.map(n => n.fluide).join(',')}` : ''}${el.type === 'vannePlane' ? el.forme + el.paroi : ''}${el.type === 'vanne' ? el.ouverte : ''}|${L.scene.env.unite}` : `global|${L.scene.elements.length}`;
+    const cle = el ? `${el.id}|${el.type}|${el.type === 'reservoir' ? `${el.ferme}|${el.ciel.mode}|${L.A.etats.get(el.id).niveaux.map(n => n.fluide).join(',')}` : ''}${el.type === 'vannePlane' ? el.forme + el.paroi + el.charniere : ''}${el.type === 'flotteur' ? `${!!el.creux}|${el.e}` : ''}${el.type === 'reservoir' ? `|${!!el.constant}` : ''}${el.type === 'vanne' ? el.ouverte : ''}|${L.scene.env.unite}` : `global|${L.scene.elements.length}`;
     if (cle !== L.inspCle) {
       if (insp.contains(document.activeElement) && document.activeElement.matches('input[type=number],input[type=text]') && L.inspCle && L.inspCle.split('|')[0] === cle.split('|')[0]) {
         // on garde le champ en cours de saisie
@@ -1150,7 +1168,7 @@ export function monterLabo(racine, opts = {}) {
         o.ecart = `${NB((v.uG - v.uC) * 100, 2)} cm`;
         o.hC = `${NB(e.zL - v.C.z, 3)} m`;
         o.FH = `${NB(v.FH / 1000, 2)} / ${NB(v.FV / 1000, 2)} kN`;
-        o.M = v.moment != null ? `${NB(v.moment / 1000, 2)} kN·m / ${NB(v.effort / 1000, 2)} kN` : 'sans charnière';
+        o.M = v.levage != null ? `levage T = ${NB(v.levage / 1000, 2)} kN` : v.moment != null ? `${NB(v.moment / 1000, 2)} kN·m / ${NB(v.effort / 1000, 2)} kN` : 'non étudiée';
         o.etapes = li(v.etapes);
         break;
       }
@@ -1161,8 +1179,10 @@ export function monterLabo(racine, opts = {}) {
         o.FA = `${NB(f.FA / 1000, 3)} kN`;
         o.T = f.fond ? 'au fond' : f.immerge ? 'immergé' : `${NB(f.T, 3)} m (franc-bord ${NB(el.h - f.T, 3)} m)`;
         o.CM = f.CM != null ? `${NB(f.CM, 3)} m` : '—';
-        o.GM = f.GM != null ? `${NB(f.GM, 3)} m` : '—';
+        o.GM = f.GM != null ? `${NB(f.GM, 3)} m${f.GMfige != null ? ` (ballast figé : ${NB(f.GMfige, 3)} m)` : ''}` : '—';
         o.etat = f.fond ? 'repose au fond' : f.stable == null ? 'flotte' : f.stable ? 'stable' : 'instable';
+        o.Fs = Number.isFinite(f.Fs) ? `${NB(f.Fs, 2)}${f.fond ? '' : ' (le corps flotte)'}` : '—';
+        if (el.creux) o.hb = `${NB(f.lest.V, 2)} m³ sur ${NB(f.lest.h, 3)} m${f.lest.surfaceLibre ? ' (surface libre)' : ''}`;
         o.couple = f.gite ? `${NB(f.gite.couple / 1000, 2)} kN·m (${f.gite.redresse ? 'redresse' : 'fait chavirer'})` : el.gite ? '—' : 'θ = 0';
         o.giteV = `${NB(el.gite, 0)}°`;
         o.etapes = li(f.etapes);
@@ -1192,6 +1212,8 @@ export function monterLabo(racine, opts = {}) {
         if (k === 'mode') { el.ciel.mode = valeur === 'piege' ? 'piege' : 'impose'; P.calerGaz(el, ctx, L.scene); structure = true; break; }
         if (k === 'p0' && ok) { el.ciel.p = clamp(v * 1000, -100000, 1e7); P.calerGaz(el, ctx, L.scene); break; }
         if (k === 'diagramme') { el.diagramme = valeur; break; }
+        if (k === 'constant') { el.constant = brut === '1'; if (el.constant) el.hc = L.A.etats.get(el.id).sL; structure = true; break; }
+        if (k === 'aspect') { el.aspect = valeur === 'sol' ? 'sol' : 'liquide'; break; }
         if (k === 'ajoutCouche' && valeur) { remplir(el, valeur, null); structure = true; break; }
         if (k.startsWith('couche:')) {
           const [, i, q] = k.split(':'), hauts = hauteursCouches(el);
@@ -1202,6 +1224,7 @@ export function monterLabo(racine, opts = {}) {
           const tot = hauts.reduce((t, c) => t + c.h, 0), max = el.H * (el.ferme ? 0.97 : 1);
           if (tot > max) { const ex = tot - max; hauts[+i] && (hauts[+i].h = Math.max(0, hauts[+i].h - ex)); }
           el.couches = P.trierCouches(P.couchesDepuisHauteurs(el, hauts), ctx);
+          if (el.constant) el.hc = Math.min(el.H, hauts.reduce((t, c) => t + c.h, 0));
           P.calerGaz(el, ctx, L.scene);
           if (q !== 'h') structure = true;
           break;
@@ -1245,7 +1268,9 @@ export function monterLabo(racine, opts = {}) {
       case 'vannePlane': {
         if (k === 'paroi') { el.paroi = valeur; structure = true; break; }
         if (k === 'forme') { el.forme = valeur; if (valeur === 'cercle') el.l = el.a; structure = true; break; }
-        if (k === 'charniere') { el.charniere = valeur; break; }
+        if (k === 'charniere') { el.charniere = valeur; if (valeur === 'glissieres') { el.f ??= 0.25; el.poids ??= 0; } structure = true; break; }
+        if (k === 'f' && ok) { el.f = clamp(v, 0, 1.5); break; }
+        if (k === 'poids' && ok) { el.poids = clamp(v * 1000, 0, 1e8); break; }
         if (!ok) return;
         if (k === 'a') { el.a = Math.max(0.05, v); if (el.forme === 'cercle') el.l = el.a; }
         if (k === 'l') el.l = Math.max(0.05, v);
@@ -1253,7 +1278,12 @@ export function monterLabo(racine, opts = {}) {
         break;
       }
       case 'flotteur':
+        if (k === 'creux') { el.creux = brut === '1'; el.e ??= 0.03; el.ballast ??= 0; el.ballastFluide ??= 'eau'; structure = true; break; }
+        if (k === 'ballastFluide') { el.ballastFluide = valeur; break; }
         if (!ok) return;
+        if (k === 'ballast') { el.ballast = clamp(v, 0, P.lestFlotteur({ ...el, ballast: Infinity }, ctx).Vmax); break; }
+        if (k === 'e') { el.e = clamp(v, 0, Math.min(el.l, el.h, el.b) / 2 - 0.01); structure = true; break; }
+        if (k === 'cloisons') { el.cloisons = clamp(Math.round(v), 1, 12); break; }
         if (k === 'dens') el.m = clamp(v, 1, 30000) * el.l * el.h * el.b;
         else if (k === 'gite') el.gite = clamp(v, -30, 30);
         else if (k === 'm') el.m = Math.max(0.01, v);
@@ -1267,7 +1297,7 @@ export function monterLabo(racine, opts = {}) {
   const debutModif = () => { if (!modifEnCours) { avantModif(); modifEnCours = true; } };
   insp.addEventListener('input', e => {
     const t = e.target, k = t.dataset && t.dataset.k;
-    if (!k || t.tagName === 'SELECT') return;
+    if (!k || t.tagName === 'SELECT' || t.type === 'checkbox') return;
     debutModif();
     appliquer(k, t.value, t.value, false);
   });
@@ -1275,7 +1305,8 @@ export function monterLabo(racine, opts = {}) {
     const t = e.target, k = t.dataset && t.dataset.k;
     if (!k) return;
     debutModif();
-    appliquer(k, t.value, t.value, true);
+    const val = t.type === 'checkbox' ? (t.checked ? '1' : '0') : t.value;
+    appliquer(k, val, val, true);
     modifEnCours = false;
     if (t.tagName === 'SELECT' && k === 'ajoutCouche') t.value = '';
   });

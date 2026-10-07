@@ -6,10 +6,14 @@ import { sceneVide, couchesDepuisHauteurs, contexte, calerGaz } from './labo-phy
 function reservoir(id, o) {
   const r = { id, type: 'reservoir', nom: o.nom || '', x: o.x || 0, z: o.z || 0, w: o.w || 1.5, H: o.H || 3, b: o.b || 1,
     alpha: o.alpha || 90, ferme: !!o.ferme, diagramme: o.diagramme || 'aucune',
+    constant: !!o.constant, aspect: o.aspect || 'liquide',
     ciel: { mode: o.mode || 'impose', p: o.p || 0, n: 0 }, couches: [] };
   r.couches = couchesDepuisHauteurs(r, o.couches || []);
+  if (r.constant) r.hc = (o.couches || []).reduce((t, c) => t + c.h, 0);
   return r;
 }
+const caisson = (id, o) => ({ id, type: 'flotteur', reservoir: o.reservoir, x: o.x, l: o.l, h: o.h, b: o.b, m: o.m, zG: o.zG, gite: 0,
+  creux: true, e: o.e ?? 0.03, ballast: o.ballast || 0, ballastFluide: o.ballastFluide || 'eau' });
 const piezo = (id, el, port, Ht, o = {}) => ({ id, type: 'piezometre', piquage: { el, port }, Ht, d: o.d ?? 12, ox: o.ox ?? 0.35 });
 const mano = (id, el, port, o = {}) => ({ id, type: 'manometre', piquage: { el, port }, mode: o.mode || 'relatif', ox: o.ox ?? 0.35 });
 const tubeU = (id, el, port, fluideM, o = {}) => ({ id, type: 'tubeU', piquage: { el, port }, piquage2: o.b || null, fluideM, L: o.L ?? 1, ox: o.ox ?? 0.6, oz: o.oz ?? -0.6 });
@@ -110,6 +114,23 @@ const fabriques = {
       piezo('P4', 'R2', 'd:0.25', 0.75, { d: 2, ox: 0.35 }),
       piezo('P5', 'R2', 'd:0.25', 0.75, { d: 15, ox: 0.85 }));
   },
+  'vanne-chasse'(s) {
+    s.elements.push(
+      reservoir('R1', { nom: 'Retenue du barrage', x: 0, w: 5, H: 13, b: 1.5, couches: [{ fluide: 'eau', h: 12 }] }),
+      { id: 'VP1', type: 'vannePlane', reservoir: 'R1', paroi: 'd', s: 0.5, forme: 'rect', a: 1, l: 1.5, charniere: 'glissieres', f: 0.25, poids: 8000 },
+      mano('M1', 'R1', 'd:3.00', { ox: 0.5 }));
+  },
+  batardeau(s) {
+    s.elements.push(
+      reservoir('R1', { nom: 'Mer (niveau constant)', x: 0, z: -3.6, w: 14, H: 5, b: 16, constant: true, couches: [{ fluide: 'mer', h: 3.6 }] }),
+      caisson('F1', { reservoir: 'R1', x: 7, l: 5, h: 4, b: 12, m: 720000 / 9.81, zG: 1.8, e: 0.03, ballastFluide: 'mer' }));
+  },
+  nappe(s) {
+    s.elements.push(
+      reservoir('R1', { nom: 'Terrain, nappe phréatique', x: 0, z: -4.5, w: 12, H: 4.5, b: 12, constant: true, aspect: 'sol', couches: [{ fluide: 'eau', h: 2 }] }),
+      caisson('F1', { reservoir: 'R1', x: 6, l: 6, h: 4, b: 10, m: 2500 * (6 * 10 * 4 - 5.4 * 9.4 * 3.4), zG: 1.75, e: 0.3 }),
+      piezo('P1', 'R1', 'g:0.50', 5, { ox: 0.5 }));
+  },
   cavitation(s) {
     s.elements.push(
       reservoir('R1', { nom: 'Cuve sous vide', x: 0, w: 1.6, H: 2.5, ferme: true, p: -60000, couches: [{ fluide: 'essence', h: 1.5 }] }),
@@ -147,6 +168,12 @@ export const SCENARIOS = [
     consigne: 'Caisson 6 × 4 × 3 m de 500 kN : tirant d’eau 2,07 m, GM = 0,28 m (stable). Montez son centre de gravité ou inclinez-le (gîte) pour voir le couple changer de signe. Le bloc de béton (d = 2,4) repose au fond.' },
   { id: 'capillarite', titre: 'Capillarité des tubes piézométriques', ref: '§ 1.6.2', ancre: 's-capillarité-loi-de-jurin',
     consigne: 'Loi de Jurin h = 4σ cos θ/(ρ g d) : dans l’eau, les tubes fins lisent trop haut ; dans le mercure (θ = 130°), trop bas. D’où la règle d ≥ 10 mm pour les piézomètres.' },
+  { id: 'vanne-chasse', titre: 'S.1 — Vanne de chasse d’un barrage', ref: 'Problème S.1', ancre: 's-problème-s.1-vanne-de-chasse-dun-barrage-et-butée',
+    consigne: 'Pertuis de fond 1,50 × 1,00 m sous 12 m d’eau : F = 169 kN, et C n’est qu’à 7 mm sous G (pression quasi uniforme en grande profondeur). Vanne levante en glissières (f = 0,25, poids 8 kN) : effort de levage 50,3 kN, dont 84 % dus au frottement. Abaissez la retenue pour voir l’effort chuter. La question 3 (débit d’orifice) relève du chapitre 4.' },
+  { id: 'batardeau', titre: 'S.6 — Batardeau flottant ballasté', ref: 'Problème S.6', ancre: 's-problème-s.6-batardeau-flottant-échoué-puis-ballasté',
+    consigne: 'Caisson acier 12 × 5 × 4 m de 720 kN en mer (niveau constant) : au remorquage, tirant d’eau 1,19 m et GM = 0,54 m. Augmentez le ballast : le caisson s’enfonce, touche le fond à 3,60 m (≈ 144 m³), puis la réaction d’appui croît ; il faut 164 m³ pour R ≥ 200 kN. Tant qu’il flotte, la surface libre du ballast ruine la stabilité (GM < 0 dès 60 m³ avec une seule cuve) : cloisonnez le ballast en 3 compartiments, comme sur chantier, pour la retrouver.' },
+  { id: 'nappe', titre: 'Réservoir enterré et remontée de nappe', ref: '§ 2.6.2', ancre: 's-équilibre-des-corps-immergés-et-flottants',
+    consigne: 'Bassin enterré vide en béton (1 653 kN) posé sur son radier : nappe à 2,00 m au-dessus du radier, F_A = 1 177 kN, sécurité au soulèvement F_s = 1,40. Remontez la nappe (tirez sa surface) : au-delà de 2,81 m, la poussée l’emporte et l’ouvrage se soulève. Remèdes : lester (ballast, radier épaissi) ou ancrer. Le poids des terres et le frottement latéral, favorables, sont négligés.' },
   { id: 'cavitation', titre: 'Dépression et vaporisation', ref: '§ 1.7 – 2.1.3', ancre: 's-pression-de-vapeur-saturante-et-cavitation',
     consigne: 'Ciel à −60 kPa : la pression absolue en surface tombe à 41 kPa, sous la pression de vapeur de l’essence (55 kPa) : le liquide se vaporise. Remplacez l’essence par de l’eau (pv = 2,3 kPa) et l’alerte disparaît. Le piézomètre ne peut pas mesurer une dépression ; le tube en U, si.' }
 ];

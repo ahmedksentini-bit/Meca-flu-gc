@@ -331,3 +331,74 @@ test('Mise en forme française', () => {
   assert.equal(L.nombre(0.0001, 2), '0,00');
   assert.equal(L.pression(46107, 'bar'), '0,4611 bar');
 });
+
+test('Problème S.1 — vanne de chasse : F = 169 kN, C à 7 mm sous G, levage 50,3 kN', () => {
+  const s = creerScenario('vanne-chasse'), A = L.analyser(s), v = A.ouvrages.get('VP1');
+  rel(v.F, 169223, 2e-4, 'F');
+  near(12 - v.C.z, 11.507, 1e-3, 'hC');
+  near(v.uG - v.uC, 0.125 / 17.25, 2e-5, 'C sous G');
+  rel(v.levage, 50306, 2e-4, 'effort de levage');
+  near(v.frottement / v.levage, 0.84, 0.005, 'part du frottement');
+});
+
+test('Problème S.6 — batardeau : tirant d’eau 1,19 m, GM 0,54 m, ballast de 164 m³ pour R = 200 kN', () => {
+  const s = creerScenario('batardeau'), f = s.elements.find(e => e.id === 'F1');
+  let A = L.analyser(s), r = A.flotteurs.get('F1');
+  near(r.T, 1.19, 0.005, 'remorquage'); near(r.GM, 0.54, 0.005, 'GM');
+  near(A.etats.get('R1').zL, 0, 1e-9, 'la mer garde son niveau');
+  // Seuil d'échouage : P = F_A(3,60 m)
+  const g = 9.81, FA = 1025 * g * 60 * 3.6;
+  f.ballast = (FA - 720000) / (1025 * g) - 0.5;
+  r = L.analyser(s).flotteurs.get('F1');
+  assert.ok(!r.fond, 'flotte encore juste avant le seuil');
+  f.ballast = 164.3;
+  r = L.analyser(s).flotteurs.get('F1');
+  assert.ok(r.fond); rel(r.FA, 2171900, 5e-4, 'F_A posé'); near(r.R / 1000, 200, 0.5, 'réaction d’appui');
+  near(r.lest.h, 164.3 / ((5 - 0.06) * (12 - 0.06)), 1e-9, 'hauteur de ballast');
+});
+
+test('Surface libre du ballast : la gîte réelle confirme la correction de carène liquide', () => {
+  const s = creerScenario('batardeau'), f = s.elements.find(e => e.id === 'F1');
+  f.ballast = 60;
+  let r = L.analyser(s).flotteurs.get('F1');
+  assert.ok(r.correction > 0 && r.GM < r.GMfige, 'GM réduit par la surface libre');
+  f.gite = 1.5;
+  r = L.analyser(s).flotteurs.get('F1');
+  near(r.gite.GZ, r.GM * Math.sin(1.5 * Math.PI / 180), 3e-4, 'GZ ≈ GM effectif · sin θ');
+});
+
+test('Nappe : soulèvement d’un bassin enterré vide au-delà de 2,81 m', () => {
+  const s = creerScenario('nappe'), R = s.elements.find(e => e.id === 'R1');
+  let A = L.analyser(s), r = A.flotteurs.get('F1');
+  const P = 2500 * (240 - 5.4 * 9.4 * 3.4) * 9.81;
+  assert.ok(r.fond); near(r.Fs, P / (1000 * 9.81 * 60 * 2), 1e-6, 'F_s');
+  near(A.mesures.get('P1').zN - A.mesures.get('P1').hc, -2.5, 1e-9, 'piézomètre de chantier = niveau de nappe');
+  R.hc = P / (1000 * 9.81 * 60) + 0.05;
+  A = L.analyser(s); r = A.flotteurs.get('F1');
+  assert.ok(!r.fond, 'la nappe soulève l’ouvrage');
+  near(A.etats.get('R1').sL, R.hc, 1e-9, 'niveau de nappe imposé malgré le volume déplacé');
+});
+
+test('Niveau imposé : il alimente un réservoir relié sans varier lui-même', () => {
+  const mer = reservoir('R1', { w: 2, H: 4, constant: true, hauteurs: [{ fluide: 'eau', h: 3 }] }); mer.hc = 3;
+  const bassin = reservoir('R2', { x: 3, w: 1, H: 4, hauteurs: [{ fluide: 'eau', h: 0.5 }] });
+  const s = scene(mer, bassin, { id: 'C1', type: 'conduite', a: { el: 'R1', port: 'f:0.50' }, b: { el: 'R2', port: 'f:0.50' }, zr: null, D: 0.1 });
+  assert.ok(L.equilibrer(s).converge);
+  const A = L.analyser(s);
+  near(A.etats.get('R1').zL, 3, 1e-9); near(A.etats.get('R2').zL, 3, 1e-3);
+});
+
+test('Ballast cloisonné : n compartiments divisent la correction par n², la gîte le confirme', () => {
+  const s = creerScenario('batardeau'), f = s.elements.find(e => e.id === 'F1');
+  f.ballast = 60;
+  const r1 = L.analyser(s).flotteurs.get('F1');
+  assert.ok(r1.GM < 0, 'une seule cuve : instable');
+  f.cloisons = 3;
+  const r3 = L.analyser(s).flotteurs.get('F1');
+  near(r3.correction, r1.correction / 9, 1e-9);
+  assert.ok(r3.GM > 0, 'trois compartiments : stable');
+  f.gite = 1.5;
+  const g = L.analyser(s).flotteurs.get('F1');
+  near(g.gite.GZ, g.GM * Math.sin(1.5 * Math.PI / 180), 3e-4);
+  assert.ok(g.gite.redresse && g.gite.ballast.length === 3);
+});

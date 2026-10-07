@@ -67,11 +67,14 @@ function reservoir(V, r, e, A, env, ui, defs) {
   const ctx = A.ctx, sel = ui.selection === r.id;
   let s = `<g data-h="res:${r.id}" class="lb-res${sel ? ' sel' : ''}">`;
   s += `<path d="${chemin(V, contour(r))}Z" class="lb-zone"/>`;
-  const pRef = ui.pRef;
+  const pRef = ui.pRef, sol = r.aspect === 'sol';
+  // Terrain : sol sec au-dessus de la nappe, sol saturé en dessous.
+  if (sol) s += `<path d="${chemin(V, contour(r))}Z" class="lb-sol-sec"/><path d="${chemin(V, contour(r))}Z" fill="url(#lb-grains)" class="lb-liq"/>`;
   // liquides
   e.niveaux.forEach((n, i) => {
     const poly = chemin(V, bande(r, n.s0, n.s1)) + 'Z';
-    s += `<path d="${poly}" fill="${couleur(ctx, n.fluide)}" class="lb-liq"/>`;
+    s += `<path d="${poly}" fill="${couleur(ctx, n.fluide)}" class="lb-liq${sol ? ' lb-liq-sol' : ''}"/>`;
+    if (sol) s += `<path d="${poly}" fill="url(#lb-grains)" class="lb-liq"/>`;
     if (env.vues.champ && pRef > 0) {
       const id = `gp-${r.id}-${i}`;
       const o1 = Math.max(0, Math.min(1, n.pHaut / pRef)) * 0.5, o0 = Math.max(0, Math.min(1, n.pBas / pRef)) * 0.5;
@@ -105,12 +108,12 @@ function reservoir(V, r, e, A, env, ui, defs) {
       const xs = xa + (xb - xa) * 0.72;
       s += `<path d="M${n1(xs - 6)},${n1(y - 10)}L${n1(xs + 6)},${n1(y - 10)}L${n1(xs)},${n1(y)}Z" class="lb-nivsym"/>` +
         `<line x1="${n1(xs - 5)}" y1="${n1(y + 3)}" x2="${n1(xs + 5)}" y2="${n1(y + 3)}" class="lb-nivsym2"/><line x1="${n1(xs - 3)}" y1="${n1(y + 6)}" x2="${n1(xs + 3)}" y2="${n1(y + 6)}" class="lb-nivsym2"/>`;
-      if (env.vues.cotes) s += texte(xs + 9, y - 3, `${P.nombre(n.z1, 2)} m`, 'lb-petit lb-cote');
+      if (env.vues.cotes || r.constant) s += texte(xs + 9, y - 3, `${sol ? 'nappe · ' : ''}${P.nombre(n.z1, 2)} m${r.constant ? ' (niveau imposé)' : ''}`, 'lb-petit lb-cote');
     } else if (env.vues.cotes) s += texte(xb - 4, y - 3, `${P.nombre(n.z1, 2)} m`, 'lb-petit lb-cote', 'end');
     // poignée de remplissage
     s += `<line x1="${n1(xa)}" y1="${n1(y)}" x2="${n1(xb)}" y2="${n1(y)}" class="lb-poignee-niv" data-h="surf:${r.id}:${i}"/>`;
     const hpx = (n.z1 - n.z0) * V.k;
-    if (hpx > 15) s += texte(xa + 6, (V.Y(n.z0) + y) / 2 + 4, `${esc(nomFluide(ctx, n.fluide).toLowerCase())} · ${P.nombre(n.z1 - n.z0, 2)} m`, 'lb-petit lb-couchet');
+    if (hpx > 15) s += texte(xa + 6, (V.Y(n.z0) + y) / 2 + 4, `${sol ? 'terrain saturé' : esc(nomFluide(ctx, n.fluide).toLowerCase())} · ${P.nombre(n.z1 - n.z0, 2)} m`, 'lb-petit lb-couchet');
   });
   // plans de charge (surface libre fictive)
   if (env.vues.charge) {
@@ -125,8 +128,16 @@ function reservoir(V, r, e, A, env, ui, defs) {
   }
   // parois
   const cont = contour(r);
-  s += `<path d="${chemin(V, cont)}${r.ferme ? 'Z' : ''}" class="lb-hach"/>`;
-  s += `<path d="${chemin(V, cont)}${r.ferme ? 'Z' : ''}" class="lb-paroi"/>`;
+  if (sol) {
+    // Limites de la zone de terrain représentée et surface du sol.
+    s += `<path d="${chemin(V, cont)}" class="lb-paroi-sol"/>`;
+    const y = V.Y(r.z + r.H), x0 = V.X(r.x), x1 = V.X(r.x + P.largeurA(r, r.H));
+    s += `<line x1="${n1(x0)}" y1="${n1(y)}" x2="${n1(x1)}" y2="${n1(y)}" class="lb-terrain"/>`;
+    for (let x = x0 + 4; x < x1; x += 12) s += `<line x1="${n1(x)}" y1="${n1(y)}" x2="${n1(x - 6)}" y2="${n1(y - 6)}" class="lb-terrain-h"/>`;
+  } else {
+    s += `<path d="${chemin(V, cont)}${r.ferme ? 'Z' : ''}" class="lb-hach"/>`;
+    s += `<path d="${chemin(V, cont)}${r.ferme ? 'Z' : ''}" class="lb-paroi"/>`;
+  }
   const titre = `${r.id}${r.nom ? ' · ' + esc(r.nom) : ''}`;
   s += texte(V.X(r.x) + 6, V.Y(r.z + r.H) + 14, titre, 'lb-nom');
   if (sel) {
@@ -361,6 +372,13 @@ function vannePlane(V, v, res, A, env, ui) {
     const h = v.charniere === 'haut' ? res.haut : res.bas;
     s += `<circle cx="${n1(V.X(h.x))}" cy="${n1(V.Y(h.z))}" r="5" class="lb-charniere"/>`;
   }
+  if (v.charniere === 'glissieres' && res.levage != null) {
+    // Effort de levage le long des glissières (verticalement pour une trappe de fond).
+    const R = res.R, o = v.paroi === 'f' ? res.G : res.haut, ux = v.paroi === 'f' ? 0 : R.dx, uz = v.paroi === 'f' ? 1 : R.dz;
+    const x = V.X(o.x) + (v.paroi === 'f' ? 0 : R.nx * 14), y = V.Y(o.z) - (v.paroi === 'f' ? 0 : R.nz * 14), L = 46;
+    s += fleche(x, y, x + ux * L, y - uz * L, 'lb-levage', 9);
+    s += texte(x + ux * L + 6, y - uz * L - 2, `T = ${P.nombre(res.levage / 1000, 2)} kN`, 'lb-petit lb-levaget');
+  }
   s += resultante(V, res, env, `${v.id} · `);
   s += `<line x1="${n1(V.X(res.bas.x))}" y1="${n1(V.Y(res.bas.z))}" x2="${n1(V.X(res.haut.x))}" y2="${n1(V.Y(res.haut.z))}" class="lb-vp-hit"/>`;
   s += '</g>';
@@ -372,23 +390,39 @@ function flotteur(V, f, res, r, e, A, env, ui) {
   if (!res || res.erreur) return '';
   const sel = ui.selection === f.id;
   const dens = f.m / (f.l * f.h * f.b);
-  const teinte = dens < 950 ? '#C9A46C' : dens > 1500 ? '#A9ADA8' : '#B7B39A';
+  // Caisson creux : acier (paroi mince) ou béton ; corps plein : teinte selon la densité.
+  const teinte = f.creux ? (f.e < 0.1 ? '#8E9BA5' : '#B9B6AC') : dens < 950 ? '#C9A46C' : dens > 1500 ? '#A9ADA8' : '#B7B39A';
+  const lest = res.lest, ep = f.creux ? Math.max(lest.e, 2 / V.k) : 0;
   const xc = r.x + f.x;
   let s = `<g data-h="flot:${f.id}" class="lb-flot${sel ? ' sel' : ''}">`;
-  let pG, pC, pM = null, poly;
+  let pG, pC, pM = null, poly, interieur = null, ballast = null, cloisons = [];
   if (res.gite && !ui.saisi?.has(f.id)) {
     const g = res.gite, oz = e.zL - g.zw;
     const W = ([x, z]) => ({ x: xc + x, z: oz + z });
     poly = g.coins.map(W);
     pG = W([g.Gx, g.Gz]); pC = W([g.Cx, g.Cz]);
+    if (g.interieur) {
+      interieur = g.interieur.map(W);
+      ballast = g.ballast ? g.ballast.map(poly => poly.map(W)) : null;
+      cloisons = g.cloisons.map(([a, b]) => [W(a), W(b)]);
+    }
   } else {
     const zb = ui.aff.flot(f.id, res.zb);
     poly = [{ x: xc - f.l / 2, z: zb }, { x: xc + f.l / 2, z: zb }, { x: xc + f.l / 2, z: zb + f.h }, { x: xc - f.l / 2, z: zb + f.h }];
     const d = zb - res.zb;
     pG = { x: xc, z: res.zG + d }; pC = { x: xc, z: res.zC + d };
     if (res.zM != null && !res.immerge) pM = { x: xc, z: res.zM + d };
+    if (f.creux) {
+      const li = f.l - 2 * ep, hi = f.h - 2 * ep, zi = zb + ep;
+      interieur = [{ x: xc - li / 2, z: zi }, { x: xc + li / 2, z: zi }, { x: xc + li / 2, z: zi + hi }, { x: xc - li / 2, z: zi + hi }];
+      if (lest.V > 0) ballast = [[{ x: xc - li / 2, z: zi }, { x: xc + li / 2, z: zi }, { x: xc + li / 2, z: zi + Math.min(lest.h, hi) }, { x: xc - li / 2, z: zi + Math.min(lest.h, hi) }]];
+      for (let k = 1; k < lest.n; k++) { const x = xc - li / 2 + k * li / lest.n; cloisons.push([{ x, z: zi }, { x, z: zi + hi }]); }
+    }
   }
   s += `<path d="${chemin(V, poly)}Z" fill="${teinte}" class="lb-flotcorps"/>`;
+  if (interieur) s += `<path d="${chemin(V, interieur)}Z" class="lb-cavite"/>`;
+  for (const b of ballast || []) if (b.length > 2) s += `<path d="${chemin(V, b)}Z" fill="${couleur(A.ctx, f.ballastFluide)}" class="lb-ballast"/>`;
+  for (const c of cloisons) s += `<path d="${chemin(V, c)}" class="lb-cloison"/>`;
   // forces : poids en G, poussée en C
   // Poids et poussée décalés de part et d'autre de l'axe pour rester lisibles.
   const Pn = 46, ec = Math.abs(V.X(pG.x) - V.X(pC.x)) < 8 ? 6 : 0;
@@ -443,7 +477,8 @@ export function dessinerScene(scene, A, vue, ui) {
   return `<defs>${DEFS}${defs.join('')}</defs>${parties.join('')}`;
 }
 
-const DEFS = `<pattern id="lb-hachure" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#6D7F89" stroke-width="1.2"/></pattern>`;
+const DEFS = `<pattern id="lb-hachure" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#6D7F89" stroke-width="1.2"/></pattern>` +
+  `<pattern id="lb-grains" width="14" height="12" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.3" fill="#8B7650" opacity=".55"/><circle cx="10" cy="8" r="1.6" fill="#8B7650" opacity=".45"/><circle cx="6" cy="10.5" r=".9" fill="#6E5C3B" opacity=".5"/></pattern>`;
 
 // Cibles d'accrochage, guides et aperçu pendant un glisser-déposer.
 function surcouche(V, ui) {

@@ -118,7 +118,16 @@ export function trierCouches(couches, ctx) {
 }
 
 // ---------- état hydrostatique d'un réservoir ----------
+// Un réservoir « à niveau imposé » (mer, nappe, grande retenue) garde sa surface
+// libre à la hauteur hc : la couche supérieure s'ajuste aux volumes déplacés.
+function imposerNiveau(r, obs) {
+  if (!r.constant || !r.couches.length || !fini(r.hc)) return;
+  const cible = volumeLibre(r, Math.min(Math.max(r.hc, 0), r.H), obs);
+  const dessous = r.couches.slice(0, -1).reduce((t, c) => t + c.V, 0);
+  r.couches[r.couches.length - 1].V = Math.max(1e-9, cible - dessous);
+}
 export function etatReservoir(r, ctx, obs = []) {
+  imposerNiveau(r, obs);
   const niveaux = [];
   let V = 0, s0 = 0;
   for (const c of r.couches) {
@@ -265,8 +274,20 @@ export const estOuverte = (scene, c) => vannesDe(scene, c).every(v => v.ouverte)
 
 // ---------- flotteurs ----------
 function recouvrement(a0, a1, b0, b1) { return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0)); }
+// Caisson creux (parois d'épaisseur e) : ballast liquide au fond de la cavité.
+export function lestFlotteur(f, ctx) {
+  const e = f.creux && fini(f.e) ? f.e : 0;
+  const li = Math.max(0.01, f.l - 2 * e), bi = Math.max(0.01, f.b - 2 * e), hi = Math.max(0.01, f.h - 2 * e);
+  const Vmax = f.creux ? li * bi * hi : 0;
+  const V = f.creux ? Math.min(Math.max(f.ballast || 0, 0), Vmax) : 0;
+  const rho = ctx.rho(f.ballastFluide || 'eau');
+  const h = V / (li * bi);
+  const n = Math.max(1, Math.round(f.cloisons || 1)); // compartiments répartis sur la largeur l
+  return { V, Vmax, m: rho * V, rho, h, e, li, bi, hi, n, zc: e + h / 2, surfaceLibre: V > 1e-9 && V < Vmax - 1e-9 };
+}
+export const masseTotale = (f, ctx) => f.m + lestFlotteur(f, ctx).m;
 export function equilibreFlotteur(f, e, ctx) {
-  const A = f.l * f.b, P = f.m * ctx.g;
+  const A = f.l * f.b, P = masseTotale(f, ctx) * ctx.g;
   const poussee = s0 => {
     let F = 0;
     for (const n of e.niveaux) F += n.rho * recouvrement(n.s0, n.s1, s0, s0 + f.h);
@@ -317,7 +338,7 @@ function ajouter(r, ctx, fluide, dV) {
   r.couches = trierCouches(r.couches, ctx);
 }
 function deverser(scene, r, ctx) {
-  if (r.ferme) return 0;
+  if (r.ferme || r.constant) return 0;
   const e = etatAvecFlotteurs(scene, r, ctx);
   let exces = e.Vliq - e.Vtot;
   if (exces <= 1e-12) return 0;
@@ -332,6 +353,7 @@ function deverser(scene, r, ctx) {
 }
 function raideur(e, ctx, rho) {
   const r = e.r;
+  if (r.constant) return 0; // surface infinie : le niveau ne bouge pas
   let k = rho * ctx.g / Math.max(r.b * largeurA(r, Math.min(e.sL, r.H)), 1e-6);
   if (r.ferme && r.ciel.mode === 'piege') k += (e.pCiel + ctx.patm) / Math.max(e.Vgaz, 1e-9);
   return k;
@@ -350,10 +372,13 @@ function etapeConduite(scene, c, ctx, idx, facteur) {
   if (Dab >= Dba && Dab > TOL_P) { src = ra; dst = rb; es = ea; ed = eb; n = na; P = A; D = Dab; }
   else if (Dba > TOL_P) { src = rb; dst = ra; es = eb; ed = ea; n = nb; P = B; D = Dba; }
   else { c._q = 0; return { D: Math.max(Dab, Dba, 0), dV: 0 }; }
+  // Deux niveaux imposés différents entretiendraient un écoulement permanent :
+  // ce n'est plus de l'hydrostatique, on ne transfère rien (alerte dans analyser).
+  if (src.constant && dst.constant) { c._q = 0; return { D, dV: 0 }; }
   const K = raideur(es, ctx, n.rho) + raideur(ed, ctx, n.rho);
   let dV = facteur * D / K;
-  // On ne vidange pas une couche sous le piquage.
-  const dispo = volumeLibre(src, n.s1, es.obs) - volumeLibre(src, P.z - src.z, es.obs);
+  // On ne vidange pas une couche sous le piquage (une source à niveau imposé est inépuisable).
+  const dispo = src.constant ? Infinity : volumeLibre(src, n.s1, es.obs) - volumeLibre(src, P.z - src.z, es.obs);
   dV = Math.min(dV, Math.max(0, dispo));
   if (dst.ferme) {
     const lim = Math.max(0, ed.Vgaz - 0.02 * ed.Vtot);
@@ -687,6 +712,18 @@ function analyserVannePlane(v, scene, A) {
   }
   etapes.push(`Intégration numérique de contrôle : F = ${nombre(res.F / 1000, 2)} kN, C à ${nombre((res.uG - res.uC) * 100, 2)} cm sous G`);
   if (v.paroi === 'd' && Math.abs((r.alpha ?? 90) - 90) > 1e-6) etapes.push(`Composantes : F<sub>H</sub> = F sin α = ${nombre(res.FH / 1000, 2)} kN ; F<sub>V</sub> = −F cos α = ${nombre(res.FV / 1000, 2)} kN`);
+  if (v.charniere === 'glissieres') {
+    const fr = fini(v.f) ? v.f : 0.25, Pv = fini(v.poids) ? v.poids : 0;
+    if (v.paroi === 'f') {
+      res.levage = Pv + Math.max(0, res.F);
+      etapes.push(`Trappe de fond levée verticalement : T = P + F = ${nombre(Pv / 1000, 2)} + ${nombre(res.F / 1000, 2)} = ${nombre(res.levage / 1000, 2)} kN`);
+    } else {
+      const sinA = Math.sin(rad(R_alpha(r, v.paroi)));
+      res.frottement = fr * Math.abs(res.F);
+      res.levage = Pv * sinA + res.frottement;
+      etapes.push(`Vanne levante en glissières : au décollement, T = P${sinA < 0.999 ? ' sin α' : ''} + f F = ${nombre(Pv * sinA / 1000, 2)} + ${nombre(fr, 2)} × ${nombre(Math.abs(res.F) / 1000, 2)} = ${nombre(res.levage / 1000, 2)} kN ; le frottement dû à la poussée en représente ${nombre(100 * res.frottement / Math.max(res.levage, 1e-9), 0)} %`);
+    }
+  }
   if (v.charniere === 'haut' || v.charniere === 'bas') {
     const uh = v.charniere === 'haut' ? v.a / 2 : -v.a / 2;
     const bras = Math.abs(uh - res.uC);
@@ -697,6 +734,7 @@ function analyserVannePlane(v, scene, A) {
   res.etapes = etapes;
   return res;
 }
+const R_alpha = (r, paroi) => (paroi === 'd' ? (fini(r.alpha) ? r.alpha : 90) : paroi === 'g' ? 90 : 0);
 // Analyse d'une paroi entière (diagramme des pressions, § 2.4 et ex. 2.5).
 export function analyserParoi(r, e, ctx, paroi) {
   const R = repereParoi(r, paroi);
@@ -717,19 +755,27 @@ export function analyserParoi(r, e, ctx, paroi) {
 function analyserFlotteur(f, scene, A) {
   const r = A.idx.get(f.reservoir), e = A.etats.get(f.reservoir);
   if (!r || !e) return { erreur: 'Réservoir introuvable.' };
-  const ctx = A.ctx, eq = equilibreFlotteur(f, e, ctx);
+  const ctx = A.ctx, eq = equilibreFlotteur(f, e, ctx), lest = lestFlotteur(f, ctx);
+  const mTot = f.m + lest.m, zGrel = (f.m * f.zG + lest.m * lest.zc) / mTot;
   const s0 = eq.s0, zb = r.z + s0, A0 = f.l * f.b;
   const parts = e.niveaux.map(n => ({ n, h: recouvrement(n.s0, n.s1, s0, s0 + f.h) })).filter(k => k.h > 1e-9);
   const Vimm = A0 * parts.reduce((t, k) => t + k.h, 0);
   const poids = parts.reduce((t, k) => t + k.n.rho * k.h, 0);
   const zC = poids > 0 ? r.z + parts.reduce((t, k) => t + k.n.rho * k.h * (Math.max(k.n.s0, s0) + k.h / 2), 0) / poids : zb;
-  const zG = zb + f.zG;
+  const zG = zb + zGrel;
   const T = Math.min(f.h, Math.max(0, e.sL - s0));
   const immerge = e.sL >= s0 + f.h - 1e-9;
-  const res = { s0, zb, x: r.x + f.x, P: eq.P, FA: eq.FA, R: eq.R, fond: eq.fond, Vimm, T, zC, zG, immerge, etapes: [] };
+  const res = { s0, zb, x: r.x + f.x, P: eq.P, FA: eq.FA, R: eq.R, fond: eq.fond, Vimm, T, zC, zG, immerge, lest, mTot, etapes: [] };
+  res.Fs = eq.FA > 1e-9 ? eq.P / eq.FA : Infinity;
   const g = ctx.g;
-  res.etapes.push(`Poids P = m g = ${nombre(f.m, 0)} × ${nombre(g, 2)} = ${nombre(eq.P / 1000, 2)} kN (masse volumique moyenne ${nombre(f.m / (A0 * f.h), 0)} kg/m³)`);
-  if (eq.fond) res.etapes.push(`Même totalement immergé, la poussée ne vaut que ${nombre(eq.FA / 1000, 2)} kN < P : le corps repose sur le fond, réaction R = P − F<sub>A</sub> = ${nombre(eq.R / 1000, 2)} kN (poids apparent)`);
+  if (lest.V > 0) {
+    res.etapes.push(`Poids à vide ${nombre(f.m * g / 1000, 2)} kN + ballast ${nombre(lest.V, 2)} m³ × ${nombre(lest.rho, 0)} × ${nombre(g, 2)} = ${nombre(lest.m * g / 1000, 2)} kN → P = ${nombre(eq.P / 1000, 2)} kN`);
+    res.etapes.push(`Ballast sur ${nombre(lest.h, 3)} m au fond de la cavité ; G global à (${nombre(f.m, 0)} × ${nombre(f.zG, 3)} + ${nombre(lest.m, 0)} × ${nombre(lest.zc, 3)}) / ${nombre(mTot, 0)} = ${nombre(zGrel, 3)} m du fond`);
+  } else res.etapes.push(`Poids P = m g = ${nombre(f.m, 0)} × ${nombre(g, 2)} = ${nombre(eq.P / 1000, 2)} kN (masse volumique moyenne ${nombre(f.m / (A0 * f.h), 0)} kg/m³)`);
+  if (eq.fond) {
+    res.etapes.push(`${immerge ? 'Même totalement immergé, la' : 'Posé sur le fond, la'} poussée ne vaut que ${nombre(eq.FA / 1000, 2)} kN < P : le corps repose sur le fond, réaction R = P − F<sub>A</sub> = ${nombre(eq.R / 1000, 2)} kN`);
+    if (eq.FA > 0) res.etapes.push(`Sécurité au soulèvement F<sub>s</sub> = P / F<sub>A</sub> = ${nombre(eq.P / 1000, 2)} / ${nombre(eq.FA / 1000, 2)} = ${nombre(res.Fs, 2)} (les règles de calcul exigent une marge, de l’ordre de 1,1 à 1,2 selon les référentiels)`);
+  }
   else res.etapes.push(`Équilibre de flottaison : F<sub>A</sub> = Σ ρ<sub>i</sub> g V<sub>imm,i</sub> = P → ${parts.length === 1 && !immerge ? `T = P/(ρ g l b) = ${nombre(eq.P, 0)} / (${nombre(parts[0].n.rho, 0)} × ${nombre(g, 2)} × ${nombre(f.l, 2)} × ${nombre(f.b, 2)}) = ${nombre(T, 3)} m` : `immersion ${immerge ? 'totale' : 'partielle'} sur ${nombre(Vimm / A0, 3)} m`}`);
   res.etapes.push(`Centre de carène C à ${nombre(zC - zb, 3)} m au-dessus du fond du corps ; G à ${nombre(f.zG, 3)} m`);
   const unFluide = parts.length === 1;
@@ -742,29 +788,57 @@ function analyserFlotteur(f, scene, A) {
       const I = f.b * f.l ** 3 / 12;
       res.CM = I / Vimm; res.zM = zC + res.CM; res.GM = res.zM - zG;
       res.etapes.push(`Rayon métacentrique CM = I/V<sub>imm</sub> = (${nombre(f.b, 2)} × ${nombre(f.l, 2)}³/12) / ${nombre(Vimm, 3)} = ${nombre(res.CM, 3)} m`);
-      res.etapes.push(`Hauteur métacentrique GM = CM − CG = ${nombre(res.CM, 3)} − (${nombre(zG - zC, 3)}) = ${nombre(res.GM, 3)} m → ${res.GM > 0 ? 'équilibre stable' : 'équilibre instable'}`);
+      res.etapes.push(`Hauteur métacentrique GM = CM − CG = ${nombre(res.CM, 3)} − (${nombre(zG - zC, 3)}) = ${nombre(res.GM, 3)} m${lest.surfaceLibre ? ' (ballast supposé figé)' : ` → ${res.GM > 0 ? 'équilibre stable' : 'équilibre instable'}`}`);
+      if (lest.surfaceLibre) {
+        // Carène liquide : le ballast se déplace à la gîte, ce qui équivaut à remonter G.
+        // n compartiments de largeur l/n : l'inertie des surfaces libres est divisée par n².
+        const ib = lest.bi * lest.li ** 3 / (12 * lest.n * lest.n);
+        res.GMfige = res.GM;
+        res.correction = lest.rho * ib / (rho * Vimm);
+        res.GM -= res.correction;
+        res.etapes.push(`Surface libre du ballast${lest.n > 1 ? ` (${lest.n} compartiments : i divisé par ${lest.n * lest.n})` : ''} : le liquide se déplace à la gîte, G remonte fictivement de ρ<sub>b</sub> i/(ρ V<sub>imm</sub>) = ${nombre(lest.rho, 0)} × ${nombre(ib, 2)} / (${nombre(rho, 0)} × ${nombre(Vimm, 2)}) = ${nombre(res.correction, 3)} m → GM effectif = ${nombre(res.GM, 3)} m, ${res.GM > 0 ? 'équilibre stable' : 'équilibre instable'}`);
+      }
     }
     res.stable = res.GM > 0;
-    if (f.gite && !immerge) Object.assign(res, gite(f, T, rho, ctx));
+    if (f.gite && !immerge) Object.assign(res, gite(f, T, rho, ctx, lest));
   } else if (!eq.fond) res.etapes.push(`Carène répartie sur plusieurs liquides : la formule CM = I/V ne s’applique plus telle quelle (stabilité non évaluée).`);
   return res;
 }
 // Flotteur incliné de theta : nouvelle carène à volume constant (polygone).
-function gite(f, T, rho, ctx) {
+function gite(f, T, rho, ctx, lest) {
   const th = rad(f.gite), c = Math.cos(th), s = Math.sin(th);
   // Corps dans son repère (origine au milieu du fond), tourné dans le sens horaire.
   const coins = [[-f.l / 2, 0], [f.l / 2, 0], [f.l / 2, f.h], [-f.l / 2, f.h]];
   const tourne = ([x, z]) => [x * c + z * s, -x * s + z * c];
   const pts = coins.map(tourne);
-  const aire = zw => surfaceSous(pts, zw);
-  const cible = f.l * T;
-  let lo = Math.min(...pts.map(p => p[1])), hi = Math.max(...pts.map(p => p[1]));
-  for (let i = 0; i < 64; i++) { const m = (lo + hi) / 2; if (aire(m).A < cible) lo = m; else hi = m; }
-  const zw = (lo + hi) / 2, car = aire(zw);
-  const Gp = tourne([0, f.zG]);
+  // Polygone sous une horizontale, d'aire imposée (carène ou ballast).
+  const niveau = (poly, cible) => {
+    let lo = Math.min(...poly.map(p => p[1])), hi = Math.max(...poly.map(p => p[1]));
+    for (let i = 0; i < 64; i++) { const m = (lo + hi) / 2; if (surfaceSous(poly, m).A < cible) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  };
+  const zw = niveau(pts, f.l * T), car = surfaceSous(pts, zw);
+  let Gp = tourne([0, f.zG]), interieur = null, ballast = null, cloisons = [];
+  if (f.creux) {
+    const e = lest.e, n = lest.n, lc = lest.li / n;
+    interieur = [[-lest.li / 2, e], [lest.li / 2, e], [lest.li / 2, e + lest.hi], [-lest.li / 2, e + lest.hi]].map(tourne);
+    for (let k = 1; k < n; k++) { const x = -lest.li / 2 + k * lc; cloisons.push([tourne([x, e]), tourne([x, e + lest.hi])]); }
+    if (lest.V > 1e-9) {
+      // Dans chaque compartiment la surface du ballast reste horizontale : son centre de gravité se déplace.
+      ballast = [];
+      let mx = 0, mz = 0;
+      for (let k = 0; k < n; k++) {
+        const x0 = -lest.li / 2 + k * lc, cell = [[x0, e], [x0 + lc, e], [x0 + lc, e + lest.hi], [x0, e + lest.hi]].map(tourne);
+        const sb = surfaceSous(cell, niveau(cell, lc * lest.h));
+        ballast.push(sb.poly); mx += sb.x / n; mz += sb.z / n;
+      }
+      const m = f.m + lest.m;
+      Gp = [(f.m * Gp[0] + lest.m * mx) / m, (f.m * Gp[1] + lest.m * mz) / m];
+    }
+  }
   const GZ = car.x - Gp[0];
-  const P = f.m * ctx.g;
-  return { gite: { theta: f.gite, zw, Cx: car.x, Cz: car.z, Gx: Gp[0], Gz: Gp[1], GZ, couple: P * GZ, redresse: GZ * Math.sign(f.gite) > 0, coins: pts } };
+  const P = (f.m + (lest ? lest.m : 0)) * ctx.g;
+  return { gite: { theta: f.gite, zw, Cx: car.x, Cz: car.z, Gx: Gp[0], Gz: Gp[1], GZ, couple: P * GZ, redresse: GZ * Math.sign(f.gite) > 0, coins: pts, interieur, ballast, cloisons } };
 }
 function surfaceSous(pts, zw) {
   // Sutherland–Hodgman contre le demi-plan z ≤ zw, puis aire et centroïde.
@@ -814,6 +888,11 @@ export function analyser(scene) {
     if (r.ferme && e.Vgaz < 0.03 * e.Vtot) alertes.push({ id, niveau: 'alerte', texte: `${id} : réservoir fermé presque plein, le ciel gazeux ne joue plus son rôle (verrou hydraulique).` });
   }
   for (const [id, ec] of conduites) {
+    const c = idx.get(id), ra = idx.get(c.a.el), rb = idx.get(c.b.el);
+    if (ec.ouverte && ra.constant && rb.constant && ec.cotes.a.f && ec.cotes.b.f) {
+      const ha = ec.cotes.a.z + ec.cotes.a.p / (ec.cotes.a.rho * ctx.g), hb = ec.cotes.b.z + ec.cotes.b.p / (ec.cotes.b.rho * ctx.g);
+      if (Math.abs(ha - hb) > 1e-3) alertes.push({ id, niveau: 'alerte', texte: `${id} relie deux niveaux imposés différents : l’écoulement serait permanent (pertes de charge, chapitre 6) ; rien ne bouge ici.` });
+    }
     const pv = ec.pire ? ctx.fl(ec.pire.fluide).pv : 0;
     if (ec.pire && ec.pire.pabs < pv) alertes.push({ id, niveau: 'alerte', texte: `${id} : au point haut (z = ${nombre(ec.pire.z, 2)} m) la pression absolue tomberait à ${nombre(ec.pire.pabs / 1000, 2)} kPa < p<sub>v</sub> : la colonne liquide se rompt (cavitation).` });
   }
@@ -896,7 +975,9 @@ export function verifierScene(brut) {
     if (e.type === 'reservoir') {
       Object.assign(o, { nom: texte(e.nom, 40, ''), x: nb(e.x, `${nom} x`, -200, 200), z: nb(e.z, `${nom} cote du fond`, -100, 200),
         w: nb(e.w, `${nom} largeur`, 0.2, 60), H: nb(e.H, `${nom} hauteur`, 0.3, 60), b: nb(e.b, `${nom} profondeur`, 0.05, 60),
-        alpha: nb(e.alpha ?? 90, `${nom} inclinaison`, 30, 150), ferme: !!e.ferme, diagramme: ['g', 'd', 'f'].includes(e.diagramme) ? e.diagramme : 'aucune' });
+        alpha: nb(e.alpha ?? 90, `${nom} inclinaison`, 30, 150), ferme: !!e.ferme, diagramme: ['g', 'd', 'f'].includes(e.diagramme) ? e.diagramme : 'aucune',
+        constant: !!e.constant, aspect: e.aspect === 'sol' ? 'sol' : 'liquide' });
+      if (o.constant) o.hc = nb(e.hc ?? o.H / 2, `${nom} niveau imposé`, 0, o.H);
       if (largeurA(o, o.H) < 0.2) throw Error(`${nom} : l’inclinaison referme le réservoir.`);
       const c = e.ciel || {};
       o.ciel = { mode: c.mode === 'piege' ? 'piege' : 'impose', p: nb(c.p ?? 0, `${nom} pression du ciel`, -100000, 1e7) };
@@ -906,7 +987,7 @@ export function verifierScene(brut) {
         return { fluide: k.fluide, V: nb(k.V, `${nom} volume`, 0, 1e6) };
       }), ctx);
       const tot = o.couches.reduce((t, k) => t + k.V, 0);
-      if (tot > capacite(o) * (1 + 1e-6)) throw Error(`${nom} : plus de liquide que le réservoir n’en contient.`);
+      if (tot > capacite(o) * (1 + 1e-6) && !o.constant) throw Error(`${nom} : plus de liquide que le réservoir n’en contient.`);
       if (o.ferme) { if (c.mode === 'piege' && fini(c.n) && c.n > 0) o.ciel.n = c.n; else calerGaz(o, ctx); }
       else o.ciel.n = 0;
     } else if (e.type === 'conduite') {
@@ -924,10 +1005,13 @@ export function verifierScene(brut) {
     } else if (e.type === 'vannePlane') {
       Object.assign(o, { reservoir: String(e.reservoir), paroi: ['g', 'd', 'f'].includes(e.paroi) ? e.paroi : 'd', s: nb(e.s, `${nom} position`, 0, 200),
         forme: formes[e.forme] ? e.forme : 'rect', a: nb(e.a, `${nom} dimension`, 0.05, 60), l: nb(e.l ?? 1, `${nom} largeur`, 0.05, 60),
-        charniere: ['haut', 'bas'].includes(e.charniere) ? e.charniere : 'aucune' });
+        charniere: ['haut', 'bas', 'glissieres'].includes(e.charniere) ? e.charniere : 'aucune',
+        f: nb(e.f ?? 0.25, `${nom} coefficient de frottement`, 0, 1.5), poids: nb(e.poids ?? 0, `${nom} poids propre`, 0, 1e8) });
     } else if (e.type === 'flotteur') {
       Object.assign(o, { reservoir: String(e.reservoir), x: nb(e.x, `${nom} position`, 0, 200), l: nb(e.l, `${nom} largeur`, 0.05, 60), h: nb(e.h, `${nom} hauteur`, 0.05, 60),
-        b: nb(e.b, `${nom} profondeur`, 0.05, 60), m: nb(e.m, `${nom} masse`, 0.01, 1e9), zG: nb(e.zG ?? e.h / 2, `${nom} centre de gravité`, 0, 60), gite: nb(e.gite ?? 0, `${nom} gîte`, -45, 45) });
+        b: nb(e.b, `${nom} profondeur`, 0.05, 60), m: nb(e.m, `${nom} masse`, 0.01, 1e9), zG: nb(e.zG ?? e.h / 2, `${nom} centre de gravité`, 0, 60), gite: nb(e.gite ?? 0, `${nom} gîte`, -45, 45),
+        creux: !!e.creux, e: nb(e.e ?? 0.02, `${nom} épaisseur de paroi`, 0, 5), ballast: nb(e.ballast ?? 0, `${nom} ballast`, 0, 1e6),
+        ballastFluide: LIQUIDES.includes(e.ballastFluide) ? e.ballastFluide : 'eau', cloisons: Math.round(nb(e.cloisons ?? 1, `${nom} compartiments`, 1, 12)) });
     }
     s.elements.push(o);
   }
@@ -958,7 +1042,7 @@ export function nettoyerScene(scene) {
         return !!resoudre(scene, q, idx);
       };
       switch (e.type) {
-        case 'reservoir': return true;
+        case 'reservoir': if (e.constant) e.hc = Math.min(Math.max(fini(e.hc) ? e.hc : e.H / 2, 0), e.H); return true;
         case 'conduite': return okRef(e.a) && okRef(e.b) && e.a.el !== e.b.el && idx.get(e.a.el)?.type === 'reservoir' && idx.get(e.b.el)?.type === 'reservoir';
         case 'vanne': return idx.get(e.conduite)?.type === 'conduite';
         case 'piezometre': case 'manometre': return okRef(e.piquage);
