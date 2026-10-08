@@ -2,7 +2,7 @@
 // balisage ; les coordonnées du monde (m) sont converties en pixels ici, si bien
 // que traits et textes gardent la même taille à tous les zooms.
 import * as P from './labo-physique.js';
-import { chargeEn } from './labo-ecoulement.js';
+import { chargeEn, segmentObstacle } from './labo-ecoulement.js';
 
 export const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const n1 = v => (Math.round(v * 10) / 10).toString();
@@ -142,6 +142,12 @@ function reservoir(V, r, e, A, env, ui, defs) {
   }
   const titre = `${r.id}${r.nom ? ' · ' + esc(r.nom) : ''}`;
   s += texte(V.X(r.x) + 6, V.Y(r.z + r.H) + 14, titre, 'lb-nom');
+  if (r.rouleaux) {
+    // réservoir posé sur rouleaux (ex. 5.5) : il est libre de reculer
+    const y = V.Y(r.z), rr = clampPx(0.09 * V.k, 4, 9), Lp = P.largeurA(r, 0);
+    for (const u of [0.15, 0.5, 0.85]) s += `<circle cx="${n1(V.X(r.x + u * Lp))}" cy="${n1(y + rr + 2)}" r="${n1(rr)}" class="lb-rouleau"/>`;
+    s += `<line x1="${n1(V.X(r.x) - 10)}" y1="${n1(y + 2 * rr + 2)}" x2="${n1(V.X(r.x + Lp) + 10)}" y2="${n1(y + 2 * rr + 2)}" class="lb-sol-ligne"/>`;
+  }
   if (sel) {
     const hx = V.X(r.x + P.largeurA(r, r.H)), hy = V.Y(r.z + r.H);
     s += `<rect x="${n1(hx - 6)}" y="${n1(hy - 6)}" width="12" height="12" class="lb-taille" data-h="taille:${r.id}"/>`;
@@ -500,7 +506,8 @@ function jets(V, scene, A, ui) {
   const zSol = Number.isFinite(scene.env.zSol) ? scene.env.zSol : 0;
   for (const j of A.ecoulement.jets) {
     if (!j.pts || j.pts.length < 2) continue;
-    const el = A.idx.get(j.de), d = el?.type === 'orifice' ? el.d : el?.type === 'robinet' ? 0.03 : (j.Q > 0 && j.V > 0 ? Math.sqrt(4 * j.Q / (Math.PI * j.V)) : 0.05);
+    // nappes déviées : épaisseur tirée du débit et de la vitesse
+    const d = !j.nappe && j.d ? j.d : (j.Q > 0 && j.V > 0 ? Math.sqrt(4 * j.Q / (Math.PI * j.V)) : 0.05);
     const w = clampPx(d * V.k, 2.5, 12), path = chemin(V, j.pts);
     s += `<path d="${path}" class="lb-jet" stroke="${couleur(A.ctx, j.fluide)}" style="stroke-width:${n1(w)}"/>`;
     s += `<path d="${path}" class="lb-jet-flux" style="stroke-dashoffset:${n1(-ui.temps * 90)}"/>`;
@@ -546,6 +553,16 @@ function appareil(V, el, A, scene, ui) {
     const so = E && E.sorties.get(el.id);
     s += texte(x + 8, y - 7, `${el.id}${so ? ` · V = ${P.nombre(so.V, 2)} m/s` : ' · sortie libre'}`, 'lb-petit lb-idi');
     s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="12" class="lb-hit"/>`;
+  } else if (el.type === 'lance') {
+    // lance : buse effilée dont (x, z) est la sortie du jet
+    const a = el.angle * Math.PI / 180, dx = Math.cos(a), dz = Math.sin(a), Lb = clampPx(0.45 * V.k, 28, 64);
+    const w0 = clampPx(el.d * V.k * 1.9, 9, 24) / 2, w1 = clampPx(el.d * V.k, 4, 16) / 2, ux = dx, uy = -dz, px = -uy, py = ux;
+    const bx = x - ux * Lb, by = y - uy * Lb;
+    s += `<path d="M${n1(bx + px * w0)},${n1(by + py * w0)}L${n1(x + px * w1)},${n1(y + py * w1)}L${n1(x - px * w1)},${n1(y - py * w1)}L${n1(bx - px * w0)},${n1(by - py * w0)}Z" class="lb-lance${el.ouvert ? '' : ' fermee'}"/>`;
+    s += `<line x1="${n1(bx)}" y1="${n1(by)}" x2="${n1(bx - ux * 14)}" y2="${n1(by - uy * 14)}" class="lb-dev-tube"/>`;
+    const st = E && E.lances.get(el.id);
+    s += texte(bx, by - w0 - 8, `${el.id} · ${el.ouvert ? `V = ${P.nombre(el.V, 2)} m/s${st ? ` · Q = ${P.nombre(st.Q * 1000, 1)} L/s` : ''}` : 'fermée'}`, 'lb-petit lb-idi', 'middle');
+    s += `<circle cx="${n1((x + bx) / 2)}" cy="${n1((y + by) / 2)}" r="${n1(Lb / 2 + 4)}" class="lb-hit"/>`;
   } else if (el.type === 'robinet') {
     s += `<path d="M${n1(x - 26)},${n1(y - 8)}L${n1(x)},${n1(y - 8)}Q${n1(x + 6)},${n1(y - 8)} ${n1(x + 6)},${n1(y - 2)}L${n1(x + 6)},${n1(y)}" class="lb-robinet"/>`;
     s += `<path d="M${n1(x - 14)},${n1(y - 8)}L${n1(x - 14)},${n1(y - 16)}M${n1(x - 19)},${n1(y - 16)}L${n1(x - 9)},${n1(y - 16)}" class="lb-robinet-volant"/>`;
@@ -586,6 +603,60 @@ function venturiDessin(V, v, A, ui) {
   return s + '</g>';
 }
 
+// Plaque et auget (chapitre 5).
+function obstacleDessin(V, o, A, ui) {
+  const seg = segmentObstacle(o), sel = ui.selection === o.id, ob = A.ecoulement && A.ecoulement.obstacles.get(o.id);
+  let s = `<g data-h="dev:${o.id}" class="lb-obst${sel ? ' sel' : ''}">`;
+  const a = { X: V.X(seg.a.x), Y: V.Y(seg.a.z) }, b = { X: V.X(seg.b.x), Y: V.Y(seg.b.z) };
+  if (o.type === 'plaque') {
+    s += `<line x1="${n1(a.X)}" y1="${n1(a.Y)}" x2="${n1(b.X)}" y2="${n1(b.Y)}" class="lb-plaque"/>`;
+    s += `<line x1="${n1(a.X)}" y1="${n1(a.Y)}" x2="${n1(b.X)}" y2="${n1(b.Y)}" class="lb-hit-trait"/>`;
+  } else {
+    // demi-cercle ouvert vers f : p(φ) = c − r cos φ · t − r sin φ · f
+    const r = o.w / 2, pts = [];
+    for (let k = 0; k <= 16; k++) { const ph = Math.PI * k / 16; pts.push({ x: o.x - r * Math.cos(ph) * seg.t.x - r * Math.sin(ph) * seg.f.x, z: o.z - r * Math.cos(ph) * seg.t.z - r * Math.sin(ph) * seg.f.z }); }
+    const d = pts.map((q, i) => `${i ? 'L' : 'M'}${n1(V.X(q.x))},${n1(V.Y(q.z))}`).join('');
+    s += `<path d="${d}" class="lb-auget"/><path d="${d}" class="lb-hit-trait"/>`;
+    if (o.u > 0) {
+      // sens de déplacement de l'auget, dessiné sous lui
+      const cx = V.X(o.x), cy = V.Y(o.z) + r * V.k + 22;
+      s += fleche(cx - seg.f.x * 13, cy + seg.f.z * 13, cx - seg.f.x * 39, cy + seg.f.z * 39, 'lb-mvt', 7);
+      s += texte(cx, cy + 18, `auget à u = ${P.nombre(o.u, 1)} m/s`, 'lb-petit lb-mvtt', 'middle');
+    }
+  }
+  const haut = Math.min(a.Y, b.Y);
+  s += texte((a.X + b.X) / 2, haut - 8, `${o.id}${ob ? ` · ${forceTexte(Math.hypot(ob.F.x, ob.F.z))}` : ''}`, 'lb-petit lb-idi', 'middle');
+  return s + '</g>';
+}
+const forceTexte = F => (Math.abs(F) >= 1000 ? `${P.nombre(F / 1000, 2)} kN` : `${P.nombre(F, Math.abs(F) < 10 ? 2 : 1)} N`);
+// Flèche d'effort de longueur croissant avec le logarithme de la force.
+function effort(x, y, F, texteF, cls = '') {
+  const m = Math.hypot(F.x, F.z);
+  if (!(m > 0.05)) return '';
+  const L = clampPx(14 + 13 * Math.log10(1 + m), 24, 82), ux = F.x / m, uy = -F.z / m;
+  return `<g class="lb-effort ${cls}">${fleche(x, y, x + ux * L, y + uy * L, 'lb-effort-fl', 9)}${texte(x + ux * (L + 6), y + uy * (L + 6) + (uy > 0.3 ? 10 : uy < -0.3 ? -2 : 4), texteF || forceTexte(m), 'lb-petit lb-effortt', ux < -0.3 ? 'end' : ux > 0.3 ? 'start' : 'middle')}</g>`;
+}
+// Efforts du chapitre 5 : obstacles, coudes, raccords, réactions des jets.
+function efforts(V, scene, A) {
+  let s = '';
+  const E = A.ecoulement, ef = A.efforts;
+  if (ef) {
+    for (const c of ef.coudes) s += effort(V.X(c.x), V.Y(c.z), c.F);
+    for (const r of ef.raccords) s += effort(V.X(r.x), V.Y(r.z) + 26, r.F);
+  }
+  if (!E) return s;
+  for (const [, ob] of E.obstacles) {
+    const q = ob.impacts[0];
+    s += effort(V.X(q ? q.x : ob.o.x), V.Y(q ? q.z : ob.o.z), ob.F, `F = ${forceTexte(Math.hypot(ob.F.x, ob.F.z))}`);
+  }
+  for (const [, st] of E.orifices) if (st.Q > 0 && st.reaction) s += effort(V.X(st.pos.x), V.Y(st.pos.z), { x: -st.reaction * st.n.x, z: -st.reaction * st.n.z }, `réaction ${forceTexte(st.reaction)}`, 'lb-reaction');
+  for (const [, l] of E.lances) if (l.Q > 0) {
+    const a = l.l.angle * Math.PI / 180, bx = l.l.x - Math.cos(a) * 0.5, bz = l.l.z - Math.sin(a) * 0.5;
+    s += effort(V.X(bx), V.Y(bz), { x: -l.reaction * l.dir.x, z: -l.reaction * l.dir.z }, `réaction ${forceTexte(l.reaction)}`, 'lb-reaction');
+  }
+  return s;
+}
+
 // ---------- scène complète ----------
 export function dessinerScene(scene, A, vue, ui) {
   const V = vueDe(vue), env = scene.env, defs = [];
@@ -620,6 +691,9 @@ export function dessinerScene(scene, A, vue, ui) {
     parties.push(jets(V, scene, A, ui));
     if (env.vues.lignes !== false) parties.push(lignesDeCharge(V, scene, A));
   }
+  for (const o of scene.elements) if (o.type === 'plaque' || o.type === 'auget') parties.push(obstacleDessin(V, o, A, ui));
+  for (const el of scene.elements) if (el.type === 'lance') parties.push(appareil(V, el, A, scene, ui));
+  if (env.vues.efforts) parties.push(efforts(V, scene, A));
   parties.push(surcouche(V, ui));
   return `<defs>${DEFS}${defs.join('')}</defs>${parties.join('')}`;
 }
