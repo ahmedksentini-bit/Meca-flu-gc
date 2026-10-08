@@ -29,6 +29,11 @@ const vanne = (id, c, t, o = {}) => ({ id, type: 'vanne', conduite: c, t, ouvert
 const visee = (V, x) => { const a = Math.asin(Math.min(1, 2 * G * x / (V * V))) / 2; return { angle: a * 180 / Math.PI, dz: (V * Math.sin(a)) ** 2 / (2 * G) }; };
 const lance = (id, x, z, o = {}) => ({ id, type: 'lance', x, z, angle: o.angle ?? 0, d: o.d ?? 0.05, V: o.V ?? 10, fluide: o.fluide || 'eau', ouvert: true });
 const aire = d => Math.PI * d * d / 4;
+// Chapitre 8 : canal vu en profil en long dans un cadre de 10 × 4 m de la scène.
+const canal = (id, o) => ({ id, type: 'canal', nom: o.nom || '', x: 0, z: 0, largeur: o.largeur ?? 10, hauteur: o.hauteur ?? 4.2, x0: o.x0 ?? 0, L: o.L, N: o.N ?? 200,
+  section: o.section || 'rect', b: o.b, m: o.m ?? 0, K: o.K ?? 0, i: o.i ?? 0, xr: o.xr ?? null, i2: o.i2 ?? 0, zf0: o.zf0 ?? 0,
+  amont: o.amont || 'debit', Q: o.Q ?? 0, aval: o.aval || 'libre', hAval: o.hAval ?? 1, init: o.init || { type: 'normale' }, bosse: o.bosse || null,
+  sonde: o.sonde ?? null, station: o.station ?? null, ritter: !!o.ritter, ondes: !!o.ondes });
 
 const fabriques = {
   vases(s) {
@@ -268,6 +273,23 @@ const fabriques = {
       reservoir('R2', { nom: 'Réservoir aval sous pression', x: 5.6, z: 0, w: 1.4, H: 2, ferme: true, p: 200000, constant: true, couches: [{ fluide: 'eau', h: 1.5 }] }),
       conduite('C1', { el: 'R1', port: 'd:0.50' }, { el: 'R2', port: 'g:0.50' }, { D: 0.3, zr: 1.5 }));
   },
+  'canal-trapeze'(s) {
+    s.elements.push(canal('CA1', { nom: 'canal d’irrigation', L: 2000, section: 'trap', b: 2, m: 1.5, K: 70, i: 0.0004, Q: 5.13, aval: 'normal', sonde: 1000 }));
+  },
+  caniveau(s) {
+    s.elements.push(canal('CA1', { nom: 'caniveau en béton lissé', L: 400, b: 1.5, K: 85, i: 0.002, Q: 2.4, aval: 'libre', sonde: 120 }));
+  },
+  intumescence(s) {
+    s.elements.push(canal('CA1', { nom: 'canal rectangulaire large', x0: -4000, L: 7000, N: 700, b: 10, K: 0, i: 0, Q: 14.4, aval: 'niveau', hAval: 1.6,
+      init: { type: 'uniforme', h: 1.6, U: 0.9 }, bosse: { x: 0, dh: 0.2, w: 300 }, ondes: true, station: -3000, sonde: -3000 }));
+  },
+  rupture(s) {
+    s.elements.push(canal('CA1', { nom: 'vallée à fond horizontal', x0: -6000, L: 16000, N: 800, b: 1, K: 0, i: 0, amont: 'mur', aval: 'libre',
+      init: { type: 'barrage', xb: 0, h1: 25, h2: 0 }, ritter: true, station: 8000, sonde: 0 }));
+  },
+  ressaut(s) {
+    s.elements.push(canal('CA1', { nom: 'coursier puis bief doux', L: 100, N: 400, b: 1, K: 75, i: 0.05, xr: 25, i2: 0.002, zf0: 2, Q: 1, aval: 'normal', sonde: 60 }));
+  },
   convergent(s) {
     // p₁ = 180 kPa juste en amont du convergent (z = 0,5 m), Q = 80 L/s.
     const V1 = 0.080 / aire(0.25), V2 = 0.080 / aire(0.15), g = 9.81;
@@ -283,7 +305,7 @@ const fabriques = {
 
 // Chapitres des expériences (groupes du sélecteur) ; les écoulements fixent leur modèle de fluide.
 // (liste ordonnée : des clés numériques passeraient avant les autres dans un objet)
-export const GROUPES = [['1-2', 'Chapitres 1 et 2 — hydrostatique'], ['3-4', 'Chapitres 3 et 4 — écoulements, Bernoulli'], ['5', 'Chapitre 5 — quantité de mouvement'], ['6', 'Chapitre 6 — pertes de charge']];
+export const GROUPES = [['1-2', 'Chapitres 1 et 2 — hydrostatique'], ['3-4', 'Chapitres 3 et 4 — écoulements, Bernoulli'], ['5', 'Chapitre 5 — quantité de mouvement'], ['6', 'Chapitre 6 — pertes de charge'], ['8', 'Chapitre 8 — surface libre']];
 export const SCENARIOS = [
   { id: 'vases', chapitre: '1-2', titre: 'Vases communicants', ref: '§ 2.2.2', ancre: 's-cas-du-liquide-incompressible',
     consigne: 'Ouvrez la vanne V1 (clic) : le liquide passe du château d’eau au bassin jusqu’à l’égalité des surfaces libres. Le volume se conserve : le niveau commun vaut Σ(hᵢSᵢ)/ΣSᵢ. Les piézomètres de la conduite suivent la charge.' },
@@ -351,6 +373,16 @@ export const SCENARIOS = [
     consigne: 'Q = 25 L/s, λ = 0,022 : pertes à l’aspiration 0,52 m, au refoulement 23,9 m ; HMT = 46,0 + 24,4 = 70,4 m, P_h = 17,3 kW, P_abs = 24,0 kW (η = 0,72). Essayez un refoulement en DN 150 : la puissance baisse d’environ 20 %.' },
   { id: 'borda', chapitre: '6', ecoulement: 'reel', vitesse: 1, titre: 'Ex. 6.7 — Élargissement brusque', ref: 'Ex. 6.7', ancre: 's-exercice-6.7-élargissement-brusque-bordacarnot',
     consigne: 'D = 100 → 200 mm, Q = 15 L/s : la vitesse tombe de 1,91 à 0,48 m/s, la perte de Borda vaut (U₁ − U₂)²/2g = 0,105 m, et la pression remonte de 6,9 cm d’eau seulement (677 Pa) au lieu des 17,4 cm d’une récupération sans perte.' },
+  { id: 'canal-trapeze', chapitre: '8', ecoulement: 'reel', vitesse: 60, titre: 'Ex. 8.1 — Canal trapézoïdal uniforme', ref: 'Ex. 8.1', ancre: 's-exercice-8.1-canal-trapézoïdal-en-régime-uniforme',
+    consigne: 'b = 2 m, fruit 3H/2V, K = 70, i = 0,4 ‰ : à h = 1,20 m, S = 4,56 m², P_m = 6,33 m, R_h = 0,721 m et Manning–Strickler donne Q = 5,13 m³/s, U = 1,13 m/s, Fr = 0,40 (fluvial). La ligne d’eau suit la profondeur normale h_n. Augmentez le débit dans l’inspecteur : l’onde se propage, puis un nouveau régime uniforme s’installe.' },
+  { id: 'caniveau', chapitre: '8', ecoulement: 'reel', vitesse: 10, titre: 'Ex. 8.2 — Profondeur normale d’un caniveau', ref: 'Ex. 8.2', ancre: 's-exercice-8.2-profondeur-normale-dun-collecteur-rectangulaire',
+    consigne: 'b = 1,50 m, K = 85, i = 2 ‰, Q = 2,40 m³/s : h_n ≈ 0,80 m (Fr = 0,71, fluvial) et h_c = 0,64 m. En bout de caniveau, la chute libre abaisse la ligne d’eau vers h_c (courbe de remous M2). Choisissez un niveau aval imposé de 1,20 m : la courbe M1 remonte vers l’amont.' },
+  { id: 'intumescence', chapitre: '8', ecoulement: 'reel', vitesse: 30, titre: 'Ex. 8.3 — Propagation d’une intumescence', ref: 'Ex. 8.3', ancre: 's-exercice-8.3-célérité-et-propagation-dune-intumescence',
+    consigne: 'h = 1,60 m, U = 0,90 m/s : c = √(gh) = 3,96 m/s, Fr = 0,23. La bosse créée au droit de la vanne se partage en deux ondes, l’une descend à U + c = 4,86 m/s, l’autre remonte le courant à U − c = −3,06 m/s et atteint l’ouvrage situé 3 km à l’amont après 980 s (temps × 30). Créez d’autres intumescences depuis l’inspecteur.' },
+  { id: 'rupture', chapitre: '8', ecoulement: 'reel', vitesse: 20, titre: 'Ex. 8.4 — Rupture de barrage (Ritter)', ref: 'Ex. 8.4', ancre: 's-exercice-8.4-onde-de-rupture-de-barrage-solution-de-ritter',
+    consigne: 'Retenue de 25 m sur fond sec et horizontal : le front dévale à 2√(gh₀) = 31,3 m/s, la profondeur au droit du barrage reste à 4/9 h₀ = 11,1 m avec une vitesse de 10,4 m/s, et l’onde atteint 8 km en 256 s. La courbe tiretée est la solution de Ritter ; le calcul numérique, légèrement diffusif, en suit la détente parabolique.' },
+  { id: 'ressaut', chapitre: '8', ecoulement: 'reel', vitesse: 1, titre: 'Ressaut hydraulique au pied d’un coursier', ref: '§ 8.2', ancre: 's-célérité-des-ondes-et-nombre-de-froude',
+    consigne: 'Q = 1 m³/s dans un canal de 1 m : sur le coursier à 5 %, l’écoulement est torrentiel (h_n = 0,21 m, Fr ≈ 3,3) ; sur le bief à 2 ‰, fluvial (h_n = 0,68 m). Le passage se fait par un ressaut dont les hauteurs conjuguées vérifient h₂/h₁ = (√(1 + 8Fr₁²) − 1)/2. Abaissez la pente aval : le ressaut remonte vers le coursier.' },
   { id: 'cavitation', titre: 'Dépression et vaporisation', ref: '§ 1.7 – 2.1.3', ancre: 's-pression-de-vapeur-saturante-et-cavitation',
     consigne: 'Ciel à −60 kPa : la pression absolue en surface tombe à 41 kPa, sous la pression de vapeur de l’essence (55 kPa) : le liquide se vaporise. Remplacez l’essence par de l’eau (pv = 2,3 kPa) et l’alerte disparaît. Le piézomètre ne peut pas mesurer une dépression ; le tube en U, si.' }
 ];

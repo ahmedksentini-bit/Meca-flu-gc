@@ -9,6 +9,7 @@
 // ensuite dans le temps (vidange, remplissage) par bilan de volume.
 import * as P from './labo-physique.js';
 import { darcyFriction } from './solvers.js';
+import { avancerCanal, diagnostic } from './labo-canal.js';
 
 const aire = D => Math.PI * D * D / 4;
 const fini = v => typeof v === 'number' && Number.isFinite(v);
@@ -468,6 +469,8 @@ export function analyserTout(scene) {
       A.alertes.push({ id: '', niveau: 'info', texte: 'Mode illustratif : orifices, pompes, lances et sorties libres sont inactifs. Choisissez « fluide parfait » ou « fluide réel » pour simuler l’écoulement.' });
   } else A = P.analyser(scene, { apresConduites: B => appliquerEcoulement(scene, B) });
   A.efforts = effortsAncrage(scene, A);
+  A.canaux = new Map();
+  for (const c of scene.elements) if (c.type === 'canal') A.canaux.set(c.id, diagnostic(c, A.ctx.g));
   return A;
 }
 
@@ -581,7 +584,11 @@ export function integrer(scene, duree, { dzMax = null, pasMax = 400 } = {}) {
 export function avancer(scene, dt) {
   const mode = scene.env.ecoulement || 'illustratif';
   if (mode === 'illustratif') return P.avancer(scene, dt);
-  return integrer(scene, dt * (fini(scene.env.vitesse) ? scene.env.vitesse : 1));
+  const d = dt * (fini(scene.env.vitesse) ? scene.env.vitesse : 1), g = P.contexte(scene).g;
+  let actif = integrer(scene, d);
+  // canaux à surface libre (chapitre 8) : Saint-Venant sur la même durée
+  for (const c of scene.elements) if (c.type === 'canal') actif = avancerCanal(c, d, g) || actif;
+  return actif;
 }
 export function equilibrer(scene) {
   if ((scene.env.ecoulement || 'illustratif') === 'illustratif') return P.equilibrer(scene);

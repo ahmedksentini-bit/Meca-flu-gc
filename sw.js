@@ -7,7 +7,7 @@
 // gardés sous la même adresse. Les fichiers du site passent donc en requête
 // conditionnelle (no-cache) : le serveur renvoie le fichier s'il a changé,
 // sinon une réponse 304 légère.
-const CACHE = "mecaflu-v2-53";
+const CACHE = "mecaflu-v2-54";
 const ASSETS = ["./","./index.html","./styles.css","./enhancements.css","./src/app.js","./src/solvers.js","./src/diagrams.js","./src/diagrams3d.js","./src/diagrams3d-families.js","./src/recaps.js","./src/warmups.js","./data/exercises.json","./data/exercises-ch1-ch2.json","./data/exercises-ch3-ch4.json","./data/exercises-ch5-ch8.json","./data/exercises-exam-td.json","./data/exercises-td.json","./data/exercises-complements.json","./data/exercises-hydrau-gen.json","./vendor/three/three.module.min.js","./vendor/three/addons/controls/OrbitControls.js","./vendor/pdfjs/pdf.min.mjs","./vendor/pdfjs/pdf.worker.min.mjs","./docs/Cours_Mecanique_des_Fluides_GC_S1_v01.pdf","./manifest.webmanifest","./assets/icon.svg"];
 ASSETS.push('./installation.css', './src/installation.js', './src/installation-solver.js');
 ASSETS.push('./engineering.css', './src/engineering.js', './src/engineering-solvers.js');
@@ -15,7 +15,7 @@ ASSETS.push('./engineering.css', './src/engineering.js', './src/engineering-solv
 // exerciseur.html sont mis en cache a la premiere visite, pas a l installation.
 ASSETS.push('./vendor/mathjax/tex-chtml.js');
 // Laboratoire virtuel (chapitres 1 et 2) : page dédiée et figures du cours.
-ASSETS.push('./labo.html','./labo.css','./src/labo.js','./src/labo-physique.js','./src/labo-dessin.js','./src/labo-scenarios.js','./src/labo-embed.js','./src/labo-ecoulement.js');
+ASSETS.push('./labo.html','./labo.css','./src/labo.js','./src/labo-physique.js','./src/labo-dessin.js','./src/labo-scenarios.js','./src/labo-embed.js','./src/labo-ecoulement.js','./src/labo-canal.js');
 ASSETS.push('./src/geo.js','./studio.css','./src/mesh-solver.js','./src/network-studio.js','./src/technical-library.js','./src/project-store.js','./src/pdf-report.js','./src/basemap-store.js');
 // Précharge sans tout-ou-rien : avec cache.addAll, un seul fichier manquant
 // faisait échouer l'installation, et le lecteur restait sur l'ancienne version.

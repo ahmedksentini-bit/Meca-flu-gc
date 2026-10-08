@@ -965,7 +965,7 @@ export function sonder(scene, analyse, x, z) {
 // ---------- création, contrôle et nettoyage des scènes ----------
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,15}$/;
 export const PREFIXES = { reservoir: 'R', conduite: 'C', vanne: 'V', piezometre: 'P', manometre: 'M', tubeU: 'U', vannePlane: 'VP', flotteur: 'F',
-  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB', lance: 'LA', plaque: 'PL', auget: 'AU' };
+  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB', lance: 'LA', plaque: 'PL', auget: 'AU', canal: 'CA' };
 export const ECOULEMENTS = ['illustratif', 'parfait', 'reel'];
 export function nouvelId(scene, type) {
   const p = PREFIXES[type] || 'E';
@@ -1080,6 +1080,21 @@ export function verifierScene(brut) {
     } else if (e.type === 'auget') {
       Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), angle: nb(e.angle ?? 180, `${nom} orientation`, -360, 360),
         w: nb(e.w ?? 0.4, `${nom} ouverture`, 0.05, 10), beta: nb(e.beta ?? 180, `${nom} déviation`, 10, 180), sens: e.sens === -1 ? -1 : 1, u: nb(e.u ?? 0, `${nom} vitesse`, 0, 200) });
+    } else if (e.type === 'canal') {
+      const ini = e.init || {}, types = ['normale', 'repos', 'barrage', 'uniforme', 'sec'];
+      Object.assign(o, { nom: texte(e.nom, 60, ''), x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500),
+        largeur: nb(e.largeur ?? 10, `${nom} largeur du cadre`, 2, 100), hauteur: nb(e.hauteur ?? 4, `${nom} hauteur du cadre`, 1, 60),
+        x0: nb(e.x0 ?? 0, `${nom} abscisse amont`, -1e6, 1e6), L: nb(e.L ?? 100, `${nom} longueur`, 1, 1e6), N: Math.round(nb(e.N ?? 200, `${nom} mailles`, 20, 1000)),
+        section: e.section === 'trap' ? 'trap' : 'rect', b: nb(e.b ?? 1, `${nom} largeur au fond`, 0.01, 1000), m: nb(e.m ?? 0, `${nom} fruit`, 0, 10),
+        K: nb(e.K ?? 70, `${nom} Strickler`, 0, 200), i: nb(e.i ?? 0.001, `${nom} pente`, -0.2, 0.5),
+        xr: e.xr == null ? null : nb(e.xr, `${nom} abscisse de rupture de pente`, -1e6, 1e6), i2: nb(e.i2 ?? 0, `${nom} seconde pente`, -0.2, 0.5),
+        zf0: nb(e.zf0 ?? 0, `${nom} cote du fond amont`, -1e4, 1e4), amont: e.amont === 'mur' ? 'mur' : 'debit', Q: nb(e.Q ?? 1, `${nom} débit`, 0, 1e5),
+        aval: ['libre', 'niveau', 'normal', 'mur'].includes(e.aval) ? e.aval : 'libre', hAval: nb(e.hAval ?? 1, `${nom} profondeur aval`, 0, 1000),
+        init: { type: types.includes(ini.type) ? ini.type : 'normale', h: nb(ini.h ?? 1, `${nom} profondeur initiale`, 0, 1000), U: nb(ini.U ?? 0, `${nom} vitesse initiale`, -100, 100),
+          xb: nb(ini.xb ?? 0, `${nom} position du barrage`, -1e6, 1e6), h1: nb(ini.h1 ?? 1, `${nom} retenue`, 0, 1000), h2: nb(ini.h2 ?? 0, `${nom} aval du barrage`, 0, 1000) },
+        bosse: e.bosse ? { x: nb(e.bosse.x, `${nom} intumescence`, -1e6, 1e6), dh: nb(e.bosse.dh, `${nom} intumescence`, -100, 100), w: nb(e.bosse.w, `${nom} intumescence`, 0.01, 1e6) } : null,
+        sonde: e.sonde == null ? null : nb(e.sonde, `${nom} sonde`, -1e6, 1e6), station: e.station == null ? null : nb(e.station, `${nom} station`, -1e6, 1e6),
+        ritter: !!e.ritter, ondes: !!e.ondes });
     } else if (e.type === 'flotteur') {
       Object.assign(o, { reservoir: String(e.reservoir), x: nb(e.x, `${nom} position`, 0, 200), l: nb(e.l, `${nom} largeur`, 0.05, 60), h: nb(e.h, `${nom} hauteur`, 0.05, 60),
         b: nb(e.b, `${nom} profondeur`, 0.05, 60), m: nb(e.m, `${nom} masse`, 0.01, 1e9), zG: nb(e.zG ?? e.h / 2, `${nom} centre de gravité`, 0, 60), gite: nb(e.gite ?? 0, `${nom} gîte`, -45, 45),
@@ -1143,7 +1158,7 @@ export function nettoyerScene(scene) {
           e.d = Math.min(e.d, c.D * 0.95);
           return true;
         }
-        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': case 'lance': case 'plaque': case 'auget': return true;
+        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': case 'lance': case 'plaque': case 'auget': case 'canal': return true;
         case 'vanne': return idx.get(e.conduite)?.type === 'conduite';
         case 'piezometre': case 'manometre': return okRef(e.piquage);
         case 'tubeU': return okRef(e.piquage) && (!e.piquage2 || okRef(e.piquage2));
