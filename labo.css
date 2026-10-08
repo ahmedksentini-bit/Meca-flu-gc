@@ -381,4 +381,14 @@
 .lb-canal-sondet{fill:#6B4BB0;font-weight:600}
 .lb-canal-coupe{fill:#fff;stroke:var(--lb-rule);pointer-events:none}
 .lb-canal-paroi{fill:none;stroke:#34444E;stroke-width:1.6;pointer-events:none}
+/* Similitude (chapitre 7) */
+.lb-bille{fill:#5B6872;stroke:#22323C;stroke-width:1.2}
+.lb-bille-g{cursor:pointer}
+.lb-bille-g.sel .lb-bille{stroke:var(--lb-brique);stroke-width:2}
+.lb-repere-b{stroke:#1E6E4E;stroke-width:1.2;stroke-dasharray:6 3;pointer-events:none}
+.lb-repere-bt{fill:#1E6E4E}
+.lb-grec{text-transform:none;font-style:normal}
+.lb-simil table{border-collapse:collapse;width:100%;font-size:12px;margin:.4rem 0}
+.lb-simil th,.lb-simil td{border-bottom:1px solid var(--lb-rule);padding:.2rem .3rem;text-align:right}
+.lb-simil th:first-child,.lb-simil td:first-child{text-align:left}
 .lb-venturi.sel .lb-venturi-corps{stroke:var(--lb-brique);stroke-width:2.2}

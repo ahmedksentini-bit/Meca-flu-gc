@@ -62,7 +62,8 @@ export function contexte(scene) {
   const g = fini(env.g) ? env.g : G;
   const patm = fini(env.patm) ? env.patm : PATM;
   const rhoPerso = scene && scene.perso && fini(scene.perso.rho) ? scene.perso.rho : FLUIDES.perso.rho;
-  const perso = { ...FLUIDES.perso, rho: rhoPerso };
+  const muPerso = scene && scene.perso && fini(scene.perso.mu) ? scene.perso.mu : FLUIDES.perso.mu;
+  const perso = { ...FLUIDES.perso, rho: rhoPerso, mu: muPerso };
   const fl = id => (id === 'perso' ? perso : FLUIDES[id]) || null;
   return { g, patm, fl, rho: id => (id && fl(id) && !fl(id).gaz ? fl(id).rho : 0) };
 }
@@ -965,7 +966,7 @@ export function sonder(scene, analyse, x, z) {
 // ---------- création, contrôle et nettoyage des scènes ----------
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,15}$/;
 export const PREFIXES = { reservoir: 'R', conduite: 'C', vanne: 'V', piezometre: 'P', manometre: 'M', tubeU: 'U', vannePlane: 'VP', flotteur: 'F',
-  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB', lance: 'LA', plaque: 'PL', auget: 'AU', canal: 'CA' };
+  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB', lance: 'LA', plaque: 'PL', auget: 'AU', canal: 'CA', bille: 'B' };
 export const ECOULEMENTS = ['illustratif', 'parfait', 'reel'];
 export function nouvelId(scene, type) {
   const p = PREFIXES[type] || 'E';
@@ -974,7 +975,7 @@ export function nouvelId(scene, type) {
 }
 export function sceneVide(nom = 'Nouvelle expérience') {
   return { version: VERSION, nom, env: { g: G, patm: PATM, unite: 'kPa', reference: 'relative', ecoulement: 'illustratif', vitesse: 1, zSol: 0,
-    vues: { champ: true, charge: true, cotes: true, isobares: false, lignes: true, efforts: false } }, perso: { rho: FLUIDES.perso.rho }, elements: [] };
+    vues: { champ: true, charge: true, cotes: true, isobares: false, lignes: true, efforts: false } }, perso: { rho: FLUIDES.perso.rho, mu: FLUIDES.perso.mu }, elements: [] };
 }
 // Recalcule la quantité de gaz piégé pour que le ciel soit à la pression p.
 export function calerGaz(r, ctx, scene = null) {
@@ -1011,6 +1012,7 @@ export function verifierScene(brut) {
   const v = env.vues || {};
   for (const k of Object.keys(s.env.vues)) if (typeof v[k] === 'boolean') s.env.vues[k] = v[k];
   s.perso.rho = nb(brut.perso?.rho ?? FLUIDES.perso.rho, 'Masse volumique du liquide personnalisé', 500, 20000);
+  s.perso.mu = nb(brut.perso?.mu ?? FLUIDES.perso.mu, 'Viscosité du liquide personnalisé', 1e-5, 100);
   const ctx = contexte(s);
   const vus = new Set();
   for (const e of brut.elements) {
@@ -1094,7 +1096,12 @@ export function verifierScene(brut) {
           xb: nb(ini.xb ?? 0, `${nom} position du barrage`, -1e6, 1e6), h1: nb(ini.h1 ?? 1, `${nom} retenue`, 0, 1000), h2: nb(ini.h2 ?? 0, `${nom} aval du barrage`, 0, 1000) },
         bosse: e.bosse ? { x: nb(e.bosse.x, `${nom} intumescence`, -1e6, 1e6), dh: nb(e.bosse.dh, `${nom} intumescence`, -100, 100), w: nb(e.bosse.w, `${nom} intumescence`, 0.01, 1e6) } : null,
         sonde: e.sonde == null ? null : nb(e.sonde, `${nom} sonde`, -1e6, 1e6), station: e.station == null ? null : nb(e.station, `${nom} station`, -1e6, 1e6),
-        ritter: !!e.ritter, ondes: !!e.ondes });
+        ritter: !!e.ritter, ondes: !!e.ondes, modeleDe: typeof e.modeleDe === 'string' ? e.modeleDe : null, echelle: nb(e.echelle ?? 1, `${nom} échelle`, 1, 1000),
+        Fm: nb(e.Fm ?? 0, `${nom} force mesurée`, 0, 1e9) });
+    } else if (e.type === 'bille') {
+      Object.assign(o, { reservoir: String(e.reservoir), x: nb(e.x ?? 0.5, `${nom} position`, 0, 200), d: nb(e.d ?? 0.003, `${nom} diamètre`, 1e-4, 0.5),
+        rhoS: nb(e.rhoS ?? 7850, `${nom} masse volumique`, 1, 30000), z0: nb(e.z0 ?? 1, `${nom} hauteur de lâcher`, 0, 200),
+        r1: nb(e.r1 ?? 0.6, `${nom} repère haut`, 0, 200), r2: nb(e.r2 ?? 0.2, `${nom} repère bas`, 0, 200), trainee: e.trainee === 'complete' ? 'complete' : 'stokes' });
     } else if (e.type === 'flotteur') {
       Object.assign(o, { reservoir: String(e.reservoir), x: nb(e.x, `${nom} position`, 0, 200), l: nb(e.l, `${nom} largeur`, 0.05, 60), h: nb(e.h, `${nom} hauteur`, 0.05, 60),
         b: nb(e.b, `${nom} profondeur`, 0.05, 60), m: nb(e.m, `${nom} masse`, 0.01, 1e9), zG: nb(e.zG ?? e.h / 2, `${nom} centre de gravité`, 0, 60), gite: nb(e.gite ?? 0, `${nom} gîte`, -45, 45),
@@ -1158,7 +1165,15 @@ export function nettoyerScene(scene) {
           e.d = Math.min(e.d, c.D * 0.95);
           return true;
         }
-        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': case 'lance': case 'plaque': case 'auget': case 'canal': return true;
+        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': case 'lance': case 'plaque': case 'auget': return true;
+        case 'canal': if (e.modeleDe && idx.get(e.modeleDe)?.type !== 'canal') e.modeleDe = null; return true;
+        case 'bille': {
+          const r = idx.get(e.reservoir);
+          if (r?.type !== 'reservoir') return false;
+          e.x = Math.min(Math.max(e.x, e.d), Math.max(e.d, largeurA(r, 0) - e.d));
+          e.z0 = Math.min(Math.max(e.z0, e.d), r.H + 1);
+          return true;
+        }
         case 'vanne': return idx.get(e.conduite)?.type === 'conduite';
         case 'piezometre': case 'manometre': return okRef(e.piquage);
         case 'tubeU': return okRef(e.piquage) && (!e.piquage2 || okRef(e.piquage2));

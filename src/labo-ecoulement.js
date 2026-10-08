@@ -9,7 +9,16 @@
 // ensuite dans le temps (vidange, remplissage) par bilan de volume.
 import * as P from './labo-physique.js';
 import { darcyFriction } from './solvers.js';
-import { avancerCanal, diagnostic } from './labo-canal.js';
+import { avancerCanal, diagnostic, deriverMaquette } from './labo-canal.js';
+import { avancerBille, etatBille } from './labo-bille.js';
+// Les maquettes recopient leur prototype avant tout calcul.
+function maquettes(scene) {
+  for (const m of scene.elements) {
+    if (m.type !== 'canal' || !m.modeleDe) continue;
+    const p = scene.elements.find(e => e.id === m.modeleDe && e.type === 'canal');
+    if (p) deriverMaquette(p, m);
+  }
+}
 
 const aire = D => Math.PI * D * D / 4;
 const fini = v => typeof v === 'number' && Number.isFinite(v);
@@ -469,8 +478,11 @@ export function analyserTout(scene) {
       A.alertes.push({ id: '', niveau: 'info', texte: 'Mode illustratif : orifices, pompes, lances et sorties libres sont inactifs. Choisissez « fluide parfait » ou « fluide réel » pour simuler l’écoulement.' });
   } else A = P.analyser(scene, { apresConduites: B => appliquerEcoulement(scene, B) });
   A.efforts = effortsAncrage(scene, A);
+  maquettes(scene);
   A.canaux = new Map();
   for (const c of scene.elements) if (c.type === 'canal') A.canaux.set(c.id, diagnostic(c, A.ctx.g));
+  A.billes = new Map();
+  for (const b of scene.elements) if (b.type === 'bille') A.billes.set(b.id, etatBille(b, scene, A));
   return A;
 }
 
@@ -586,8 +598,12 @@ export function avancer(scene, dt) {
   if (mode === 'illustratif') return P.avancer(scene, dt);
   const d = dt * (fini(scene.env.vitesse) ? scene.env.vitesse : 1), g = P.contexte(scene).g;
   let actif = integrer(scene, d);
-  // canaux à surface libre (chapitre 8) : Saint-Venant sur la même durée
-  for (const c of scene.elements) if (c.type === 'canal') actif = avancerCanal(c, d, g) || actif;
+  // canaux à surface libre (chapitre 8) : Saint-Venant sur la même durée ;
+  // une maquette au 1/N vit en temps réduit (t_m = t_p/√N) pour rester homologue
+  maquettes(scene);
+  for (const c of scene.elements) if (c.type === 'canal') actif = avancerCanal(c, c.modeleDe ? d / Math.sqrt(c.echelle) : d, g) || actif;
+  // billes en chute libre (viscosimètre, chapitre 7) : temps réel
+  for (const b of scene.elements) if (b.type === 'bille') actif = avancerBille(b, scene, d) || actif;
   return actif;
 }
 export function equilibrer(scene) {

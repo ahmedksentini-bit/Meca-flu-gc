@@ -119,7 +119,11 @@ function flux(c, g, hL, QL, hR, QR) {
 function fantomes(c, st, g) {
   const N = st.N, h1 = st.h[0], q1 = st.Q[0], hN = st.h[N - 1], qN = st.Q[N - 1];
   let am, av;
-  if (c.amont === 'debit') am = { h: h1, Q: c.Q, zf: st.zf[0] + pente(c, st.x[0]) * st.dx };
+  if (c.amont === 'debit') {
+    // pente forte (h_n < h_c) : l'entrée se fait en régime critique, comme sur la crête d'un déversoir
+    const hn = hNormale(c, c.Q, pente(c, st.x[0])), hc = hCritique(c, c.Q, g);
+    am = { h: hn != null && hn < hc ? hc : h1, Q: c.Q, zf: st.zf[0] + pente(c, st.x[0]) * st.dx };
+  }
   else am = { h: h1, Q: -q1, zf: st.zf[0] };
   const zfa = st.zf[N - 1] - pente(c, st.x[N - 1]) * st.dx;
   if (c.aval === 'mur') av = { h: hN, Q: -qN, zf: st.zf[N - 1] };
@@ -188,6 +192,23 @@ export function avancerCanal(c, duree, g) {
   // régime permanent atteint : les profondeurs ne bougent plus (< 1 µm/s)
   st.actif = vmax > 1e-6;
   return st.actif;
+}
+
+// ---------- maquette en similitude de Froude (chapitre 7) ----------
+// Échelle λ = L_m/L_p = 1/N : longueurs × λ, vitesses et temps × √λ,
+// débits × λ^(5/2), forces × λ³, puissances × λ^(7/2), Strickler × λ^(-1/6).
+export const ECHELLES = {
+  longueur: [1, 1], vitesse: [0.5, -1], temps: [0.5, 2], debit: [2.5, 1], force: [3, 0], pression: [1, -2], puissance: [3.5, -1]
+};
+export const facteur = (N, grandeur, loi = 'froude') => Math.pow(1 / N, ECHELLES[grandeur][loi === 'froude' ? 0 : 1]);
+// Recopie à l'échelle les données du prototype dans la maquette.
+export function deriverMaquette(p, m) {
+  const N = m.echelle, l = 1 / N, v = Math.sqrt(l);
+  Object.assign(m, { x0: p.x0 * l, L: p.L * l, N: p.N, section: p.section, b: p.b * l, m: p.m, K: p.K * Math.pow(l, -1 / 6), i: p.i, xr: Number.isFinite(p.xr) ? p.xr * l : null, i2: p.i2,
+    zf0: p.zf0 * l, amont: p.amont, Q: p.Q * Math.pow(l, 2.5), aval: p.aval, hAval: p.hAval * l,
+    init: { ...p.init, h: p.init.h * l, U: p.init.U * v, xb: p.init.xb * l, h1: p.init.h1 * l, h2: p.init.h2 * l },
+    bosse: p.bosse ? { x: p.bosse.x * l, dh: p.bosse.dh * l, w: p.bosse.w * l } : null, sonde: Number.isFinite(p.sonde) ? p.sonde * l : null,
+    station: Number.isFinite(p.station) ? p.station * l : null, ritter: p.ritter, ondes: p.ondes });
 }
 
 // ---------- lecture des résultats ----------

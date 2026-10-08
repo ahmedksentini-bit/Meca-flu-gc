@@ -762,7 +762,24 @@ function canalDessin(V, c, d, A, ui) {
   // titre
   const sec = c.section === 'trap' ? `trapèze b = ${P.nombre(c.b, 2)} m, m = ${P.nombre(c.m, 2)}` : `rectangle b = ${P.nombre(c.b, 2)} m`;
   s += texte(X0 + 6, Yh + 14, `${c.id}${c.nom ? ' · ' + esc(c.nom) : ''} · ${sec} · ${c.K > 0 ? `K = ${P.nombre(c.K, 0)}` : 'sans frottement'}${c.amont === 'debit' ? ` · Q = ${P.nombre(c.Q, c.Q < 10 ? 2 : 1)} m³/s` : ''}`, 'lb-nom');
-  s += texte(X1 - 6, Yh + 27, `t = ${P.nombre(d.t, d.t < 100 ? 1 : 0)} s · échelle verticale × ${P.nombre(ex, ex < 10 ? 1 : 0)}`, 'lb-petit lb-axe', 'end');
+  s += texte(X1 - 6, Yh + 27, `${c.modeleDe ? `maquette de ${esc(c.modeleDe)} · t<tspan baseline-shift="sub" font-size="8">m</tspan> = t<tspan baseline-shift="sub" font-size="8">p</tspan>/√${P.nombre(c.echelle, 0)} = ` : 't = '}${P.nombre(d.t, d.t < 100 ? 1 : 0)} s · échelle verticale × ${P.nombre(ex, ex < 10 ? 1 : 0)}`, 'lb-petit lb-axe', 'end');
+  return s + '</g>';
+}
+
+// Bille en chute dans un réservoir (viscosimètre, chapitre 7).
+function billeDessin(V, b, st, A, ui) {
+  const r = A.idx.get(b.reservoir);
+  if (!r || !st) return '';
+  const sel = ui.selection === b.id, x = V.X(r.x + b.x), y = V.Y(st.z), R = Math.max(3.5, b.d / 2 * V.k);
+  const Lr = P.largeurA(r, 0);
+  let s = `<g data-h="dev:${b.id}" class="lb-bille-g${sel ? ' sel' : ''}">`;
+  for (const [nom, h] of [['repère 1', b.r1], ['repère 2', b.r2]]) {
+    const yr = V.Y(r.z + h), t = st.passages[nom === 'repère 1' ? 'r1' : 'r2'];
+    s += `<line x1="${n1(V.X(r.x) - 6)}" y1="${n1(yr)}" x2="${n1(V.X(r.x + Lr) + 6)}" y2="${n1(yr)}" class="lb-repere-b"/>`;
+    s += texte(V.X(r.x + Lr) + 9, yr + 4, `${nom}${t != null ? ` · t = ${P.nombre(t, 2)} s` : ''}`, 'lb-petit lb-repere-bt');
+  }
+  s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(R)}" class="lb-bille"/><circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(R + 8)}" class="lb-hit"/>`;
+  s += texte(x + R + 6, y + 4, `${b.id} · ${st.fond ? 'au fond' : `V = ${P.nombre(st.v, 3)} m/s`}`, 'lb-petit lb-idi');
   return s + '</g>';
 }
 
@@ -789,6 +806,7 @@ export function dessinerScene(scene, A, vue, ui) {
     if (r) parties.push(flotteur(V, f, A.flotteurs.get(f.id), r, A.etats.get(r.id), A, env, ui));
   }
   for (const v of scene.elements) if (v.type === 'vannePlane') parties.push(vannePlane(V, v, A.ouvrages.get(v.id), A, env, ui));
+  for (const b of scene.elements) if (b.type === 'bille') parties.push(billeDessin(V, b, A.billes && A.billes.get(b.id), A, ui));
   for (const u of scene.elements) {
     const m = A.mesures.get(u.id);
     if (u.type === 'piezometre') parties.push(piezometre(V, u, m, A, env, ui));
