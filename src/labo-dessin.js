@@ -3,6 +3,7 @@
 // que traits et textes gardent la même taille à tous les zooms.
 import * as P from './labo-physique.js';
 import { chargeEn, segmentObstacle } from './labo-ecoulement.js';
+import { section as sectionCanal, ritter, fond as fondCanal } from './labo-canal.js';
 
 export const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const n1 = v => (Math.round(v * 10) / 10).toString();
@@ -657,6 +658,114 @@ function efforts(V, scene, A) {
   return s;
 }
 
+// ---------- canal à surface libre (chapitre 8) : profil en long ----------
+const pasGrad = (etendue, n) => {
+  const brut = etendue / n, p10 = 10 ** Math.floor(Math.log10(brut));
+  for (const k of [1, 2, 2.5, 5, 10]) if (brut <= k * p10) return k * p10;
+  return 10 * p10;
+};
+const longueur = v => (Math.abs(v) >= 1000 ? `${P.nombre(v / 1000, Math.abs(v) % 1000 ? 1 : 0)} km` : `${P.nombre(v, Math.abs(v) < 10 && v % 1 ? 1 : 0)} m`);
+function canalDessin(V, c, d, A, ui) {
+  if (!d) return '';
+  const sel = ui.selection === c.id, X0 = V.X(c.x), X1 = V.X(c.x + c.largeur), Yb = V.Y(c.z), Yh = V.Y(c.z + c.hauteur);
+  const Xa = X0 + 44, Xb = X1 - 10, Ya = Yb - 22, Yt = Yh + 34;
+  if (Xb - Xa < 60 || Ya - Yt < 30) return '';
+  // étendue verticale : fond et profondeurs de référence (stables dans le temps)
+  const zfs = d.pts.map(p => p.zf), zmin = Math.min(...zfs, fondCanal(c, c.x0 + c.L)), zmaxb = Math.max(...zfs, fondCanal(c, c.x0));
+  const ini = c.init || {}, hRef = Math.max(d.hn || 0, d.hn2 || 0, d.hc || 0, ini.type === 'barrage' ? ini.h1 : 0, ini.type === 'repos' || ini.type === 'uniforme' ? ini.h : 0,
+    c.aval === 'niveau' ? c.hAval : 0, d.hmax, 0.1) + (c.bosse ? Math.abs(c.bosse.dh) : 0);
+  const zhi = zmaxb + 1.3 * hRef, zlo = zmin - 0.12 * (zhi - zmin);
+  const px = x => Xa + (x - c.x0) / c.L * (Xb - Xa), pz = z => Ya - (z - zlo) / (zhi - zlo) * (Ya - Yt);
+  const ex = ((Ya - Yt) / (zhi - zlo)) / ((Xb - Xa) / c.L);
+  let s = `<g class="lb-canal${sel ? ' sel' : ''}">`;
+  s += `<rect x="${n1(X0)}" y="${n1(Yh)}" width="${n1(X1 - X0)}" height="${n1(Yb - Yh)}" class="lb-canal-cadre" data-h="canal:${c.id}"/>`;
+  // graduations
+  const sx = pasGrad(c.L, Math.max(3, Math.floor((Xb - Xa) / 90))), sz = pasGrad(zhi - zlo, Math.max(2, Math.floor((Ya - Yt) / 40)));
+  for (let x = Math.ceil(c.x0 / sx) * sx; x <= c.x0 + c.L + 1e-9; x += sx) {
+    s += `<line x1="${n1(px(x))}" y1="${n1(Yt)}" x2="${n1(px(x))}" y2="${n1(Ya)}" class="lb-canal-grille"/>`;
+    s += texte(px(x), Ya + 13, longueur(Math.abs(x) < 1e-9 ? 0 : x), 'lb-petit lb-axe', 'middle');
+  }
+  for (let z = Math.ceil(zlo / sz) * sz; z <= zhi + 1e-9; z += sz) {
+    s += `<line x1="${n1(Xa)}" y1="${n1(pz(z))}" x2="${n1(Xb)}" y2="${n1(pz(z))}" class="lb-canal-grille"/>`;
+    s += texte(Xa - 4, pz(z) + 3, `${P.nombre(Math.abs(z) < 1e-9 ? 0 : z, sz < 0.1 ? 2 : sz < 1 ? 1 : 0)}`, 'lb-petit lb-axe', 'end');
+  }
+  // fond
+  const xs = [c.x0, ...(Number.isFinite(c.xr) && c.xr > c.x0 && c.xr < c.x0 + c.L ? [c.xr] : []), c.x0 + c.L];
+  s += `<path d="M${xs.map(x => `${n1(px(x))},${n1(pz(fondCanal(c, x)))}`).join('L')}L${n1(Xb)},${n1(Ya)}L${n1(Xa)},${n1(Ya)}Z" class="lb-canal-fond"/>`;
+  s += `<path d="M${xs.map(x => `${n1(px(x))},${n1(pz(fondCanal(c, x)))}`).join('L')}" class="lb-canal-radier"/>`;
+  // eau, avec les tronçons torrentiels repérés
+  const P0 = d.pts, haut = P0.map(p => `${n1(px(p.x))},${n1(pz(p.zf + p.h))}`), bas = P0.map(p => `${n1(px(p.x))},${n1(pz(p.zf))}`).reverse();
+  s += `<path d="M${haut.join('L')}L${bas.join('L')}Z" class="lb-canal-eau"/>`;
+  for (let k = 0; k < P0.length; k++) {
+    if (!(P0[k].Fr > 1 && P0[k].h > 1e-4)) continue;
+    let j = k;
+    while (j + 1 < P0.length && P0[j + 1].Fr > 1 && P0[j + 1].h > 1e-4) j++;
+    const seg = P0.slice(k, j + 1);
+    s += `<path d="M${seg.map(p => `${n1(px(p.x))},${n1(pz(p.zf + p.h))}`).join('L')}L${seg.slice().reverse().map(p => `${n1(px(p.x))},${n1(pz(p.zf))}`).join('L')}Z" class="lb-canal-torrent"/>`;
+    k = j;
+  }
+  s += `<path d="M${haut.join('L')}" class="lb-canal-surface"/>`;
+  // profondeurs normale et critique
+  const ligne = (x1, x2, hgt, cls) => `<line x1="${n1(px(x1))}" y1="${n1(pz(fondCanal(c, x1) + hgt))}" x2="${n1(px(x2))}" y2="${n1(pz(fondCanal(c, x2) + hgt))}" class="${cls}"/>`;
+  const xm = Number.isFinite(c.xr) && c.xr > c.x0 && c.xr < c.x0 + c.L ? c.xr : c.x0 + c.L;
+  // h_n et h_c n'ont de sens qu'avec un débit imposé à l'amont
+  const avecQ = c.amont === 'debit' && d.Qref > 0;
+  if (avecQ && d.hn) { s += ligne(c.x0, xm, d.hn, 'lb-canal-hn'); s += texte(px(c.x0) + 3, pz(fondCanal(c, c.x0) + d.hn) - 3, 'h<tspan baseline-shift="sub" font-size="8">n</tspan>', 'lb-petit lb-canal-hnt'); }
+  if (avecQ && d.hn2 && xm < c.x0 + c.L) { s += ligne(xm, c.x0 + c.L, d.hn2, 'lb-canal-hn'); s += texte(px(c.x0 + c.L) - 3, pz(fondCanal(c, c.x0 + c.L) + d.hn2) - 3, 'h<tspan baseline-shift="sub" font-size="8">n</tspan>', 'lb-petit lb-canal-hnt', 'end'); }
+  if (avecQ && d.hc > 0) { for (let k = 1; k < xs.length; k++) s += ligne(xs[k - 1], xs[k], d.hc, 'lb-canal-hc'); s += texte(px(c.x0 + c.L) - 3, pz(fondCanal(c, c.x0 + c.L) + d.hc) + 11, 'h<tspan baseline-shift="sub" font-size="8">c</tspan>', 'lb-petit lb-canal-hct', 'end'); }
+  // solution de Ritter
+  if (c.ritter && d.t > 0) {
+    const pts = [];
+    for (let k = 0; k <= 160; k++) { const x = c.x0 + c.L * k / 160; pts.push(`${n1(px(x))},${n1(pz(fondCanal(c, x) + ritter(x - ini.xb, d.t, ini.h1, A.ctx.g)))}`); }
+    s += `<path d="M${pts.join('L')}" class="lb-canal-ritter"/>`;
+    s += texte(px(ini.xb + 2 * Math.sqrt(A.ctx.g * ini.h1) * d.t), Yt + 10, 'front de Ritter', 'lb-petit lb-canal-rittert', 'middle');
+  }
+  // fronts d'onde théoriques U ± c
+  if (c.ondes) for (const pe of d.st.perturbations) for (const [w, nom] of [[pe.U + pe.c, 'U + c'], [pe.U - pe.c, 'U − c']]) {
+    const xw = pe.x + w * (d.t - pe.t);
+    if (xw < c.x0 || xw > c.x0 + c.L) continue;
+    s += `<line x1="${n1(px(xw))}" y1="${n1(Yt)}" x2="${n1(px(xw))}" y2="${n1(Ya)}" class="lb-canal-onde"/>` + texte(px(xw), Yt + 10, nom, 'lb-petit lb-canal-ondet', 'middle');
+  }
+  if (Number.isFinite(c.station) && c.station >= c.x0 && c.station <= c.x0 + c.L) {
+    s += `<line x1="${n1(px(c.station))}" y1="${n1(Yt)}" x2="${n1(px(c.station))}" y2="${n1(Ya)}" class="lb-canal-station"/>`;
+    s += texte(px(c.station) + 3, Yt + 22, 'ouvrage', 'lb-petit lb-canal-stationt');
+  }
+  // ressauts
+  for (const r of d.ressauts) s += `<path d="M${n1(px(r.x))},${n1(pz(fondCanal(c, r.x) + r.h2) - 6)}l0,-12" class="lb-canal-ressaut"/>` + texte(px(r.x), pz(fondCanal(c, r.x) + r.h2) - 22, 'ressaut', 'lb-petit lb-canal-ressautt', 'middle');
+  // vitesses
+  const nf = 12;
+  for (let k = 0; k < nf; k++) {
+    const p = P0[Math.floor((k + 0.5) * P0.length / nf)];
+    if (!p || p.h < 1e-3 || Math.abs(p.U) < 1e-3) continue;
+    const L = clampPx(8 + 10 * Math.log10(1 + Math.abs(p.U) * 3), 8, 30) * Math.sign(p.U), y = pz(p.zf + p.h / 2), x = px(p.x);
+    if (Math.abs(pz(p.zf) - pz(p.zf + p.h)) > 10) s += fleche(x - L / 2, y, x + L / 2, y, 'lb-canal-v', 5);
+  }
+  // sonde
+  const so = d.sonde;
+  if (so) {
+    const x = px(so.x);
+    s += `<line x1="${n1(x)}" y1="${n1(Yt)}" x2="${n1(x)}" y2="${n1(Ya)}" class="lb-canal-sonde" data-h="canal:${c.id}"/>`;
+    // sous l'encart de coupe quand la sonde est à droite
+    s += texte(x + (x > (Xa + Xb) / 2 ? -5 : 5), x > Xa + 0.6 * (Xb - Xa) ? Yt + 72 : Yt + 34, `h = ${P.nombre(so.h, so.h < 1 ? 3 : 2)} m · Fr = ${P.nombre(so.Fr, 2)}`, 'lb-petit lb-canal-sondet', x > (Xa + Xb) / 2 ? 'end' : 'start');
+  }
+  // coupe en travers à la sonde
+  if (so && Xb - Xa > 320 && c.b > 0.2 * hRef) {
+    const W = 92, Hc = 52, cx = Xb - W - 6, cy = Yt + 4, mm = c.section === 'trap' ? c.m : 0;
+    const hb = Math.max(hRef, so.h) * 1.15, Bmax = c.b + 2 * mm * hb, k = Math.min((W - 12) / Bmax, (Hc - 12) / hb);
+    const yb = cy + Hc - 6, xc = cx + W / 2, bx = c.b * k / 2;
+    s += `<rect x="${n1(cx)}" y="${n1(cy)}" width="${W}" height="${Hc}" class="lb-canal-coupe"/>`;
+    const tb = mm * so.h * k;
+    s += `<path d="M${n1(xc - bx - tb)},${n1(yb - so.h * k)}L${n1(xc + bx + tb)},${n1(yb - so.h * k)}L${n1(xc + bx)},${n1(yb)}L${n1(xc - bx)},${n1(yb)}Z" class="lb-canal-eau"/>`;
+    s += `<path d="M${n1(xc - bx - mm * hb * k)},${n1(yb - hb * k)}L${n1(xc - bx)},${n1(yb)}L${n1(xc + bx)},${n1(yb)}L${n1(xc + bx + mm * hb * k)},${n1(yb - hb * k)}" class="lb-canal-paroi"/>`;
+    s += texte(cx + 3, cy + 10, 'coupe à la sonde', 'lb-petit lb-axe');
+  }
+  // titre
+  const sec = c.section === 'trap' ? `trapèze b = ${P.nombre(c.b, 2)} m, m = ${P.nombre(c.m, 2)}` : `rectangle b = ${P.nombre(c.b, 2)} m`;
+  s += texte(X0 + 6, Yh + 14, `${c.id}${c.nom ? ' · ' + esc(c.nom) : ''} · ${sec} · ${c.K > 0 ? `K = ${P.nombre(c.K, 0)}` : 'sans frottement'}${c.amont === 'debit' ? ` · Q = ${P.nombre(c.Q, c.Q < 10 ? 2 : 1)} m³/s` : ''}`, 'lb-nom');
+  s += texte(X1 - 6, Yh + 27, `t = ${P.nombre(d.t, d.t < 100 ? 1 : 0)} s · échelle verticale × ${P.nombre(ex, ex < 10 ? 1 : 0)}`, 'lb-petit lb-axe', 'end');
+  return s + '</g>';
+}
+
 // ---------- scène complète ----------
 export function dessinerScene(scene, A, vue, ui) {
   const V = vueDe(vue), env = scene.env, defs = [];
@@ -665,6 +774,7 @@ export function dessinerScene(scene, A, vue, ui) {
   for (const [, e] of A.etats) ui.pRef = Math.max(ui.pRef, e.pFond, e.pCiel);
   const E = A.ecoulement;
   if (E && (E.jets.length || scene.elements.some(e => e.type === 'orifice' || e.type === 'robinet' || e.type === 'exutoire'))) parties.push(sol(V, scene, A, vue));
+  for (const c of scene.elements) if (c.type === 'canal') parties.push(canalDessin(V, c, A.canaux && A.canaux.get(c.id), A, ui));
   for (const c of scene.elements) if (c.type === 'conduite' && A.conduites.get(c.id)) parties.push(conduite(V, c, A.conduites.get(c.id), A, env, ui));
   for (const v of scene.elements) if (v.type === 'venturi') parties.push(venturiDessin(V, v, A, ui));
   for (const el of scene.elements) if (['pompe', 'raccord', 'exutoire', 'robinet'].includes(el.type)) parties.push(appareil(V, el, A, scene, ui));
