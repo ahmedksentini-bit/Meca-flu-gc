@@ -16,7 +16,7 @@ Application web statique et PWA d’exercices de mécanique des fluides pour le 
 
 Le **Bureau de calcul** complète le parcours pédagogique avec une interface de logiciel : saisie directe des données, recalcul instantané, schéma physique, résultats et note de calcul pour les conduites, le pompage, Bernoulli, l’hydrostatique et les écoulements à surface libre.
 
-### Laboratoire virtuel (chapitres 1 à 6 et 8)
+### Laboratoire virtuel (chapitres 1 à 8)
 
 `labo.html` est un banc d’hydrostatique à monter soi-même : réservoirs ouverts, fermés (ciel à pression imposée ou gaz piégé isotherme) ou à paroi inclinée, couches de liquides non miscibles (eau, eau de mer, huile, essence, glycérine, tétrachlorure, mercure, liquide personnalisé), conduites et vannes, piézomètres, manomètres à cadran, tubes en U simples, différentiels ou renversés, vannes planes (rectangle, cercle, triangle ; charnière ou levage en glissières avec frottement) et flotteurs, pleins ou caissons creux ballastables. Un réservoir peut garder un niveau imposé (mer, nappe, grande retenue) et se représenter comme un terrain saturé.
 
@@ -33,6 +33,8 @@ Onze expériences d’écoulement reprennent les exercices 3.5, 4.1 à 4.7, 6.4,
 **Quantité de mouvement (chapitre 5).** Une lance projette un jet de vitesse et de diamètre imposés ; plaques et augets placés sur sa trajectoire (ou sur celle d’un orifice ou d’une sortie) le dévient. Le théorème d’Euler donne l’effort du jet, le partage du débit entre les nappes d’une plaque inclinée (Q₁ = Q(1 + cos α)/2), et pour un auget animé d’une vitesse u, la puissance recueillie avec sa courbe P(u). L’affichage « Efforts » dessine aussi les efforts d’ancrage des coudes, F = (pS + ρQV)(e₁ − e₂), l’effort axial sur les raccords et la réaction des jets sur leur réservoir ou leur lance. Six expériences reprennent les exercices 5.1 à 5.6 (`tests/labo-quantite-mouvement.test.mjs`).
 
 **Surface libre (chapitre 8).** Le canal (`src/labo-canal.js`) se voit en profil en long, avec une exagération verticale. Sa section est rectangulaire ou trapézoïdale ; on règle la pente (avec une éventuelle rupture), le Strickler, le débit amont et la condition aval : chute libre, niveau imposé, régime uniforme ou mur. Les équations de Saint-Venant sont résolues par volumes finis (flux HLL, reconstruction hydrostatique, frottement de Manning–Strickler semi-implicite, fronts secs admis). Le profil marque la profondeur normale, la profondeur critique, les zones torrentielles, les ressauts avec leurs hauteurs conjuguées, les ondes U ± c d’une intumescence et la solution de Ritter d’une rupture de barrage ; une sonde déplaçable donne S, P<sub>m</sub>, R<sub>h</sub>, U, Fr et E, avec une coupe en travers. Cinq expériences reprennent les exercices 8.1 à 8.4 et le ressaut du § 8.2 (`tests/labo-surface-libre.test.mjs`).
+
+**Similitude (chapitre 7).** Un canal peut devenir la maquette au 1/N d’un autre : sa géométrie, son débit (× λ^5/2), sa rugosité (K × N^1/6) et ses conditions aux limites découlent du prototype, et son temps s’écoule √N fois plus vite, si bien que les deux lignes d’eau restent homothétiques à chaque instant. L’inspecteur de la maquette dresse le tableau des échelles de Froude, avec les valeurs homologues et la comparaison avec la similitude de Reynolds. Le viscosimètre à chute de bille (`src/labo-bille.js`) lâche une sphère dans le liquide d’un réservoir, avec la traînée de Stokes ou la loi complète de Schiller–Naumann ; le chronométrage entre deux repères donne μ = (ρ<sub>s</sub> − ρ)gd²/(18V) et le contrôle Re < 1. Deux expériences reprennent les exercices 7.4 et 7.5 (`tests/labo-similitude.test.mjs`) ; la viscosité du liquide personnalisé se règle dans les constantes.
 
 ### Installation hydraulique
 
@@ -70,7 +72,7 @@ La longueur lue est **horizontale** : elle ignore la pente, les coudes et le pro
 - `src/diagrams.js` : figures de cours, une par situation physique ;
 - `src/mesh-solver.js`, `src/network-studio.js` : réseaux maillés et atelier graphique ;
 - `src/geo.js` : projection Web Mercator, distances orthodromiques et pavage en tuiles ;
-- `src/labo-physique.js` (moteur hydrostatique), `src/labo-ecoulement.js` (écoulements en charge et jets), `src/labo-canal.js` (Saint-Venant), `src/labo-dessin.js` (rendu SVG), `src/labo-scenarios.js` (expériences guidées), `src/labo.js` (interface), `src/labo-embed.js` et `labo.css` : laboratoire virtuel ;
+- `src/labo-physique.js` (moteur hydrostatique), `src/labo-ecoulement.js` (écoulements en charge et jets), `src/labo-canal.js` (Saint-Venant et maquettes), `src/labo-bille.js` (chute de bille), `src/labo-dessin.js` (rendu SVG), `src/labo-scenarios.js` (expériences guidées), `src/labo.js` (interface), `src/labo-embed.js` et `labo.css` : laboratoire virtuel ;
 - `src/technical-library.js`, `src/project-store.js`, `src/pdf-report.js`, `src/basemap-store.js` : bibliothèque technique, sauvegarde locale, notes PDF et fonds de plan ;
 - `sw.js` et `manifest.webmanifest` : installation et fonctionnement hors connexion ;
 - `tests/` : contrôles numériques des solveurs.

@@ -5,6 +5,7 @@ import * as P from './labo-physique.js';
 import { SCENARIOS, GROUPES, creerScenario } from './labo-scenarios.js';
 import * as E from './labo-ecoulement.js';
 import * as CA from './labo-canal.js';
+import * as BI from './labo-bille.js';
 import { dessinerScene, vueDe, esc, fmtP, apercuReservoir, apercuRemplissage, apercuFlotteur, apercuSegment } from './labo-dessin.js';
 
 const CLE = 'mecaflu-labo-v1';
@@ -39,7 +40,8 @@ const ICONES = {
   lance: ic('<path d="M2 10l10 2v4L2 18z" fill="#C9D3D8" stroke="currentColor" stroke-width="1.6"/><path d="M12 14h14" stroke="#5DA3BD" stroke-width="3"/>'),
   plaque: ic('<path d="M3 14h13" stroke="#5DA3BD" stroke-width="3"/><path d="M19 4v20" stroke="currentColor" stroke-width="3.4"/><path d="M18 9q-3-3-4-6M18 19q-3 3-4 6" fill="none" stroke="#5DA3BD" stroke-width="2"/>'),
   auget: ic('<path d="M2 12h12" stroke="#5DA3BD" stroke-width="3"/><path d="M15 6a8 8 0 0 1 0 16" fill="none" stroke="currentColor" stroke-width="3"/><path d="M14 17H5" stroke="#5DA3BD" stroke-width="2"/>'),
-  canal: ic('<path d="M2 12l24 6v6H2z" fill="#C9D3D8"/><path d="M2 9q8 2 12 4t12 3v3L2 13z" fill="#8CC4DA"/><path d="M2 12l24 6" stroke="currentColor" stroke-width="2"/>')
+  canal: ic('<path d="M2 12l24 6v6H2z" fill="#C9D3D8"/><path d="M2 9q8 2 12 4t12 3v3L2 13z" fill="#8CC4DA"/><path d="M2 12l24 6" stroke="currentColor" stroke-width="2"/>'),
+  bille: ic('<rect x="8" y="3" width="12" height="22" fill="#E6BE62" stroke="currentColor" stroke-width="1.6"/><circle cx="14" cy="13" r="3" fill="#5B6872"/><path d="M6 8h16M6 20h16" stroke="#1E6E4E" stroke-width="1.2" stroke-dasharray="2 2"/>')
 };
 const goutte = c => ic(`<path d="M14 3c4 6 8 10 8 14a8 8 0 0 1-16 0c0-4 4-8 8-14z" fill="${c}" stroke="currentColor" stroke-width="1.4"/>`);
 const PALETTE = [
@@ -50,6 +52,7 @@ const PALETTE = [
   { titre: 'Ouvrages', items: [['vp-rect', 'Vanne plane'], ['vp-cercle', 'Vanne circulaire'], ['flotteur', 'Flotteur']] },
   { titre: 'Écoulement', items: [['orifice', 'Orifice'], ['exutoire', 'Sortie libre'], ['pompe', 'Pompe'], ['raccord', 'Changement de section'], ['venturi', 'Venturi'], ['pitot', 'Tube de Pitot'], ['pitotDouble', 'Pitot double'], ['robinet', 'Robinet']] },
   { titre: 'Quantité de mouvement', items: [['lance', 'Lance (jet)'], ['plaque', 'Plaque'], ['auget', 'Auget']] },
+  { titre: 'Similitude', items: [['bille', 'Bille (viscosimètre)']] },
   { titre: 'Surface libre', items: [['canal', 'Canal']] }
 ];
 const AIDE_PALETTE = {
@@ -76,14 +79,15 @@ const AIDE_PALETTE = {
   lance: 'Lance : jet de vitesse et de diamètre imposés (orientation réglable).',
   plaque: 'Plaque lisse : placez-la sur la trajectoire d’un jet pour lire l’effort et le partage du débit.',
   auget: 'Auget : retourne le jet (180°) ; fixe ou animé d’une vitesse u, comme sur une roue Pelton.',
-  canal: 'Canal à surface libre vu en profil en long : Manning–Strickler, Froude, ressaut, ondes (Saint-Venant).'
+  canal: 'Canal à surface libre vu en profil en long : Manning–Strickler, Froude, ressaut, ondes (Saint-Venant).',
+  bille: 'Lâchez une bille dans un réservoir : sa vitesse limite donne la viscosité du liquide (loi de Stokes).'
 };
 // Éléments qui n'agissent qu'en mode écoulement (fluide parfait ou réel).
-const ECOULEMENT = ['orifice', 'exutoire', 'pompe', 'raccord', 'venturi', 'pitot', 'pitotDouble', 'robinet', 'lance', 'plaque', 'auget', 'canal'];
+const ECOULEMENT = ['orifice', 'exutoire', 'pompe', 'raccord', 'venturi', 'pitot', 'pitotDouble', 'robinet', 'lance', 'plaque', 'auget', 'canal', 'bille'];
 const LIBRES = ['exutoire', 'pompe', 'raccord', 'robinet', 'lance', 'plaque', 'auget'];
 const NOMS = { reservoir: 'Réservoir', conduite: 'Conduite', vanne: 'Vanne', piezometre: 'Piézomètre', manometre: 'Manomètre', tubeU: 'Tube en U', vannePlane: 'Vanne plane', flotteur: 'Flotteur',
   orifice: 'Orifice', exutoire: 'Sortie libre', pompe: 'Pompe', raccord: 'Changement de section', venturi: 'Venturi', robinet: 'Robinet',
-  lance: 'Lance', plaque: 'Plaque', auget: 'Auget', canal: 'Canal' };
+  lance: 'Lance', plaque: 'Plaque', auget: 'Auget', canal: 'Canal', bille: 'Bille' };
 const VITESSES = [1, 5, 10, 30, 60, 100, 300];
 function duree(t) {
   if (!(t > 0)) return '0 s';
@@ -535,6 +539,11 @@ export function monterLabo(racine, opts = {}) {
       amont: 'debit', Q: 0.5, aval: 'libre', hAval: 1, init: { type: 'normale', h: 1, U: 0, xb: 0, h1: 1, h2: 0 }, bosse: null, sonde: 50, station: null, ritter: false, ondes: true };
     return { id, type: kind, x, z };
   }
+  function nouvelleBille(r, x) {
+    const e = L.A.etats.get(r.id), z0 = Math.max(0.05, Math.min(r.H, e ? e.sL : r.H) - 0.05);
+    return { id: nouvelId('bille'), type: 'bille', reservoir: r.id, x: clamp(x, 0.02, P.largeurA(r, 0) - 0.02), d: 0.005, rhoS: 7850, z0: arr(z0, 0.01),
+      r1: arr(0.7 * z0, 0.01), r2: arr(0.25 * z0, 0.01), trainee: 'complete' };
+  }
   const nouvelOrifice = (r, paroi, s) => ({ id: nouvelId('orifice'), type: 'orifice', reservoir: r.id, paroi, s, d: 0.05, Cd: 0.62, Cv: 0.98, ouvert: true });
   const nouveauVenturi = (c, t) => ({ id: nouvelId('venturi'), type: 'venturi', conduite: c.id, t, d: Math.max(3, arr(c.D * 500, 1)) / 1000, Cq: 0.98, fluideM: 'mercure' });
   function ajoutRapideEcoulement(kind, cible) {
@@ -546,6 +555,11 @@ export function monterLabo(racine, opts = {}) {
       if (kind === 'venturi') return ajouter(nouveauVenturi(cond, 0.5));
       const ref = { el: cond.id, port: 'k:0.35' };
       return ajouter(creerAppareil(kind, { ...P.resoudre(L.scene, ref), el: cond.id, ref }));
+    }
+    if (kind === 'bille') {
+      if (!cible) return refus('Ajoutez d’abord un réservoir rempli de liquide.');
+      basculerEcoulement(kind);
+      return ajouter(nouvelleBille(cible, P.largeurA(cible, 0) / 2));
     }
     if (kind === 'orifice') {
       if (!cible) return refus('Ajoutez d’abord un réservoir.');
@@ -726,6 +740,14 @@ export function monterLabo(racine, opts = {}) {
       d.texteAide = pw ? 'Relâchez pour percer l’orifice.' : 'Approchez d’une paroi ou d’un fond de réservoir.';
       return;
     }
+    if (k === 'bille') {
+      const r = reservoirSous(x, z, 0.2);
+      if (!r) { d.texteAide = 'Lâchez la bille au-dessus d’un réservoir.'; return; }
+      d.cible = { r, x: arr(x - r.x, 0.01) };
+      d.ui.aimant = { x: r.x + d.cible.x, z: Math.min(z, r.z + r.H), texte: `bille dans ${r.id}` };
+      d.texteAide = `Lâcher dans ${r.id}`;
+      return;
+    }
     if (k === 'canal') {
       d.cible = { x: arr(x, 0.5), z: arr(z, 0.5) };
       d.ui.apercu = apercuSegment(L.vue, d.cible, { x: d.cible.x + 10, z: d.cible.z });
@@ -777,6 +799,7 @@ export function monterLabo(racine, opts = {}) {
     if (k === 'vanne') { ajouter({ id: nouvelId('vanne'), type: 'vanne', conduite: c.id, t: c.t, ouverte: false }); return; }
     if (ECOULEMENT.includes(k)) basculerEcoulement(k);
     if (k === 'venturi') { ajouter(nouveauVenturi(elt(c.id), c.t)); return; }
+    if (k === 'bille') { ajouter(nouvelleBille(c.r, c.x)); return; }
     if (k === 'pitot' || k === 'pitotDouble') { ajouter(creerAppareil(k, c)); return; }
     if (k === 'orifice') { ajouter(nouvelOrifice(c.r, c.paroi, c.s)); return; }
     if (LIBRES.includes(k) || k === 'canal') { ajouter(nouvelAppareil(k, c.x, c.z)); if (k === 'canal' && !L.zoomManuel) cadrer(); return; }
@@ -985,6 +1008,12 @@ export function monterLabo(racine, opts = {}) {
       L.sel = el.id; L.inspCle = null;
       dire(`Vanne ${el.id} ${el.ouverte ? 'ouverte' : 'fermée'}`);
       apresEdition(true);
+      return;
+    }
+    if (type === 'dev' && el.type === 'bille') {
+      BI.lacher(el, L.scene); L.sel = el.id; L.inspCle = null; L.pause = false; majBarre();
+      dire(`Bille ${el.id} lâchée`);
+      demander();
       return;
     }
     if (type === 'dev' && ['orifice', 'pompe', 'robinet', 'lance'].includes(el.type)) {
@@ -1203,7 +1232,8 @@ export function monterLabo(racine, opts = {}) {
   // ---------- inspecteur ----------
   const num = (k, lab, val, unite, o = {}) => `<label class="lb-champ"><span>${lab}</span><input type="number" inputmode="decimal" data-k="${k}" value="${Number.isFinite(val) ? +val.toFixed(o.dec ?? 3) : ''}" step="${o.pas ?? 0.05}"${o.min != null ? ` min="${o.min}"` : ''}${o.max != null ? ` max="${o.max}"` : ''}><em>${unite}</em></label>`;
   const sel_ = (k, lab, val, options) => `<label class="lb-champ"><span>${lab}</span><select data-k="${k}">${options.map(([v, t]) => `<option value="${esc(v)}"${String(v) === String(val) ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
-  const sortie = (k, lab) => `<div class="lb-sortie"><span>${lab}</span><output data-o="${k}">—</output></div>`;
+  // les intitulés sont en capitales : les lettres grecques minuscules (μ, ρ, λ…) gardent leur casse
+  const sortie = (k, lab) => `<div class="lb-sortie"><span>${lab.replace(/([α-ω])/g, '<i class="lb-grec">$1</i>')}</span><output data-o="${k}">—</output></div>`;
   const fluidesOpt = P.LIQUIDES.map(f => [f, P.FLUIDES[f].nom]);
   const PAROIS = [['g', 'Paroi gauche'], ['d', 'Paroi droite'], ['f', 'Fond']];
 
@@ -1287,6 +1317,16 @@ export function monterLabo(racine, opts = {}) {
         break;
       case 'canal': {
         const pm = 1000;
+        if (el.modeleDe) {
+          h += `<button type="button" class="lb-btn" data-k="relancer">Relancer prototype et maquette</button>`;
+          h += `<p class="lb-note">Maquette de ${esc(el.modeleDe)} en <b>similitude de Froude</b> : géométrie, débit, rugosité et conditions aux limites découlent du prototype ; réglez celui-ci. Son temps s’écoule √N fois plus vite.</p>`;
+          h += `<div class="lb-grille2">${num('echelle', 'Échelle 1/N', el.echelle, '', { pas: 5, min: 1, max: 1000, dec: 0 })}${num('Fm', 'Force mesurée sur la maquette', el.Fm, 'N', { pas: 1, min: 0, dec: 1 })}</div>`;
+          h += `<div class="lb-simil" data-o="simil"></div>`;
+          h += `<div class="lb-sorties">${sortie('h', 'Profondeur h (maquette)')}${sortie('U', 'Vitesse U (maquette)')}${sortie('Fr', 'Froude (maquette = prototype)')}</div>`;
+          break;
+        }
+        const maq = L.scene.elements.find(e => e.type === 'canal' && e.modeleDe === el.id);
+        if (maq) h += `<p class="lb-note">Prototype de la maquette ${esc(maq.id)} au 1/${NB(maq.echelle, 0)} : ses réglages s’y reportent en similitude de Froude.</p>`;
         h += `<div class="lb-grille2"><button type="button" class="lb-btn" data-k="relancer">Relancer l’écoulement</button><button type="button" class="lb-btn" data-k="bosse">Intumescence à la sonde</button></div>`;
         h += `<fieldset><legend>Conditions aux limites</legend><div class="lb-grille2">${sel_('amont', 'Amont', el.amont, [['debit', 'débit imposé'], ['mur', 'fermé (mur)']])}${el.amont === 'debit' ? num('Q', 'Débit Q', el.Q, 'm³/s', { pas: 0.1, min: 0, dec: 3 }) : ''}`;
         h += `${sel_('aval', 'Aval', el.aval, [['libre', 'chute libre'], ['niveau', 'niveau imposé'], ['normal', 'régime uniforme'], ['mur', 'fermé (mur)']])}${el.aval === 'niveau' ? num('hAval', 'Profondeur aval', el.hAval, 'm', { pas: 0.05, min: 0, dec: 3 }) : ''}</div></fieldset>`;
@@ -1299,6 +1339,13 @@ export function monterLabo(racine, opts = {}) {
         h += `<div class="lb-sorties">${sortie('h', 'Profondeur h')}${sortie('U', 'Vitesse U')}${sortie('Fr', 'Froude')}${sortie('geo', 'S · P<sub>m</sub> · R<sub>h</sub>')}${sortie('ondes', 'Ondes U ± c')}${sortie('E', 'Énergie spécifique')}${sortie('hn', 'Profondeur normale h<sub>n</sub>')}${sortie('hc', 'Profondeur critique h<sub>c</sub>')}</div>`;
         break;
       }
+      case 'bille':
+        h += `<button type="button" class="lb-btn lb-btn-fort" data-k="lacher">Lâcher la bille</button>`;
+        h += `<div class="lb-grille2">${num('d', 'Diamètre d', el.d * 1000, 'mm', { pas: 0.5, min: 0.1, dec: 2 })}${num('rhoS', 'Masse volumique ρ<sub>s</sub>', el.rhoS, 'kg/m³', { pas: 50, min: 1, dec: 0 })}${sel_('trainee', 'Traînée', el.trainee, [['stokes', 'Stokes : F = 3πμVd'], ['complete', 'loi complète (Schiller–Naumann)']])}`;
+        h += `${num('z0', 'Hauteur de lâcher', el.z0, 'm', { pas: 0.05, min: 0, dec: 3 })}${num('r1', 'Repère 1 (haut)', el.r1, 'm', { pas: 0.05, min: 0, dec: 3 })}${num('r2', 'Repère 2 (bas)', el.r2, 'm', { pas: 0.05, min: 0, dec: 3 })}</div>`;
+        h += `<p class="lb-note">Le liquide est celui du réservoir ; ρ et μ du liquide personnalisé se règlent dans les constantes (inspecteur général).</p>`;
+        h += `<div class="lb-sorties">${sortie('V', 'Vitesse')}${sortie('Vlim', 'Vitesse limite')}${sortie('Re', 'Reynolds')}${sortie('dt', 'Temps entre repères')}${sortie('Vm', 'Vitesse mesurée')}${sortie('mu', 'μ par Stokes')}${sortie('muv', 'μ du liquide')}</div>`;
+        break;
       case 'lance':
         h += `<button type="button" class="lb-btn lb-btn-fort" data-k="basculer">${el.ouvert ? 'Fermer la lance' : 'Ouvrir la lance'}</button>`;
         h += `<div class="lb-grille2">${num('d', 'Diamètre du jet d', el.d * 1000, 'mm', { pas: 1, min: 2, dec: 1 })}${num('V', 'Vitesse V', el.V, 'm/s', { pas: 0.5, min: 0, dec: 2 })}${num('angle', 'Orientation', el.angle, '°', { pas: 5, dec: 2 })}${sel_('fluide', 'Liquide', el.fluide, fluidesOpt)}${num('x', 'x de la buse', el.x, 'm')}${num('z', 'z de la buse', el.z, 'm')}</div>`;
@@ -1376,14 +1423,14 @@ export function monterLabo(racine, opts = {}) {
     }</tbody></table></div><p class="lb-note">À 20 °C. Poids volumique γ = ρg ; densité d = ρ/ρ<sub>eau</sub> ; célérité du son c = √(E<sub>v</sub>/ρ).</p></details>`;
     const ec = modeEc() !== 'illustratif';
     if (ec) h += `<div class="lb-sorties">${sortie('temps', 'Temps simulé')}${sortie('perdu', 'Volume parti au sol')}</div>`;
-    h += `<details class="lb-env"><summary>Constantes</summary><div class="lb-grille2">${num('g', 'g', env.g, 'm/s²', { pas: 0.01, dec: 3 })}${num('patm', 'p<sub>atm</sub>', env.patm / 1000, 'kPa', { pas: 0.1, dec: 3 })}${num('rhoPerso', 'ρ liquide perso.', L.scene.perso.rho, 'kg/m³', { pas: 10, dec: 0 })}${ec ? num('zSol', 'Cote du sol', env.zSol ?? 0, 'm', { pas: 0.25, dec: 2 }) : ''}</div></details>`;
+    h += `<details class="lb-env"><summary>Constantes</summary><div class="lb-grille2">${num('g', 'g', env.g, 'm/s²', { pas: 0.01, dec: 3 })}${num('patm', 'p<sub>atm</sub>', env.patm / 1000, 'kPa', { pas: 0.1, dec: 3 })}${num('rhoPerso', 'ρ liquide perso.', L.scene.perso.rho, 'kg/m³', { pas: 10, dec: 0 })}${num('muPerso', 'μ liquide perso.', L.scene.perso.mu ?? 1e-3, 'Pa·s', { pas: 0.001, dec: 4 })}${ec ? num('zSol', 'Cote du sol', env.zSol ?? 0, 'm', { pas: 0.25, dec: 2 }) : ''}</div></details>`;
     h += ec ? `<p class="lb-note lb-hyp">Hypothèses : liquide incompressible, régime quasi permanent (les niveaux varient lentement devant le temps de mise en vitesse), conduites en série, vitesse négligeable dans les réservoirs${modeEc() === 'reel' ? ', pertes de charge de Darcy–Weisbach (λ de Colebrook ou 64/Re) et coefficients singuliers usuels' : ', fluide parfait : aucune perte, seule l’énergie cinétique du jet de sortie est perdue'}.</p>`
       : `<p class="lb-note lb-hyp">Hypothèses : fluides au repos, liquides incompressibles et non miscibles, poids des gaz négligé, gaz piégé isotherme, appareils de volume négligeable, conduites amorcées.</p>`;
     return h;
   }
   function majInspecteur() {
     const el = L.sel ? elt(L.sel) : null;
-    const cle = el ? `${el.id}|${el.type}|${el.type === 'reservoir' ? `${el.ferme}|${el.ciel.mode}|${L.A.etats.get(el.id).niveaux.map(n => n.fluide).join(',')}` : ''}${el.type === 'vannePlane' ? el.forme + el.paroi + el.charniere : ''}${el.type === 'flotteur' ? `${!!el.creux}|${el.e}` : ''}${el.type === 'reservoir' ? `|${!!el.constant}` : ''}${el.type === 'vanne' ? el.ouverte : ''}${el.type === 'conduite' ? `${el.lambda == null}|${el.Lreel == null}` : ''}${['orifice', 'robinet', 'lance'].includes(el.type) ? el.ouvert : ''}${el.type === 'canal' ? `${el.amont}|${el.aval}|${el.section}|${Number.isFinite(el.xr)}` : ''}${el.type === 'pompe' ? `${el.mode}|${el.marche}` : ''}|${L.scene.env.unite}|${modeEc()}` : `global|${L.scene.elements.length}|${modeEc()}`;
+    const cle = el ? `${el.id}|${el.type}|${el.type === 'reservoir' ? `${el.ferme}|${el.ciel.mode}|${L.A.etats.get(el.id).niveaux.map(n => n.fluide).join(',')}` : ''}${el.type === 'vannePlane' ? el.forme + el.paroi + el.charniere : ''}${el.type === 'flotteur' ? `${!!el.creux}|${el.e}` : ''}${el.type === 'reservoir' ? `|${!!el.constant}` : ''}${el.type === 'vanne' ? el.ouverte : ''}${el.type === 'conduite' ? `${el.lambda == null}|${el.Lreel == null}` : ''}${['orifice', 'robinet', 'lance'].includes(el.type) ? el.ouvert : ''}${el.type === 'canal' ? `${el.amont}|${el.aval}|${el.section}|${Number.isFinite(el.xr)}|${el.modeleDe}` : ''}${el.type === 'pompe' ? `${el.mode}|${el.marche}` : ''}|${L.scene.env.unite}|${modeEc()}` : `global|${L.scene.elements.length}|${modeEc()}`;
     if (cle !== L.inspCle) {
       if (insp.contains(document.activeElement) && document.activeElement.matches('input[type=number],input[type=text]') && L.inspCle && L.inspCle.split('|')[0] === cle.split('|')[0]) {
         // on garde le champ en cours de saisie
@@ -1427,6 +1474,7 @@ export function monterLabo(racine, opts = {}) {
       else if (Ec && e.type === 'venturi') { const st = Ec.venturis.get(e.id); if (st) t = `Δh = ${NB(Math.abs(st.dh) * 1000, 0)} mm · Q = ${NB(st.Qmes * 1000, 2)} L/s`; }
       else if (Ec && e.type === 'exutoire') { const so = Ec.sorties.get(e.id); t = so ? `V = ${NB(so.V, 2)} m/s · Q = ${NB(so.Q * 1000, 2)} L/s` : 'à sec'; }
       else if (e.type === 'robinet') t = e.ouvert ? `${NB(e.Q * 1000, 2)} L/s` : 'fermé';
+      else if (e.type === 'bille' && A.billes) { const b = A.billes.get(e.id); if (b) t = b.fond ? (b.mesure ? `V = ${NB(b.mesure.V, 3)} m/s · μ = ${NB(b.mesure.mu, 3)} Pa·s` : 'au fond') : `V = ${NB(b.v, 3)} m/s`; }
       else if (e.type === 'canal' && A.canaux) { const d = A.canaux.get(e.id), so = d && d.sonde; if (so) t = `sonde : h = ${NB(so.h, 3)} m · Fr = ${NB(so.Fr, 2)} (${so.Fr < 1 ? 'fluvial' : 'torrentiel'})${d.ressauts.length ? ' · ressaut' : ''}`; }
       else if (e.type === 'raccord' && A.efforts) { const r = A.efforts.raccords.find(k => k.r === e); if (r) t = `effort axial ${forceTexte(Math.abs(r.Fa))}`; }
       else if (Ec && e.type === 'lance') { const st = Ec.lances.get(e.id); t = st && st.Q > 0 ? `Q = ${NB(st.Q * 1000, 2)} L/s · ρQV = ${forceTexte(st.reaction)}` : 'fermée'; }
@@ -1739,6 +1787,28 @@ export function monterLabo(racine, opts = {}) {
       case 'canal': {
         const d = A.canaux && A.canaux.get(el.id), so = d && d.sonde;
         if (!so) break;
+        if (el.modeleDe) {
+          const dp = A.canaux.get(el.modeleDe), sp = dp && dp.sonde, N = el.echelle;
+          o.h = `${NB(so.h, 4)} m`; o.U = `${NB(so.U, 3)} m/s`; o.Fr = `${NB(so.Fr, 3)}${sp ? ` (prototype ${NB(sp.Fr, 3)})` : ''}`;
+          if (!sp) break;
+          const Fp = el.Fm / CA.facteur(N, 'force');
+          o.simil = `<table><thead><tr><th>Grandeur</th><th>Froude</th><th>Maquette</th><th>Prototype</th><th>Reynolds*</th></tr></thead><tbody>`
+            + `<tr><td>Profondeur (sonde)</td><td>λ</td><td>${NB(so.h, 4)} m</td><td>${NB(sp.h, 3)} m</td><td>λ</td></tr>`
+            + `<tr><td>Vitesse (sonde)</td><td>λ<sup>1/2</sup></td><td>${NB(so.U, 3)} m/s</td><td>${NB(sp.U, 2)} m/s</td><td>λ<sup>−1</sup></td></tr>`
+            + `<tr><td>Débit</td><td>λ<sup>5/2</sup></td><td>${NB(el.Q * 1000, 1)} L/s</td><td>${NB(dp.Qref, 0)} m³/s</td><td>λ</td></tr>`
+            + `<tr><td>Temps écoulé</td><td>λ<sup>1/2</sup></td><td>${NB(d.t, 1)} s</td><td>${NB(dp.t, 1)} s</td><td>λ<sup>2</sup></td></tr>`
+            + `<tr><td>Force</td><td>λ<sup>3</sup></td><td>${NB(el.Fm, 1)} N</td><td>${Fp >= 1e6 ? NB(Fp / 1e6, 2) + ' MN' : Fp >= 1e3 ? NB(Fp / 1e3, 2) + ' kN' : NB(Fp, 1) + ' N'}</td><td>1</td></tr>`
+            + `<tr><td>Strickler K</td><td>λ<sup>−1/6</sup></td><td>${NB(el.K, 1)}</td><td>${NB(elt(el.modeleDe).K, 1)}</td><td>—</td></tr>`
+            + `<tr><td>Reynolds 4UR<sub>h</sub>/ν</td><td>λ<sup>3/2</sup></td><td>${fmtRe(4 * so.U * so.Rh / 1e-6)}</td><td>${fmtRe(4 * sp.U * sp.Rh / 1e-6)}</td><td>1</td></tr></tbody></table>`
+            + `<p class="lb-note">* échelles qu’imposerait la similitude de Reynolds avec le même fluide (ex. 7.3 : forces égales, mais vitesses N fois plus grandes sur maquette) : impossible à tenir en même temps que Froude, d’où la similitude de Froude pour les écoulements à surface libre, avec un Reynolds de maquette assez grand.</p>`;
+          o.etapes = li([`Échelle λ = 1/${NB(N, 0)} ; Fr<sub>m</sub> = Fr<sub>p</sub> avec le même g ⇒ V<sub>m</sub>/V<sub>p</sub> = λ<sup>1/2</sup> = 1/${NB(Math.sqrt(N), 3)}.`,
+            `Débit : Q<sub>m</sub> = Q<sub>p</sub> λ<sup>5/2</sup> = ${NB(dp.Qref, 0)}/${NB(Math.pow(N, 2.5), 0)} = <b>${NB(el.Q, 4)} m³/s</b> (${NB(el.Q * 1000, 0)} L/s, praticable en laboratoire).`,
+            `Vitesse à la sonde : V<sub>p</sub> = V<sub>m</sub>√${NB(N, 0)} = ${NB(so.U, 3)} × ${NB(Math.sqrt(N), 3)} = <b>${NB(so.U * Math.sqrt(N), 2)} m/s</b> (calcul du prototype : ${NB(sp.U, 2)} m/s).`,
+            `Temps : t<sub>p</sub> = t<sub>m</sub>√${NB(N, 0)} ; 2 min de maquette valent ${NB(2 * Math.sqrt(N), 1)} min de prototype.`,
+            `Forces (même fluide) : F<sub>p</sub> = F<sub>m</sub> N³ = ${NB(el.Fm, 1)} × ${NB(N ** 3, 0)} = <b>${Fp >= 1e6 ? NB(Fp / 1e6, 2) + ' MN' : NB(Fp, 0) + ' N'}</b>.`,
+            `Rugosité : U = K R<sub>h</sub><sup>2/3</sup> √i impose K<sub>m</sub> = K<sub>p</sub> N<sup>1/6</sup> = ${NB(el.K, 1)} : la maquette doit être plus lisse que l’ouvrage réel.`]);
+          break;
+        }
         const regimeTxt = so.h < 1e-4 ? 'à sec' : so.Fr < 1 ? 'fluvial' : 'torrentiel';
         o.h = `${NB(so.h, 3)} m à x = ${NB(so.x, 1)} m`;
         o.U = `${NB(so.U, 3)} m/s · Q = ${NB(so.Q, 3)} m³/s`;
@@ -1770,6 +1840,29 @@ export function monterLabo(racine, opts = {}) {
           et.push(`Intumescence créée à x = ${NB(pe.x, 0)} m (t = ${NB(pe.t, 0)} s) : ondes à U + c = ${NB(pe.U + pe.c, 2)} m/s et U − c = ${NB(pe.U - pe.c, 2)} m/s (repères violets).`);
           if (Number.isFinite(el.station)) { const w = el.station < pe.x ? pe.U - pe.c : pe.U + pe.c; if ((el.station - pe.x) * w > 0) et.push(`Elle atteint l’ouvrage (x = ${NB(el.station, 0)} m) après |Δx|/|w| = ${NB(Math.abs(el.station - pe.x), 0)}/${NB(Math.abs(w), 2)} = <b>${NB(Math.abs((el.station - pe.x) / w), 0)} s</b>.`); }
         }
+        o.etapes = li(et);
+        break;
+      }
+      case 'bille': {
+        const b = A.billes && A.billes.get(el.id);
+        if (!b) break;
+        const md = b.milieu, nomL = md.fluide ? A.ctx.fl(md.fluide).nom.toLowerCase() : 'air';
+        o.V = b.fond ? 'au fond' : `${NB(b.v, 4)} m/s`;
+        o.Vlim = b.Vlim != null ? `${NB(b.Vlim, 4)} m/s` : '—';
+        o.Re = b.Re != null ? NB(b.Re, 3) : '—';
+        o.dt = b.mesure ? `${NB(b.mesure.dt, 3)} s` : 'en attente des repères';
+        o.Vm = b.mesure ? `${NB(b.mesure.V, 4)} m/s` : '—';
+        o.mu = b.mesure ? `<b>${NB(b.mesure.mu, 4)} Pa·s</b>` : '—';
+        o.muv = md.fluide ? `${NB(md.mu, 4)} Pa·s (${esc(nomL)})` : '—';
+        const et = [`À vitesse limite, poids apparent et traînée s’équilibrent : (ρ<sub>s</sub> − ρ) g πd³/6 = ${el.trainee === 'stokes' ? '3πμVd (Stokes)' : '½ρV²C<sub>x</sub>πd²/4, C<sub>x</sub> = 24/Re (1 + 0,15 Re<sup>0,687</sup>)'}.`];
+        if (b.tau) et.push(`Temps de mise en vitesse τ = ρ<sub>s</sub>d²/(18μ) = ${NB(b.tau * 1000, 2)} ms : la vitesse limite est atteinte presque aussitôt.`);
+        if (b.mesure) {
+          const m = b.mesure;
+          et.push(`Chronométrage : ${NB(el.r1 - el.r2, 3)} m parcourus en ${NB(m.dt, 3)} s ⇒ V = <b>${NB(m.V, 4)} m/s</b>.`);
+          et.push(`Stokes : μ = (ρ<sub>s</sub> − ρ) g d²/(18V) = (${NB(el.rhoS, 0)} − ${NB(md.rho, 0)}) × ${NB(g, 2)} × ${NB(el.d, 4)}²/(18 × ${NB(m.V, 4)}) = <b>${NB(m.mu, 4)} Pa·s</b>.`);
+          et.push(`Vérification : Re = ρVd/μ = ${NB(md.rho, 0)} × ${NB(m.V, 4)} × ${NB(el.d, 4)}/${NB(m.mu, 4)} = <b>${NB(m.Re, 3)}</b> ${m.Re < 0.5 ? '< 1 : régime de Stokes valable' : m.Re < 1.5 ? '≈ 1 : à la limite du régime de Stokes, une correction d’Oseen serait justifiée' : '> 1 : hors du régime de Stokes, la formule n’est plus valable'}.`);
+          if (md.fluide) et.push(`Viscosité vraie du liquide : ${NB(md.mu, 4)} Pa·s ; écart de la mesure : ${NB((m.mu / md.mu - 1) * 100, 1)} %.`);
+        } else et.push('La vitesse se mesure entre les deux repères, une fois la vitesse limite atteinte.');
         o.etapes = li(et);
         break;
       }
@@ -1854,6 +1947,7 @@ export function monterLabo(racine, opts = {}) {
       if (k === 'g') L.scene.env.g = clamp(v, 1, 30);
       if (k === 'patm') L.scene.env.patm = clamp(v * 1000, 50000, 120000);
       if (k === 'rhoPerso') L.scene.perso.rho = clamp(v, 500, 20000);
+      if (k === 'muPerso') L.scene.perso.mu = clamp(v, 1e-5, 100);
       if (k === 'zSol') L.scene.env.zSol = clamp(v, -200, 200);
       for (const r of L.scene.elements) if (r.type === 'reservoir') { r.couches = P.trierCouches(r.couches, P.contexte(L.scene)); }
       return apresEdition(fin);
@@ -1969,8 +2063,24 @@ export function monterLabo(racine, opts = {}) {
         if (k === 'x') el.x = clamp(v, -500, 500);
         if (k === 'z') el.z = clamp(v, -500, 500);
         break;
+      case 'bille':
+        if (k === 'lacher') { BI.lacher(el, L.scene); L.pause = false; majBarre(); break; }
+        if (k === 'trainee') { el.trainee = valeur === 'complete' ? 'complete' : 'stokes'; BI.lacher(el, L.scene); break; }
+        if (!ok) return;
+        if (k === 'd') el.d = clamp(v / 1000, 1e-4, 0.5);
+        if (k === 'rhoS') el.rhoS = clamp(v, 1, 30000);
+        if (k === 'z0') el.z0 = clamp(v, 0, 200);
+        if (k === 'r1') el.r1 = clamp(v, 0, 200);
+        if (k === 'r2') el.r2 = clamp(v, 0, 200);
+        break;
       case 'canal': {
-        if (k === 'relancer') { CA.reinitialiser(el, ctx.g); structure = true; break; }
+        if (k === 'relancer') {
+          // prototype et maquette repartent ensemble pour rester homologues
+          for (const c of L.scene.elements) if (c.type === 'canal' && (c === el || c.id === el.modeleDe || c.modeleDe === el.id)) CA.reinitialiser(c, ctx.g);
+          structure = true; break;
+        }
+        if (k === 'echelle' && ok) { el.echelle = clamp(v, 1, 1000); for (const c of L.scene.elements) if (c.type === 'canal' && (c === el || c.id === el.modeleDe)) CA.reinitialiser(c, ctx.g); break; }
+        if (k === 'Fm' && ok) { el.Fm = clamp(v, 0, 1e9); break; }
         if (k === 'bosse') { const st = CA.etatCanal(el, ctx.g), so = L.A.canaux.get(el.id).sonde; CA.perturber(el, st, so.x, Math.max(0.05, 0.15 * Math.max(so.h, 0.2)), el.L / 25, ctx.g); el.ondes = true; L.pause = false; majBarre(); break; }
         if (k === 'amont') { el.amont = valeur === 'mur' ? 'mur' : 'debit'; structure = true; break; }
         if (k === 'aval') { el.aval = ['libre', 'niveau', 'normal', 'mur'].includes(valeur) ? valeur : 'libre'; structure = true; break; }

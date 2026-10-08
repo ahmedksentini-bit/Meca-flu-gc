@@ -74,7 +74,11 @@ test('Ressaut : passage torrentiel → fluvial avec hauteurs conjuguées', () =>
   assert.ok(r.Fr1 > 1.5, 'amont torrentiel');
   rel(r.h2, r.h2theo, 0.08, 'hauteur conjuguée');
   rel(proche(d, 90).h, C.hNormale(c, 1, c.i2), 0.02, 'profondeur normale aval');
-  rel(proche(d, 10).h, C.hNormale(c, 1, c.i), 0.03, 'profondeur normale du coursier');
+  // entrée en régime critique, puis la ligne d'eau s'abaisse vers h_n sur le coursier (courbe S2)
+  const hn1 = C.hNormale(c, 1, c.i), hc = C.hCritique(c, 1, g);
+  rel(d.pts[0].h, hc, 0.25, 'entrée proche de h_c');
+  assert.ok(proche(d, 5).h > proche(d, 15).h && proche(d, 15).h > proche(d, 23).h, 'abaissement le long du coursier');
+  rel(proche(d, 23).h, hn1, 0.1, 'profondeur normale du coursier');
 });
 
 test('Les canaux passent le contrôle d’import et se figent au repos', () => {

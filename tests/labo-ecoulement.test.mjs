@@ -134,7 +134,7 @@ test('Les expériences d’écoulement se chargent et passent le contrôle d’i
     assert.equal(t.elements.length, s.elements.length, sc.id);
     assert.equal(t.env.ecoulement, sc.ecoulement);
     const A = E.analyserTout(s);
-    assert.ok(A.ecoulement.chaines.some(c => c.Q > 0) || A.ecoulement.orifices.size || A.ecoulement.lances.size || A.canaux.size, sc.id);
+    assert.ok(A.ecoulement.chaines.some(c => c.Q > 0) || A.ecoulement.orifices.size || A.ecoulement.lances.size || A.canaux.size || A.billes.size, sc.id);
     for (const [k, m] of A.mesures) assert.ok(!m.erreur, `${sc.id} ${k}`);
   }
 });

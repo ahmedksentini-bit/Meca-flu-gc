@@ -33,7 +33,7 @@ const aire = d => Math.PI * d * d / 4;
 const canal = (id, o) => ({ id, type: 'canal', nom: o.nom || '', x: 0, z: 0, largeur: o.largeur ?? 10, hauteur: o.hauteur ?? 4.2, x0: o.x0 ?? 0, L: o.L, N: o.N ?? 200,
   section: o.section || 'rect', b: o.b, m: o.m ?? 0, K: o.K ?? 0, i: o.i ?? 0, xr: o.xr ?? null, i2: o.i2 ?? 0, zf0: o.zf0 ?? 0,
   amont: o.amont || 'debit', Q: o.Q ?? 0, aval: o.aval || 'libre', hAval: o.hAval ?? 1, init: o.init || { type: 'normale' }, bosse: o.bosse || null,
-  sonde: o.sonde ?? null, station: o.station ?? null, ritter: !!o.ritter, ondes: !!o.ondes });
+  sonde: o.sonde ?? null, station: o.station ?? null, ritter: !!o.ritter, ondes: !!o.ondes, modeleDe: o.modeleDe ?? null, echelle: o.echelle ?? 1, Fm: o.Fm ?? 0 });
 
 const fabriques = {
   vases(s) {
@@ -290,6 +290,20 @@ const fabriques = {
   ressaut(s) {
     s.elements.push(canal('CA1', { nom: 'coursier puis bief doux', L: 100, N: 400, b: 1, K: 75, i: 0.05, xr: 25, i2: 0.002, zf0: 2, Q: 1, aval: 'normal', sonde: 60 }));
   },
+  evacuateur(s) {
+    // Ex. 7.4 : évacuateur de 60 m de large (Q = 1 800 m³/s), coursier à 5 % puis bassin de dissipation ;
+    // la maquette au 1/50 recopie le prototype en similitude de Froude.
+    const p = canal('CA1', { nom: 'évacuateur de crues (prototype)', L: 300, N: 300, b: 60, K: 75, i: 0.05, xr: 60, i2: 0, zf0: 3, Q: 1800, aval: 'niveau', hAval: 7,
+      init: { type: 'normale', h: 7 }, sonde: 62 });
+    p.z = 4.8;
+    s.elements.push(p, canal('CA2', { nom: 'maquette au 1/50', modeleDe: 'CA1', echelle: 50, L: 6, b: 1.2, Fm: 85 }));
+  },
+  bille(s) {
+    // Ex. 7.5 : viscosimètre à chute de bille, huile ρ = 890 kg/m³, μ = 0,284 Pa·s (liquide personnalisé).
+    s.perso.rho = 890; s.perso.mu = 0.284;
+    s.elements.push(reservoir('R1', { nom: 'éprouvette d’huile', x: 0, z: 0, w: 0.4, H: 1, b: 0.4, couches: [{ fluide: 'perso', h: 0.9 }] }),
+      { id: 'B1', type: 'bille', reservoir: 'R1', x: 0.2, d: 0.003, rhoS: 7850, z0: 0.85, r1: 0.6, r2: 0.2, trainee: 'stokes' });
+  },
   convergent(s) {
     // p₁ = 180 kPa juste en amont du convergent (z = 0,5 m), Q = 80 L/s.
     const V1 = 0.080 / aire(0.25), V2 = 0.080 / aire(0.15), g = 9.81;
@@ -305,7 +319,7 @@ const fabriques = {
 
 // Chapitres des expériences (groupes du sélecteur) ; les écoulements fixent leur modèle de fluide.
 // (liste ordonnée : des clés numériques passeraient avant les autres dans un objet)
-export const GROUPES = [['1-2', 'Chapitres 1 et 2 — hydrostatique'], ['3-4', 'Chapitres 3 et 4 — écoulements, Bernoulli'], ['5', 'Chapitre 5 — quantité de mouvement'], ['6', 'Chapitre 6 — pertes de charge'], ['8', 'Chapitre 8 — surface libre']];
+export const GROUPES = [['1-2', 'Chapitres 1 et 2 — hydrostatique'], ['3-4', 'Chapitres 3 et 4 — écoulements, Bernoulli'], ['5', 'Chapitre 5 — quantité de mouvement'], ['6', 'Chapitre 6 — pertes de charge'], ['7', 'Chapitre 7 — similitude'], ['8', 'Chapitre 8 — surface libre']];
 export const SCENARIOS = [
   { id: 'vases', chapitre: '1-2', titre: 'Vases communicants', ref: '§ 2.2.2', ancre: 's-cas-du-liquide-incompressible',
     consigne: 'Ouvrez la vanne V1 (clic) : le liquide passe du château d’eau au bassin jusqu’à l’égalité des surfaces libres. Le volume se conserve : le niveau commun vaut Σ(hᵢSᵢ)/ΣSᵢ. Les piézomètres de la conduite suivent la charge.' },
@@ -373,6 +387,10 @@ export const SCENARIOS = [
     consigne: 'Q = 25 L/s, λ = 0,022 : pertes à l’aspiration 0,52 m, au refoulement 23,9 m ; HMT = 46,0 + 24,4 = 70,4 m, P_h = 17,3 kW, P_abs = 24,0 kW (η = 0,72). Essayez un refoulement en DN 150 : la puissance baisse d’environ 20 %.' },
   { id: 'borda', chapitre: '6', ecoulement: 'reel', vitesse: 1, titre: 'Ex. 6.7 — Élargissement brusque', ref: 'Ex. 6.7', ancre: 's-exercice-6.7-élargissement-brusque-bordacarnot',
     consigne: 'D = 100 → 200 mm, Q = 15 L/s : la vitesse tombe de 1,91 à 0,48 m/s, la perte de Borda vaut (U₁ − U₂)²/2g = 0,105 m, et la pression remonte de 6,9 cm d’eau seulement (677 Pa) au lieu des 17,4 cm d’une récupération sans perte.' },
+  { id: 'evacuateur', chapitre: '7', ecoulement: 'reel', vitesse: 10, titre: 'Ex. 7.4 — Maquette d’évacuateur (Froude)', ref: 'Ex. 7.4', ancre: 's-exercice-7.4-modèle-réduit-dévacuateur-de-crues-froude',
+    consigne: 'Prototype (en haut) et maquette au 1/50 (en bas) calculés séparément : en similitude de Froude, les deux lignes d’eau sont homothétiques à chaque instant. Q_m = 1 800/50^2,5 = 102 L/s ; au pied du coursier, 1,64 m/s sur maquette donnent 1,64 × √50 = 11,6 m/s ; 2 min de maquette valent 14,1 min ; 85 N mesurés valent 85 × 50³ = 10,6 MN. Le Strickler de la maquette est plus fort (× 50^1/6) : parois plus lisses.' },
+  { id: 'bille', chapitre: '7', ecoulement: 'reel', vitesse: 1, titre: 'Ex. 7.5 — Viscosimètre à chute de bille', ref: 'Ex. 7.5', ancre: 's-exercice-7.5-chute-dune-bille-mesure-de-viscosité-stokes',
+    consigne: 'Bille d’acier de 3 mm dans une huile (ρ = 890 kg/m³) : elle atteint presque aussitôt sa vitesse limite. Chronométrée entre les deux repères (40 cm), V = 0,12 m/s, d’où μ = (ρ_s − ρ) g d²/(18V) = 0,284 Pa·s ; mais Re = ρVd/μ = 1,13 est à la limite de Stokes. Passez la traînée en loi complète : la bille ralentit (0,105 m/s) et la formule de Stokes surestime alors μ de 15 %.' },
   { id: 'canal-trapeze', chapitre: '8', ecoulement: 'reel', vitesse: 60, titre: 'Ex. 8.1 — Canal trapézoïdal uniforme', ref: 'Ex. 8.1', ancre: 's-exercice-8.1-canal-trapézoïdal-en-régime-uniforme',
     consigne: 'b = 2 m, fruit 3H/2V, K = 70, i = 0,4 ‰ : à h = 1,20 m, S = 4,56 m², P_m = 6,33 m, R_h = 0,721 m et Manning–Strickler donne Q = 5,13 m³/s, U = 1,13 m/s, Fr = 0,40 (fluvial). La ligne d’eau suit la profondeur normale h_n. Augmentez le débit dans l’inspecteur : l’onde se propage, puis un nouveau régime uniforme s’installe.' },
   { id: 'caniveau', chapitre: '8', ecoulement: 'reel', vitesse: 10, titre: 'Ex. 8.2 — Profondeur normale d’un caniveau', ref: 'Ex. 8.2', ancre: 's-exercice-8.2-profondeur-normale-dun-collecteur-rectangulaire',
