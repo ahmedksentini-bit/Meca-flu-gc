@@ -2,9 +2,11 @@
 // balisage ; les coordonnées du monde (m) sont converties en pixels ici, si bien
 // que traits et textes gardent la même taille à tous les zooms.
 import * as P from './labo-physique.js';
+import { chargeEn } from './labo-ecoulement.js';
 
 export const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const n1 = v => (Math.round(v * 10) / 10).toString();
+const clampPx = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export function vueDe(v) {
   return { ...v, X: x => v.ox + x * v.k, Y: z => v.oy - z * v.k, x: X => (X - v.ox) / v.k, z: Y => (v.oy - Y) / v.k };
@@ -208,14 +210,28 @@ function conduite(V, c, ec, A, env, ui) {
   const ctx = A.ctx, sel = ui.selection === c.id;
   let s = `<g data-h="cond:${c.id}" class="lb-cond${sel ? ' sel' : ''}">`;
   const d = chemin(V, ec.tr.pts);
-  s += `<path d="${d}" class="lb-tuyau-ext"/>`;
+  // Le trait suit le diamètre réel (lisible entre 6 et 30 px).
+  const ext = clampPx((c.D || 0.1) * V.k + 3, 6, 30), int = Math.max(2.5, ext - 3.5);
+  s += `<path d="${d}" class="lb-tuyau-ext" style="stroke-width:${n1(ext)}"/>`;
   for (const t of ec.troncons) {
     const pts = sousTrace(ec.tr, t.t0, t.t1);
-    s += `<path d="${chemin(V, pts)}" class="lb-tuyau-int${t.isole ? ' isole' : ''}" stroke="${couleur(ctx, t.fluide)}"/>`;
+    s += `<path d="${chemin(V, pts)}" class="lb-tuyau-int${t.isole ? ' isole' : ''}" stroke="${couleur(ctx, t.fluide)}" style="stroke-width:${n1(int)}"/>`;
   }
+  const flux = A.ecoulement && A.ecoulement.parConduite.get(c.id);
   if (Math.abs(ec.q) > 1e-7) {
-    const v = Math.min(80, 18 + Math.abs(ec.q) * 4000);
+    const v = flux ? clampPx(flux.d.V * V.k, 12, 420) : Math.min(80, 18 + Math.abs(ec.q) * 4000);
     s += `<path d="${d}" class="lb-flux" style="stroke-dashoffset:${n1(-ec.sens * ui.temps * v)}"/>`;
+  }
+  if (flux) {
+    // étiquette au milieu du plus long tronçon droit
+    let best = 1, lg = 0;
+    for (let i = 1; i < ec.tr.pts.length; i++) { const l = ec.tr.cum[i] - ec.tr.cum[i - 1]; if (l > lg) { lg = l; best = i; } }
+    const a = ec.tr.pts[best - 1], b = ec.tr.pts[best], horiz = Math.abs(b.z - a.z) < 1e-9;
+    const mx = V.X((a.x + b.x) / 2), my = V.Y((a.z + b.z) / 2);
+    // sur un tronçon court, l'étiquette se réduit à V, puis disparaît
+    const pix = lg * V.k, vit = `V = ${P.nombre(flux.d.V, 2)} m/s`;
+    const lab = !horiz || pix >= 185 ? `Q = ${P.nombre(flux.sol.Q * 1000, 1)} L/s · ${vit}` : pix >= 80 ? vit : null;
+    if (lab) s += texte(horiz ? mx : mx + ext / 2 + 5, horiz ? my - ext / 2 - 5 : my, lab, 'lb-petit lb-debit', horiz ? 'middle' : 'start');
   }
   s += `<path d="${d}" class="lb-tuyau-hit"/>`;
   // palier horizontal déplaçable
@@ -448,13 +464,139 @@ function flotteur(V, f, res, r, e, A, env, ui) {
   return s;
 }
 
+// ---------- écoulements : lignes de charge, jets, appareils ----------
+function lignesDeCharge(V, scene, A) {
+  let s = '';
+  for (const sol of A.ecoulement.chaines) {
+    if (!(sol.Q > 0) || !sol.parTuyau) continue;
+    const egl = [], hgl = [];
+    for (const it of sol.ordre) {
+      if (it.type !== 'conduite') continue;
+      const pt = sol.parTuyau.get(it.c.id), ec = A.conduites.get(it.c.id);
+      if (!pt || !ec) continue;
+      const ts = new Set([0, 1]);
+      for (let i = 0; i <= 40; i++) ts.add(i / 40);
+      for (let i = 1; i < ec.tr.pts.length - 1; i++) ts.add(ec.tr.cum[i] / ec.tr.L);
+      for (const p of pt.points) { ts.add(Math.max(0, p.t - 1e-6)); ts.add(Math.min(1, p.t + 1e-6)); }
+      for (const c of pt.cols) for (const k of [-1, -0.5, 0, 0.5, 1]) ts.add(Math.min(1, Math.max(0, c.t + k * c.dt)));
+      let liste = [...ts].sort((a, b) => a - b);
+      if (pt.t.sens < 0) liste = liste.reverse();
+      for (const t of liste) {
+        const q = P.pointSurTrace(ec.tr, t), c = chargeEn(pt, t);
+        egl.push({ x: q.x, z: c.H }); hgl.push({ x: q.x, z: c.H - c.hv });
+      }
+      if (pt.hsExit > 0) { const q = P.pointSurTrace(ec.tr, pt.sortieT), c = chargeEn(pt, pt.sortieT); egl.push({ x: q.x, z: c.H - pt.hsExit }); }
+    }
+    if (egl.length < 2) continue;
+    s += `<path d="${chemin(V, egl)}" class="lb-egl"/><path d="${chemin(V, hgl)}" class="lb-hgl"/>`;
+    s += texte(V.X(egl[0].x) + 4, V.Y(egl[0].z) - 4, `ligne de charge ${P.nombre(egl[0].z, 2)} m`, 'lb-petit lb-eglt');
+    const i = Math.min(hgl.length - 1, Math.floor(hgl.length * 0.55));
+    s += texte(V.X(hgl[i].x) + 4, V.Y(hgl[i].z) + 12, 'ligne piézométrique', 'lb-petit lb-hglt');
+  }
+  return s;
+}
+function jets(V, scene, A, ui) {
+  let s = '';
+  const zSol = Number.isFinite(scene.env.zSol) ? scene.env.zSol : 0;
+  for (const j of A.ecoulement.jets) {
+    if (!j.pts || j.pts.length < 2) continue;
+    const el = A.idx.get(j.de), d = el?.type === 'orifice' ? el.d : el?.type === 'robinet' ? 0.03 : (j.Q > 0 && j.V > 0 ? Math.sqrt(4 * j.Q / (Math.PI * j.V)) : 0.05);
+    const w = clampPx(d * V.k, 2.5, 12), path = chemin(V, j.pts);
+    s += `<path d="${path}" class="lb-jet" stroke="${couleur(A.ctx, j.fluide)}" style="stroke-width:${n1(w)}"/>`;
+    s += `<path d="${path}" class="lb-jet-flux" style="stroke-dashoffset:${n1(-ui.temps * 90)}"/>`;
+    const f = j.pts[j.pts.length - 1];
+    if (j.portee != null && Math.abs(f.z - zSol) < 1e-6 && Math.abs(j.portee) > 0.05) {
+      s += `<path d="M${n1(V.X(f.x) - 9)},${n1(V.Y(f.z))}q4,-7 9,0q5,-7 9,0" class="lb-eclat" stroke="${couleur(A.ctx, j.fluide)}"/>`;
+      s += texte(V.X(f.x), V.Y(f.z) + 14, `portée ${P.nombre(Math.abs(j.portee), 2)} m`, 'lb-petit lb-lect', 'middle');
+    }
+  }
+  return s;
+}
+function sol(V, scene, A, vue) {
+  const zSol = Number.isFinite(scene.env.zSol) ? scene.env.zSol : 0, y = V.Y(zSol);
+  if (y < 0 || y > vue.H) return '';
+  let s = `<line x1="0" y1="${n1(y)}" x2="${vue.W}" y2="${n1(y)}" class="lb-sol-ligne"/>`;
+  for (let x = 6; x < vue.W; x += 14) s += `<line x1="${x}" y1="${n1(y)}" x2="${x - 7}" y2="${n1(y + 7)}" class="lb-sol-h"/>`;
+  return s + texte(vue.W - 8, y - 4, `sol · z = ${P.nombre(zSol, 2)} m`, 'lb-petit lb-idi', 'end');
+}
+function appareil(V, el, A, scene, ui) {
+  const sel = ui.selection === el.id, x = V.X(el.x), y = V.Y(el.z), E = A.ecoulement;
+  let s = `<g data-h="dev:${el.id}" class="lb-dev${sel ? ' sel' : ''}">`;
+  if (el.type === 'pompe') {
+    const r = clampPx(0.26 * V.k, 11, 20), d = el.sens === -1 ? -1 : 1;
+    for (const port of ['asp', 'ref']) { const q = P.portAppareil(el, port); s += `<line x1="${n1(x)}" y1="${n1(y)}" x2="${n1(V.X(q.x))}" y2="${n1(V.Y(q.z))}" class="lb-dev-tube"/>`; }
+    const sol = E && E.chaines.find(c => c.Q > 0 && c.pompes && c.pompes.some(p => p.el === el)), info = sol && sol.pompes.find(p => p.el === el);
+    s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(r)}" class="lb-pompe${el.marche === false ? ' arret' : ''}"/>`;
+    const ang = info ? ui.temps * 6 : 0;
+    s += `<g transform="translate(${n1(x)},${n1(y)}) rotate(${n1((ang * 57.3) % 360)})"><path d="M${n1(-r * 0.55)},0L${n1(r * 0.55)},0M0,${n1(-r * 0.55)}L0,${n1(r * 0.55)}" class="lb-roue"/></g>`;
+    s += `<path d="M${n1(x - d * r * 0.2)},${n1(y - r - 7)}l${n1(d * 10)},4l${n1(-d * 10)},4z" class="lb-pompe-sens"/>`;
+    s += texte(x, y + r + 13, `${el.id}${info ? ` · H = ${P.nombre(info.H, 2)} m` : el.marche === false ? ' · arrêt' : ''}`, 'lb-petit lb-idi', 'middle');
+    s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(r + 6)}" class="lb-hit"/>`;
+  } else if (el.type === 'raccord') {
+    const pa = P.portAppareil(el, 'a'), pb = P.portAppareil(el, 'b');
+    const conduites = scene.elements.filter(c => c.type === 'conduite');
+    const D = port => { const c = conduites.find(k => (k.a.el === el.id && k.a.port === port) || (k.b.el === el.id && k.b.port === port)); return c ? c.D : 0.1; };
+    const wa = clampPx(D('a') * V.k + 3, 6, 30) / 2, wb = clampPx(D('b') * V.k + 3, 6, 30) / 2;
+    const xa = V.X(pa.x), xb = V.X(pb.x);
+    s += `<path d="M${n1(xa)},${n1(y - wa)}L${n1(xb)},${n1(y - wb)}L${n1(xb)},${n1(y + wb)}L${n1(xa)},${n1(y + wa)}Z" class="lb-raccord"/>`;
+    s += texte(x, y + Math.max(wa, wb) + 13, el.id, 'lb-petit lb-idi', 'middle');
+    s += `<rect x="${n1(xa - 4)}" y="${n1(y - Math.max(wa, wb) - 4)}" width="${n1(xb - xa + 8)}" height="${n1(2 * Math.max(wa, wb) + 8)}" class="lb-hit"/>`;
+  } else if (el.type === 'exutoire') {
+    s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="5" class="lb-exutoire"/>`;
+    const so = E && E.sorties.get(el.id);
+    s += texte(x + 8, y - 7, `${el.id}${so ? ` · V = ${P.nombre(so.V, 2)} m/s` : ' · sortie libre'}`, 'lb-petit lb-idi');
+    s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="12" class="lb-hit"/>`;
+  } else if (el.type === 'robinet') {
+    s += `<path d="M${n1(x - 26)},${n1(y - 8)}L${n1(x)},${n1(y - 8)}Q${n1(x + 6)},${n1(y - 8)} ${n1(x + 6)},${n1(y - 2)}L${n1(x + 6)},${n1(y)}" class="lb-robinet"/>`;
+    s += `<path d="M${n1(x - 14)},${n1(y - 8)}L${n1(x - 14)},${n1(y - 16)}M${n1(x - 19)},${n1(y - 16)}L${n1(x - 9)},${n1(y - 16)}" class="lb-robinet-volant"/>`;
+    s += texte(x - 28, y - 14, `${el.id} · ${el.ouvert ? P.nombre(el.Q * 1000, 1) + ' L/s' : 'fermé'}`, 'lb-petit lb-idi', 'end');
+    s += `<rect x="${n1(x - 30)}" y="${n1(y - 22)}" width="40" height="24" class="lb-hit"/>`;
+  }
+  return s + '</g>';
+}
+function orificeDessin(V, o, A, ui) {
+  const r = A.idx.get(o.reservoir);
+  if (!r) return '';
+  const R = P.repereParoi(r, o.paroi), x = V.X(R.ox + o.s * R.dx), y = V.Y(R.oz + o.s * R.dz);
+  const st = A.ecoulement && A.ecoulement.orifices.get(o.id), sel = ui.selection === o.id;
+  const w = clampPx(o.d * V.k, 4, 14);
+  // trou dans la paroi, perpendiculaire à celle-ci
+  const tx = R.dx, ty = -R.dz;
+  let s = `<g data-h="dev:${o.id}" class="lb-orifice${sel ? ' sel' : ''}${o.ouvert ? '' : ' ferme'}">`;
+  s += `<line x1="${n1(x - tx * w / 2)}" y1="${n1(y - ty * w / 2)}" x2="${n1(x + tx * w / 2)}" y2="${n1(y + ty * w / 2)}" class="lb-trou"/>`;
+  s += `<circle cx="${n1(x)}" cy="${n1(y)}" r="${n1(w / 2 + 6)}" class="lb-hit"/>`;
+  const lib = `${o.id}${st && st.Q > 0 ? ` · ${P.nombre(st.Q * 1000, 1)} L/s` : o.ouvert ? '' : ' · bouché'}`;
+  s += texte(x + R.nx * 10, y - R.nz * 10 - 8, lib, 'lb-petit lb-idi', R.nx < 0 ? 'end' : 'start');
+  return s + '</g>';
+}
+function venturiDessin(V, v, A, ui) {
+  const c = A.idx.get(v.conduite), ec = A.conduites.get(v.conduite);
+  if (!c || !ec) return '';
+  const p = P.pointSurTrace(ec.tr, v.t), a = ec.tr.pts[p.i - 1], b = ec.tr.pts[p.i];
+  const ang = Math.atan2(-(b.z - a.z), b.x - a.x) * 180 / Math.PI;
+  const x = V.X(p.x), y = V.Y(p.z), L = clampPx(0.7 * V.k, 34, 90);
+  const W = clampPx(c.D * V.k + 3, 6, 30) / 2 + 2, w = Math.max(2, W * v.d / c.D);
+  const st = A.ecoulement && A.ecoulement.venturis.get(v.id), sel = ui.selection === v.id;
+  let s = `<g data-h="vt:${v.id}" class="lb-venturi${sel ? ' sel' : ''}"><g transform="translate(${n1(x)},${n1(y)}) rotate(${n1(ang)})">`;
+  s += `<path d="M${n1(-L / 2)},${n1(-W)}L${n1(-L / 6)},${n1(-w)}L${n1(-L / 12)},${n1(-w)}L${n1(L / 2)},${n1(-W)}L${n1(L / 2)},${n1(W)}L${n1(-L / 12)},${n1(w)}L${n1(-L / 6)},${n1(w)}L${n1(-L / 2)},${n1(W)}Z" class="lb-venturi-corps"/>`;
+  s += `<rect x="${n1(-L / 2 - 2)}" y="${n1(-W - 4)}" width="${n1(L + 4)}" height="${n1(2 * W + 8)}" class="lb-hit"/>`;
+  s += `</g>`;
+  if (st && Number.isFinite(st.dh)) s += texte(x, y + W + 26, `Δh = ${P.nombre(Math.abs(st.dh) * 1000, 0)} mm · Q mesuré ${P.nombre(st.Qmes * 1000, 1)} L/s`, 'lb-petit lb-lect', 'middle');
+  s += texte(x, y + W + 13, v.id, 'lb-petit lb-idi', 'middle');
+  return s + '</g>';
+}
+
 // ---------- scène complète ----------
 export function dessinerScene(scene, A, vue, ui) {
   const V = vueDe(vue), env = scene.env, defs = [];
   const parties = [fond(V, vue.W, vue.H, env)];
   ui.pRef = 0;
   for (const [, e] of A.etats) ui.pRef = Math.max(ui.pRef, e.pFond, e.pCiel);
+  const E = A.ecoulement;
+  if (E && (E.jets.length || scene.elements.some(e => e.type === 'orifice' || e.type === 'robinet' || e.type === 'exutoire'))) parties.push(sol(V, scene, A, vue));
   for (const c of scene.elements) if (c.type === 'conduite' && A.conduites.get(c.id)) parties.push(conduite(V, c, A.conduites.get(c.id), A, env, ui));
+  for (const v of scene.elements) if (v.type === 'venturi') parties.push(venturiDessin(V, v, A, ui));
+  for (const el of scene.elements) if (['pompe', 'raccord', 'exutoire', 'robinet'].includes(el.type)) parties.push(appareil(V, el, A, scene, ui));
   for (const r of scene.elements) if (r.type === 'reservoir') parties.push(reservoir(V, r, A.etats.get(r.id), A, env, ui, defs));
   for (const r of scene.elements) {
     if (r.type !== 'reservoir') continue;
@@ -473,6 +615,11 @@ export function dessinerScene(scene, A, vue, ui) {
     else if (u.type === 'tubeU') parties.push(tubeU(V, u, m, A, env, ui));
   }
   for (const v of scene.elements) if (v.type === 'vanne' && A.conduites.get(v.conduite)) parties.push(vanne(V, v, A.conduites.get(v.conduite), A, env, ui));
+  for (const o of scene.elements) if (o.type === 'orifice') parties.push(orificeDessin(V, o, A, ui));
+  if (E) {
+    parties.push(jets(V, scene, A, ui));
+    if (env.vues.lignes !== false) parties.push(lignesDeCharge(V, scene, A));
+  }
   parties.push(surcouche(V, ui));
   return `<defs>${DEFS}${defs.join('')}</defs>${parties.join('')}`;
 }

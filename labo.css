@@ -27,6 +27,9 @@
 .lb-seg button{border-radius:0}
 .lb-seg button:first-child{border-radius:2px 0 0 2px}
 .lb-seg button:last-child{border-radius:0 2px 2px 0;border-left:0}
+.lb-chrono{display:inline-flex;align-items:center;gap:.3rem}
+.labo .lb-chrono[hidden]{display:none}
+.lb-temps{font-variant-numeric:tabular-nums;min-width:8.5em;color:var(--lb-eau);font-weight:600}
 .lb-vues{position:relative}
 .lb-vues summary{list-style:none;cursor:pointer;padding:.32rem .55rem;border:1px solid var(--lb-rule);border-radius:2px;background:#fff}
 .lb-vues summary::-webkit-details-marker{display:none}
@@ -301,3 +304,32 @@
 .lb-coche{display:flex;gap:.45rem;align-items:flex-start;margin:.35rem 0;font-size:13px;color:var(--lb-ink);cursor:pointer}
 .lb-coche input{margin-top:.2rem}
 .lb-cloison{fill:none;stroke:#5B6872;stroke-width:1.6;pointer-events:none}
+/* Écoulements en charge */
+.lb-debit{fill:#0B5B72;font-weight:500}
+.lb-egl{fill:none;stroke:var(--lb-brique);stroke-width:1.6;stroke-dasharray:7 4;pointer-events:none}
+.lb-hgl{fill:none;stroke:#1D6F8C;stroke-width:1.6;pointer-events:none}
+.lb-eglt{fill:var(--lb-brique)}
+.lb-hglt{fill:#1D6F8C}
+.lb-jet{fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:.9;pointer-events:none}
+.lb-jet-flux{fill:none;stroke:rgba(255,255,255,.75);stroke-width:1.5;stroke-dasharray:2 10;pointer-events:none}
+.lb-eclat{fill:none;stroke-width:2;pointer-events:none}
+.lb-sol-ligne{stroke:#6B5A3E;stroke-width:2;pointer-events:none}
+.lb-sol-h{stroke:#8B7B5E;stroke-width:1;pointer-events:none}
+.lb-dev{cursor:grab}
+.lb-dev-tube{stroke:#34444E;stroke-width:6}
+.lb-pompe{fill:#fff;stroke:#22323C;stroke-width:2}
+.lb-pompe.arret{fill:#E3E7E9}
+.lb-dev.sel .lb-pompe,.lb-dev.sel .lb-raccord,.lb-dev.sel .lb-exutoire{stroke:var(--lb-brique)}
+.lb-roue{stroke:#4C616C;stroke-width:2;stroke-linecap:round}
+.lb-pompe-sens{fill:var(--lb-brique)}
+.lb-raccord{fill:#C9D3D8;stroke:#22323C;stroke-width:1.6}
+.lb-exutoire{fill:#fff;stroke:#22323C;stroke-width:2}
+.lb-robinet{fill:none;stroke:#34444E;stroke-width:6;stroke-linecap:round}
+.lb-robinet-volant{stroke:#22323C;stroke-width:2.2;stroke-linecap:round}
+.lb-orifice{cursor:grab}
+.lb-trou{stroke:#fff;stroke-width:5;stroke-linecap:butt}
+.lb-orifice.ferme .lb-trou{stroke:#4C616C}
+.lb-orifice.sel .lb-trou{stroke:var(--lb-brique)}
+.lb-venturi{cursor:grab}
+.lb-venturi-corps{fill:#C9D3D8;stroke:#22323C;stroke-width:1.5}
+.lb-venturi.sel .lb-venturi-corps{stroke:var(--lb-brique);stroke-width:2.2}

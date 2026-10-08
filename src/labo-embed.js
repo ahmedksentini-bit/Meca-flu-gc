@@ -4,10 +4,14 @@
 import { monterLabo } from './labo.js';
 
 const blocs = [...document.querySelectorAll('.labo-widget[data-labo]')];
+// Une figure hors écran fige sa simulation (vidanges, pompes…).
+const vue = 'IntersectionObserver' in window ? new IntersectionObserver(entrees => {
+  for (const e of entrees) if (e.target.labo) e.target.labo.visible(e.isIntersecting);
+}, { rootMargin: '80px 0px' }) : null;
 const monter = n => {
   if (n.dataset.monte) return;
   n.dataset.monte = '1';
-  try { monterLabo(n, { mode: 'integre', scenario: n.dataset.labo }); }
+  try { monterLabo(n, { mode: 'integre', scenario: n.dataset.labo }); if (vue) vue.observe(n); }
   catch (e) { n.dataset.monte = ''; console.error('Laboratoire', n.dataset.labo, e); }
 };
 if ('IntersectionObserver' in window) {

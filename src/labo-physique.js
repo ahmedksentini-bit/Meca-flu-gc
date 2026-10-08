@@ -1,4 +1,5 @@
-// Laboratoire virtuel d'hydrostatique — moteur de calcul (chapitres 1 et 2 du cours).
+// Laboratoire virtuel d'hydrostatique — moteur de calcul (chapitres 1 et 2 du cours) ;
+// les écoulements (chapitres 3, 4 et 6) le prolongent dans labo-ecoulement.js.
 //
 // Module pur, sans DOM, testé par tests/labo.test.mjs. Unités SI ; les pressions
 // sont relatives (p − p_atm) sauf mention « abs ». Le plan de travail est une
@@ -203,21 +204,43 @@ export function indexer(scene) {
   return m;
 }
 function lirePort(id) {
-  const m = /^([gdfht]):(-?\d+(?:\.\d+)?)$/.exec(String(id || ''));
-  return m ? { paroi: m[1], s: +m[2] } : null;
+  const m = /^([gdfhtk]):(-?\d+(?:\.\d+)?)$/.exec(String(id || ''));
+  if (m) return { paroi: m[1], s: +m[2] };
+  return /^(o|asp|ref|a|b)$/.test(String(id || '')) ? { paroi: id, s: 0 } : null;
 }
+// Appareils posés librement dans le plan (écoulements) et leurs raccords.
+export const APPAREILS = ['exutoire', 'pompe', 'raccord'];
+export function portAppareil(el, port) {
+  if (el.type === 'exutoire' && port === 'o') return { x: el.x, z: el.z, sx: 0, sz: 0 };
+  const d = el.sens === -1 ? -1 : 1;
+  if (el.type === 'pompe' && (port === 'asp' || port === 'ref')) {
+    const s = port === 'asp' ? -d : d;
+    return { x: el.x + s * 0.35, z: el.z, sx: s, sz: 0 };
+  }
+  if (el.type === 'raccord' && (port === 'a' || port === 'b')) {
+    const s = port === 'a' ? -1 : 1;
+    return { x: el.x + s * 0.2, z: el.z, sx: s, sz: 0 };
+  }
+  return null;
+}
+export const PORTS_APPAREIL = { exutoire: ['o'], pompe: ['asp', 'ref'], raccord: ['a', 'b'] };
 // Résout une référence {el, port} en coordonnées ; les conduites exposent des
 // piquages « t:0.50 » le long de leur tracé.
 export function resoudre(scene, ref, idx = indexer(scene)) {
   if (!ref) return null;
   const el = idx.get(ref.el), q = lirePort(ref.port);
   if (!el || !q) return null;
-  if (el.type === 'reservoir') return q.paroi === 't' ? null : portReservoir(el, q.paroi, q.s);
-  if (el.type === 'conduite' && q.paroi === 't') {
+  if (el.type === 'reservoir') return ['g', 'd', 'f', 'h'].includes(q.paroi) ? portReservoir(el, q.paroi, q.s) : null;
+  if (el.type === 'conduite' && (q.paroi === 't' || q.paroi === 'k')) {
     const tr = traceConduite(el, scene, idx);
     if (!tr || !(q.s > 0 && q.s < 1)) return null;
     const p = pointSurTrace(tr, q.s);
-    return { id: ref.port, el: el.id, paroi: 't', s: q.s, x: p.x, z: p.z, sx: 0, sz: 1, t: q.s };
+    // « k » : prise de pression totale (tube de Pitot) au même point.
+    return { id: ref.port, el: el.id, paroi: q.paroi, s: q.s, x: p.x, z: p.z, sx: 0, sz: 1, t: q.s, total: q.paroi === 'k' };
+  }
+  if (APPAREILS.includes(el.type)) {
+    const a = portAppareil(el, ref.port);
+    return a ? { id: ref.port, el: el.id, paroi: 'appareil', s: 0, ...a } : null;
   }
   return null;
 }
@@ -225,7 +248,7 @@ export function resoudre(scene, ref, idx = indexer(scene)) {
 // ---------- conduites ----------
 export function traceConduite(c, scene, idx = indexer(scene)) {
   const A = resoudre(scene, c.a, idx), B = resoudre(scene, c.b, idx);
-  if (!A || !B || A.paroi === 't' || B.paroi === 't') return null;
+  if (!A || !B || A.paroi === 't' || B.paroi === 't' || A.paroi === 'k' || B.paroi === 'k') return null;
   const L0 = 0.3;
   const A1 = { x: A.x + A.sx * L0, z: A.z + A.sz * L0 }, B1 = { x: B.x + B.sx * L0, z: B.z + B.sz * L0 };
   const zr = fini(c.zr) ? c.zr : zPassageDefaut(A, B);
@@ -361,8 +384,9 @@ function raideur(e, ctx, rho) {
 function etapeConduite(scene, c, ctx, idx, facteur) {
   if (!estOuverte(scene, c)) { c._q = 0; return { D: 0, dV: 0 }; }
   const ra = idx.get(c.a.el), rb = idx.get(c.b.el);
+  if (!ra || !rb || ra.type !== 'reservoir' || rb.type !== 'reservoir') return { D: 0, dV: 0 };
   const A = resoudre(scene, c.a, idx), B = resoudre(scene, c.b, idx);
-  if (!ra || !rb || !A || !B || ra === rb) return { D: 0, dV: 0 };
+  if (!A || !B || ra === rb) return { D: 0, dV: 0 };
   const ea = etatAvecFlotteurs(scene, ra, ctx), eb = etatAvecFlotteurs(scene, rb, ctx);
   const pa = pressionDans(ea, A.z, ctx), pb = pressionDans(eb, B.z, ctx);
   const na = coucheA(ea, A.z), nb = coucheA(eb, B.z);
@@ -409,6 +433,11 @@ export function equilibrer(scene, { facteur = 1, iterations = 3000 } = {}) {
   for (const c of conduites) c._q = 0;
   return { iterations: it, residu, converge: residu <= TOL_P * 4 };
 }
+// Transferts de liquide pour le moteur d'écoulement (labo-ecoulement.js).
+export function retirerFluide(r, ctx, fluide, dV) { retirer(r, ctx, fluide, dV); }
+export function ajouterFluide(scene, r, ctx, fluide, dV) { ajouter(r, ctx, fluide, dV); return deverser(scene, r, ctx); }
+export function volumeSous(r, s, obs = []) { return volumeLibre(r, s, obs); }
+
 // Avance d'un pas de temps (animation) ; renvoie vrai tant que ça s'écoule.
 export function avancer(scene, dt, tau = 0.45) {
   const ctx = contexte(scene), idx = indexer(scene);
@@ -430,15 +459,22 @@ export function etatConduite(c, scene, ctx, etats, idx = indexer(scene)) {
   const tr = traceConduite(c, scene, idx);
   if (!tr) return null;
   const ea = etats.get(c.a.el), eb = etats.get(c.b.el);
-  const pA = pressionDans(ea, tr.A.z, ctx), pB = pressionDans(eb, tr.B.z, ctx);
-  const nA = coucheA(ea, tr.A.z), nB = coucheA(eb, tr.B.z);
-  const cotes = {
-    a: { p: pA, z: tr.A.z, f: nA ? nA.fluide : null, rho: nA ? nA.rho : 0 },
-    b: { p: pB, z: tr.B.z, f: nB ? nB.fluide : null, rho: nB ? nB.rho : 0 }
+  // Au repos, un bout raccordé à un appareil (pompe, raccord, sortie) n'apporte
+  // aucune pression : la conduite est un bras mort alimenté par l'autre bout.
+  const cote = (e, z) => {
+    if (!e) return { p: NaN, z, f: null, rho: 0, mort: true };
+    const n = coucheA(e, z);
+    return { p: pressionDans(e, z, ctx), z, f: n ? n.fluide : null, rho: n ? n.rho : 0 };
   };
+  const cotes = { a: cote(ea, tr.A.z), b: cote(eb, tr.B.z) };
+  const pA = cotes.a.p, pB = cotes.b.p;
   const depuis = (k, z) => { const s = cotes[k]; return s.f ? s.p + s.rho * ctx.g * (s.z - z) : s.p; };
   const vannes = vannesDe(scene, c);
-  const fermees = vannes.filter(v => !v.ouverte).map(v => v.t).sort((u, v) => u - v);
+  const fermees = vannes.filter(v => !v.ouverte).map(v => v.t);
+  if (cotes.a.mort && cotes.b.mort) fermees.push(0, 1);
+  else if (cotes.b.mort) fermees.push(1);
+  else if (cotes.a.mort) fermees.push(0);
+  fermees.sort((u, v) => u - v);
   const ouverte = !fermees.length;
   const zDe = t => pointSurTrace(tr, t).z;
   // Premier point (en partant d'un côté) où le tracé dépasse la cote zMax.
@@ -478,9 +514,10 @@ export function etatConduite(c, scene, ctx, etats, idx = indexer(scene)) {
       }
     } else troncons = [{ t0: 0, t1: 1, fluide: null, cote: null }];
   } else {
-    troncons.push(...tronconsCote('a', 0, fermees[0]));
-    if (fermees.length > 1) troncons.push({ t0: fermees[0], t1: fermees[fermees.length - 1], fluide: cotes.a.f || cotes.b.f, cote: null, isole: true });
-    troncons.push(...tronconsCote('b', fermees[fermees.length - 1], 1));
+    if (fermees[0] > 0) troncons.push(...tronconsCote('a', 0, fermees[0]));
+    if (fermees.length > 1 && fermees[fermees.length - 1] > fermees[0]) troncons.push({ t0: fermees[0], t1: fermees[fermees.length - 1], fluide: cotes.a.f || cotes.b.f, cote: null, isole: true });
+    if (fermees[fermees.length - 1] < 1) troncons.push(...tronconsCote('b', fermees[fermees.length - 1], 1));
+    if (!troncons.length) troncons.push({ t0: 0, t1: 1, fluide: null, cote: null, isole: true });
   }
   const en = t => {
     const tc = troncons.find(k => t >= k.t0 - 1e-9 && t <= k.t1 + 1e-9) || troncons[0];
@@ -504,7 +541,7 @@ export function etatConduite(c, scene, ctx, etats, idx = indexer(scene)) {
     if (!pire || pabs < pire.pabs) pire = { t, pabs, fluide: q.fluide, z: q.z, p: q.p };
   }
   const deltas = vannes.map(v => {
-    if (v.ouverte || fermees.length !== 1) return { id: v.id, dp: null };
+    if (v.ouverte || fermees.length !== 1 || cotes.a.mort || cotes.b.mort) return { id: v.id, dp: null };
     const z = zDe(v.t);
     return { id: v.id, dp: depuis('a', z) - depuis('b', z), z };
   });
@@ -515,12 +552,13 @@ export function etatConduite(c, scene, ctx, etats, idx = indexer(scene)) {
 export function piquage(scene, ref, A, idx = A.idx) {
   const P = resoudre(scene, ref, idx);
   if (!P) return null;
-  if (P.paroi === 't') {
+  if (P.paroi === 't' || P.paroi === 'k') {
     const ec = A.conduites.get(P.el);
     if (!ec) return null;
-    const q = ec.en(P.t);
+    const q = P.total && ec.enTotal ? ec.enTotal(P.t) : ec.en(P.t);
     return { ...P, p: q.p, fluide: q.fluide, rho: A.ctx.rho(q.fluide), isole: !!q.isole };
   }
+  if (P.paroi === 'appareil') return null;
   const e = A.etats.get(P.el);
   const n = coucheA(e, P.z);
   return { ...P, p: pressionDans(e, P.z, A.ctx), fluide: n ? n.fluide : null, rho: n ? n.rho : 0 };
@@ -858,12 +896,13 @@ function surfaceSous(pts, zw) {
 }
 
 // ---------- analyse complète ----------
-export function analyser(scene) {
+export function analyser(scene, { apresConduites = null } = {}) {
   const ctx = contexte(scene), idx = indexer(scene);
   const etats = new Map(), conduites = new Map(), mesures = new Map(), ouvrages = new Map(), flotteurs = new Map(), parois = new Map();
   const A = { ctx, idx, etats, conduites };
   for (const r of scene.elements) if (r.type === 'reservoir') etats.set(r.id, etatAvecFlotteurs(scene, r, ctx));
   for (const c of scene.elements) if (c.type === 'conduite') { const ec = etatConduite(c, scene, ctx, etats, idx); if (ec) conduites.set(c.id, ec); }
+  if (apresConduites) apresConduites(A);
   for (const u of scene.elements) {
     if (u.type === 'piezometre') mesures.set(u.id, lirePiezometre(u, scene, A));
     else if (u.type === 'manometre') mesures.set(u.id, lireManometre(u, scene, A));
@@ -889,7 +928,7 @@ export function analyser(scene) {
   }
   for (const [id, ec] of conduites) {
     const c = idx.get(id), ra = idx.get(c.a.el), rb = idx.get(c.b.el);
-    if (ec.ouverte && ra.constant && rb.constant && ec.cotes.a.f && ec.cotes.b.f) {
+    if ((scene.env.ecoulement || 'illustratif') === 'illustratif' && ec.ouverte && ra?.constant && rb?.constant && ec.cotes.a.f && ec.cotes.b.f) {
       const ha = ec.cotes.a.z + ec.cotes.a.p / (ec.cotes.a.rho * ctx.g), hb = ec.cotes.b.z + ec.cotes.b.p / (ec.cotes.b.rho * ctx.g);
       if (Math.abs(ha - hb) > 1e-3) alertes.push({ id, niveau: 'alerte', texte: `${id} relie deux niveaux imposés différents : l’écoulement serait permanent (pertes de charge, chapitre 6) ; rien ne bouge ici.` });
     }
@@ -898,7 +937,9 @@ export function analyser(scene) {
   }
   for (const [id, m] of mesures) if (m.message && (m.deborde || m.chasse || m.depression || m.invalide)) alertes.push({ id, niveau: 'info', texte: `${id} : ${m.message}` });
   for (const [id, f] of flotteurs) if (f.fond) alertes.push({ id, niveau: 'info', texte: `${id} repose sur le fond (poids apparent ${nombre(f.R / 1000, 2)} kN).` });
-  return { ctx, idx, etats, conduites, mesures, ouvrages, flotteurs, parois, alertes };
+  A.mesures = mesures; A.ouvrages = ouvrages; A.flotteurs = flotteurs; A.parois = parois; A.alertes = alertes;
+  if (A.alertesEcoulement) alertes.push(...A.alertesEcoulement);
+  return A;
 }
 
 // Sonde : grandeurs en un point du plan.
@@ -923,14 +964,17 @@ export function sonder(scene, analyse, x, z) {
 
 // ---------- création, contrôle et nettoyage des scènes ----------
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,15}$/;
-export const PREFIXES = { reservoir: 'R', conduite: 'C', vanne: 'V', piezometre: 'P', manometre: 'M', tubeU: 'U', vannePlane: 'VP', flotteur: 'F' };
+export const PREFIXES = { reservoir: 'R', conduite: 'C', vanne: 'V', piezometre: 'P', manometre: 'M', tubeU: 'U', vannePlane: 'VP', flotteur: 'F',
+  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB' };
+export const ECOULEMENTS = ['illustratif', 'parfait', 'reel'];
 export function nouvelId(scene, type) {
   const p = PREFIXES[type] || 'E';
   const pris = new Set(scene.elements.map(e => e.id));
   for (let i = 1; ; i++) if (!pris.has(p + i)) return p + i;
 }
 export function sceneVide(nom = 'Nouvelle expérience') {
-  return { version: VERSION, nom, env: { g: G, patm: PATM, unite: 'kPa', reference: 'relative', vues: { champ: true, charge: true, cotes: true, isobares: false } }, perso: { rho: FLUIDES.perso.rho }, elements: [] };
+  return { version: VERSION, nom, env: { g: G, patm: PATM, unite: 'kPa', reference: 'relative', ecoulement: 'illustratif', vitesse: 1, zSol: 0,
+    vues: { champ: true, charge: true, cotes: true, isobares: false, lignes: true } }, perso: { rho: FLUIDES.perso.rho }, elements: [] };
 }
 // Recalcule la quantité de gaz piégé pour que le ciel soit à la pression p.
 export function calerGaz(r, ctx, scene = null) {
@@ -961,6 +1005,9 @@ export function verifierScene(brut) {
   s.env.patm = nb(env.patm ?? PATM, 'Pression atmosphérique', 50000, 120000);
   s.env.unite = UNITES[env.unite] ? env.unite : 'kPa';
   s.env.reference = env.reference === 'absolue' ? 'absolue' : 'relative';
+  s.env.ecoulement = ECOULEMENTS.includes(env.ecoulement) ? env.ecoulement : 'illustratif';
+  s.env.vitesse = nb(env.vitesse ?? 1, 'Accélération du temps', 0.1, 10000);
+  s.env.zSol = nb(env.zSol ?? 0, 'Cote du sol', -200, 200);
   const v = env.vues || {};
   for (const k of Object.keys(s.env.vues)) if (typeof v[k] === 'boolean') s.env.vues[k] = v[k];
   s.perso.rho = nb(brut.perso?.rho ?? FLUIDES.perso.rho, 'Masse volumique du liquide personnalisé', 500, 20000);
@@ -991,9 +1038,12 @@ export function verifierScene(brut) {
       if (o.ferme) { if (c.mode === 'piege' && fini(c.n) && c.n > 0) o.ciel.n = c.n; else calerGaz(o, ctx); }
       else o.ciel.n = 0;
     } else if (e.type === 'conduite') {
-      Object.assign(o, { a: ref(e.a, nom), b: ref(e.b, nom), zr: e.zr == null ? null : nb(e.zr, `${nom} cote de passage`, -200, 200), D: nb(e.D ?? 0.1, `${nom} diamètre`, 0.005, 5) });
+      Object.assign(o, { a: ref(e.a, nom), b: ref(e.b, nom), zr: e.zr == null ? null : nb(e.zr, `${nom} cote de passage`, -200, 200), D: nb(e.D ?? 0.1, `${nom} diamètre`, 0.005, 5),
+        rugo: nb(e.rugo ?? 0.1, `${nom} rugosité (mm)`, 0, 50), lambda: e.lambda == null ? null : nb(e.lambda, `${nom} λ`, 0, 0.2),
+        Lreel: e.Lreel == null ? null : nb(e.Lreel, `${nom} longueur réelle`, 0.01, 100000), K: nb(e.K ?? 0, `${nom} ΣK`, 0, 10000), Kauto: e.Kauto !== false });
     } else if (e.type === 'vanne') {
-      Object.assign(o, { conduite: String(e.conduite), t: nb(e.t, `${nom} position`, 0.01, 0.99), ouverte: e.ouverte !== false });
+      Object.assign(o, { conduite: String(e.conduite), t: nb(e.t, `${nom} position`, 0.01, 0.99), ouverte: e.ouverte !== false,
+        ouverture: nb(e.ouverture ?? 1, `${nom} ouverture`, 0, 1), Kv: nb(e.Kv ?? 0.2, `${nom} K pleine ouverture`, 0, 1000) });
     } else if (e.type === 'piezometre') {
       Object.assign(o, { piquage: ref(e.piquage, nom), Ht: nb(e.Ht ?? 3, `${nom} hauteur du tube`, 0.2, 40), d: nb(e.d ?? 12, `${nom} diamètre (mm)`, 0.5, 60), ox: nb(e.ox ?? 0.35, `${nom} déport`, -20, 20) });
     } else if (e.type === 'manometre') {
@@ -1007,6 +1057,21 @@ export function verifierScene(brut) {
         forme: formes[e.forme] ? e.forme : 'rect', a: nb(e.a, `${nom} dimension`, 0.05, 60), l: nb(e.l ?? 1, `${nom} largeur`, 0.05, 60),
         charniere: ['haut', 'bas', 'glissieres'].includes(e.charniere) ? e.charniere : 'aucune',
         f: nb(e.f ?? 0.25, `${nom} coefficient de frottement`, 0, 1.5), poids: nb(e.poids ?? 0, `${nom} poids propre`, 0, 1e8) });
+    } else if (e.type === 'orifice') {
+      Object.assign(o, { reservoir: String(e.reservoir), paroi: ['g', 'd', 'f'].includes(e.paroi) ? e.paroi : 'd', s: nb(e.s, `${nom} position`, 0, 200),
+        d: nb(e.d ?? 0.05, `${nom} diamètre`, 0.001, 5), Cd: nb(e.Cd ?? 0.62, `${nom} Cd`, 0.05, 1), Cv: nb(e.Cv ?? 0.98, `${nom} Cv`, 0.05, 1), ouvert: e.ouvert !== false });
+    } else if (e.type === 'exutoire' || e.type === 'raccord') {
+      Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500) });
+    } else if (e.type === 'pompe') {
+      Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), sens: e.sens === -1 ? -1 : 1, marche: e.marche !== false,
+        mode: e.mode === 'courbe' ? 'courbe' : 'debit', Q: nb(e.Q ?? 0.01, `${nom} débit`, 0, 100), H0: nb(e.H0 ?? 30, `${nom} H₀`, 0, 5000),
+        k: nb(e.k ?? 10000, `${nom} coefficient de courbe`, 0, 1e9), eta: nb(e.eta ?? 0.7, `${nom} rendement`, 0.05, 1) });
+    } else if (e.type === 'venturi') {
+      Object.assign(o, { conduite: String(e.conduite), t: nb(e.t, `${nom} position`, 0.05, 0.95), d: nb(e.d, `${nom} diamètre du col`, 0.002, 5),
+        Cq: nb(e.Cq ?? 0.98, `${nom} Cq`, 0.5, 1), fluideM: LIQUIDES.includes(e.fluideM) ? e.fluideM : 'mercure' });
+    } else if (e.type === 'robinet') {
+      Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), Q: nb(e.Q ?? 0.005, `${nom} débit`, 0, 100),
+        fluide: LIQUIDES.includes(e.fluide) ? e.fluide : 'eau', ouvert: e.ouvert !== false });
     } else if (e.type === 'flotteur') {
       Object.assign(o, { reservoir: String(e.reservoir), x: nb(e.x, `${nom} position`, 0, 200), l: nb(e.l, `${nom} largeur`, 0.05, 60), h: nb(e.h, `${nom} hauteur`, 0.05, 60),
         b: nb(e.b, `${nom} profondeur`, 0.05, 60), m: nb(e.m, `${nom} masse`, 0.01, 1e9), zG: nb(e.zG ?? e.h / 2, `${nom} centre de gravité`, 0, 60), gite: nb(e.gite ?? 0, `${nom} gîte`, -45, 45),
@@ -1043,7 +1108,34 @@ export function nettoyerScene(scene) {
       };
       switch (e.type) {
         case 'reservoir': if (e.constant) e.hc = Math.min(Math.max(fini(e.hc) ? e.hc : e.H / 2, 0), e.H); return true;
-        case 'conduite': return okRef(e.a) && okRef(e.b) && e.a.el !== e.b.el && idx.get(e.a.el)?.type === 'reservoir' && idx.get(e.b.el)?.type === 'reservoir';
+        case 'conduite': {
+          const extremite = q => {
+            const el = idx.get(q.el);
+            if (!el) return false;
+            if (el.type === 'reservoir') return okRef(q) && !/^[tk]:/.test(q.port);
+            if (!APPAREILS.includes(el.type) || !PORTS_APPAREIL[el.type].includes(q.port)) return false;
+            // un port d'appareil ne reçoit qu'une conduite
+            const cle = `${q.el}:${q.port}`;
+            if (portsPris.has(cle) && portsPris.get(cle) !== e.id) return false;
+            portsPris.set(cle, e.id);
+            return true;
+          };
+          return e.a.el !== e.b.el && extremite(e.a) && extremite(e.b);
+        }
+        case 'orifice': {
+          const r = idx.get(e.reservoir);
+          if (r?.type !== 'reservoir') return false;
+          const L = e.paroi === 'f' ? r.w : r.H;
+          e.s = Math.min(Math.max(e.s, Math.min(e.d / 2 + 0.01, L / 2)), Math.max(L - e.d / 2 - 0.01, L / 2));
+          return true;
+        }
+        case 'venturi': {
+          const c = idx.get(e.conduite);
+          if (c?.type !== 'conduite') return false;
+          e.d = Math.min(e.d, c.D * 0.95);
+          return true;
+        }
+        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': return true;
         case 'vanne': return idx.get(e.conduite)?.type === 'conduite';
         case 'piezometre': case 'manometre': return okRef(e.piquage);
         case 'tubeU': return okRef(e.piquage) && (!e.piquage2 || okRef(e.piquage2));
@@ -1067,6 +1159,7 @@ export function nettoyerScene(scene) {
       }
     };
     const avant = scene.elements.length;
+    const portsPris = new Map();
     scene.elements = scene.elements.filter(garder);
     if (scene.elements.length !== avant) change = true;
   }
