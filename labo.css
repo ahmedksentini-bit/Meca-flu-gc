@@ -332,4 +332,26 @@
 .lb-orifice.sel .lb-trou{stroke:var(--lb-brique)}
 .lb-venturi{cursor:grab}
 .lb-venturi-corps{fill:#C9D3D8;stroke:#22323C;stroke-width:1.5}
+/* Quantité de mouvement (chapitre 5) */
+.lb-lance{fill:#C9D3D8;stroke:#22323C;stroke-width:1.6}
+.lb-lance.fermee{fill:#E3E7E9}
+.lb-dev.sel .lb-lance{stroke:var(--lb-brique);stroke-width:2.2}
+.lb-obst{cursor:grab}
+.lb-plaque{stroke:#34444E;stroke-width:7;stroke-linecap:butt}
+.lb-auget{fill:none;stroke:#34444E;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.lb-obst.sel .lb-plaque,.lb-obst.sel .lb-auget{stroke:var(--lb-brique)}
+.lb-hit-trait{fill:none;stroke:transparent;stroke-width:18;pointer-events:stroke}
+.lb-mvt{color:#6B4BB0}
+.lb-mvtt{fill:#6B4BB0}
+.lb-effort{color:#8E2F14;pointer-events:none}
+.lb-effort .lb-fl{stroke-width:2.6}
+.lb-effortt{fill:#8E2F14;font-weight:600}
+.lb-reaction{color:#6B4BB0}
+.lb-reaction .lb-effortt{fill:#6B4BB0}
+.lb-rouleau{fill:#fff;stroke:#34444E;stroke-width:1.6}
+.lb-courbe svg{display:block;width:100%;max-width:300px;height:auto;margin:.4rem 0;font-family:var(--lb-mono);font-size:9px;fill:var(--lb-ink2)}
+.lb-axe-c{stroke:var(--lb-ink2);stroke-width:1}
+.lb-repere-c{stroke:var(--lb-brique);stroke-width:1;stroke-dasharray:3 3}
+.lb-courbe-p{fill:none;stroke:var(--lb-eau);stroke-width:2}
+.lb-point-c{fill:var(--lb-brique)}
 .lb-venturi.sel .lb-venturi-corps{stroke:var(--lb-brique);stroke-width:2.2}

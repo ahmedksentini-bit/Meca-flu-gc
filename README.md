@@ -16,7 +16,7 @@ Application web statique et PWA d’exercices de mécanique des fluides pour le 
 
 Le **Bureau de calcul** complète le parcours pédagogique avec une interface de logiciel : saisie directe des données, recalcul instantané, schéma physique, résultats et note de calcul pour les conduites, le pompage, Bernoulli, l’hydrostatique et les écoulements à surface libre.
 
-### Laboratoire virtuel (chapitres 1, 2, 3, 4 et 6)
+### Laboratoire virtuel (chapitres 1 à 6)
 
 `labo.html` est un banc d’hydrostatique à monter soi-même : réservoirs ouverts, fermés (ciel à pression imposée ou gaz piégé isotherme) ou à paroi inclinée, couches de liquides non miscibles (eau, eau de mer, huile, essence, glycérine, tétrachlorure, mercure, liquide personnalisé), conduites et vannes, piézomètres, manomètres à cadran, tubes en U simples, différentiels ou renversés, vannes planes (rectangle, cercle, triangle ; charnière ou levage en glissières avec frottement) et flotteurs, pleins ou caissons creux ballastables. Un réservoir peut garder un niveau imposé (mer, nappe, grande retenue) et se représenter comme un terrain saturé.
 
@@ -29,6 +29,8 @@ Hypothèses affichées dans l’interface : fluides au repos, liquides incompres
 **Écoulements en charge.** Le sélecteur de modèle passe en **fluide parfait** (chapitre 4) ou en **fluide réel** (chapitre 6). Les conduites relient alors réservoirs, sorties à l’air libre, pompes et changements de section en chaînes série, résolues en régime quasi permanent par Bernoulli généralisé : H<sub>amont</sub> + H<sub>pompe</sub>(Q) = H<sub>aval</sub> + Σ pertes(Q). En fluide réel, les pertes linéaires suivent Darcy–Weisbach (λ = 64/Re ou Colebrook à partir de la rugosité, ou λ imposé, sur la longueur dessinée ou une longueur de calcul) ; les pertes singulières comptent l’entrée (0,5), la sortie (1), ΣK, la vanne selon son ouverture, le venturi et les raccords (Borda, rétrécissement). La palette « Écoulement » ajoute orifices en mince paroi (Torricelli, C<sub>d</sub>, C<sub>v</sub>, jet balistique qui tombe au sol ou dans un réservoir), sorties libres, pompes (débit imposé ou courbe H₀ − kQ², rendement, clapet), changements de section, venturis à manomètre différentiel, tubes de Pitot simples et doubles, et robinets d’apport. Les niveaux évoluent dans le temps par bilan de volume, avec chronomètre, pause et accélération (× 1 à × 300) ; les lignes de charge et piézométrique se tracent le long du circuit, et l’inspecteur déroule le bilan terme à terme (V, Re, λ, h<sub>f</sub>, singularités, HMT, puissances, alertes de cavitation).
 
 Onze expériences d’écoulement reprennent les exercices 3.5, 4.1 à 4.7, 6.4, 6.6 et 6.7, avec les valeurs des corrigés (`tests/labo-ecoulement.test.mjs`) ; elles sont intégrées au cours comme figures dynamiques, figées lorsqu’elles sortent de l’écran.
+
+**Quantité de mouvement (chapitre 5).** Une lance projette un jet de vitesse et de diamètre imposés ; plaques et augets placés sur sa trajectoire (ou sur celle d’un orifice ou d’une sortie) le dévient. Le théorème d’Euler donne l’effort du jet, le partage du débit entre les nappes d’une plaque inclinée (Q₁ = Q(1 + cos α)/2), et pour un auget animé d’une vitesse u, la puissance recueillie avec sa courbe P(u). L’affichage « Efforts » dessine aussi les efforts d’ancrage des coudes, F = (pS + ρQV)(e₁ − e₂), l’effort axial sur les raccords et la réaction des jets sur leur réservoir ou leur lance. Six expériences reprennent les exercices 5.1 à 5.6 (`tests/labo-quantite-mouvement.test.mjs`).
 
 ### Installation hydraulique
 

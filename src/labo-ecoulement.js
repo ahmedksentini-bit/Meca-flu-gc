@@ -239,15 +239,47 @@ export function chargeEn(pt, t) {
   return { H, hv };
 }
 
+// ---------- obstacles : plaques et augets (chapitre 5) ----------
+const rad = a => a * Math.PI / 180;
+// Segment d'interception : la plaque elle-même, ou l'embouchure de l'auget
+// (perpendiculaire à la direction f vers laquelle il s'ouvre).
+export function segmentObstacle(o) {
+  if (o.type === 'plaque') {
+    const t = { x: Math.cos(rad(o.angle)), z: Math.sin(rad(o.angle)) };
+    return { a: { x: o.x - t.x * o.L / 2, z: o.z - t.z * o.L / 2 }, b: { x: o.x + t.x * o.L / 2, z: o.z + t.z * o.L / 2 }, t };
+  }
+  const f = { x: Math.cos(rad(o.angle)), z: Math.sin(rad(o.angle)) }, t = { x: -f.z, z: f.x };
+  return { a: { x: o.x - t.x * o.w / 2, z: o.z - t.z * o.w / 2 }, b: { x: o.x + t.x * o.w / 2, z: o.z + t.z * o.w / 2 }, t, f };
+}
+// Abscisse u ∈ [0, 1] du croisement des segments [p, q] et [a, b], ou null.
+function croisement(p, q, a, b) {
+  const rx = q.x - p.x, rz = q.z - p.z, sx = b.x - a.x, sz = b.z - a.z, den = rx * sz - rz * sx;
+  if (Math.abs(den) < 1e-14) return null;
+  const u = ((a.x - p.x) * sz - (a.z - p.z) * sx) / den, v = ((a.x - p.x) * rz - (a.z - p.z) * rx) / den;
+  return u >= 0 && u <= 1 && v >= 0 && v <= 1 ? u : null;
+}
+
 // ---------- orifices, sorties libres et jets ----------
-function trajectoire(scene, A, x0, z0, vx, vz, exclu = null) {
+function trajectoire(scene, A, x0, z0, vx, vz, exclu = null, sauf = null) {
   const g = A.ctx.g, zSol = fini(scene.env.zSol) ? scene.env.zSol : 0;
   const pts = [{ x: x0, z: z0 }];
   let cible = null, x = x0, z = z0, t = 0;
   const dt = 0.01;
+  const obs = scene.elements.filter(o => (o.type === 'plaque' || o.type === 'auget') && o !== sauf).map(o => ({ o, seg: segmentObstacle(o) }));
   for (let i = 0; i < 4000; i++) {
     t += dt;
     const xn = x0 + vx * t, zn = z0 + vz * t - g * t * t / 2;
+    // premier obstacle rencontré pendant ce pas
+    let choc = null;
+    for (const { o, seg } of obs) {
+      const u = croisement({ x, z }, { x: xn, z: zn }, seg.a, seg.b);
+      if (u == null || (choc && u >= choc.u)) continue;
+      const th = t - dt + u * dt, v = { x: vx, z: vz - g * th };
+      // l'auget n'intercepte que le jet qui entre par son embouchure plus vite qu'il ne fuit
+      if (o.type === 'auget' && -(v.x * seg.f.x + v.z * seg.f.z) <= (o.u || 0)) continue;
+      choc = { u, o, x: x + (xn - x) * u, z: z + (zn - z) * u, v, t: th };
+    }
+    if (choc) { pts.push({ x: choc.x, z: choc.z }); return { pts, cible: null, x: choc.x, z: choc.z, impact: choc }; }
     // entrée par le haut d'un réservoir ouvert
     if (!cible) for (const r of scene.elements) {
       if (r.type !== 'reservoir' || r.ferme || r === exclu) continue;
@@ -278,14 +310,60 @@ function etatOrifice(o, scene, A) {
   if (!o.ouvert || !n || !(res.h > 0)) return res;
   const Vth = Math.sqrt(2 * g * res.h);
   Object.assign(res, { Vth, V: o.Cv * Vth, Q: o.Cd * aire(o.d) * Vth, rho: n.rho });
-  res.jet = trajectoire(scene, A, pos.x, pos.z, res.V * R.nx, res.V * R.nz, r);
+  // réaction du jet sur le réservoir (ex. 5.5) : −ρQV dans l'axe du jet
+  res.reaction = n.rho * res.Q * res.V;
   return res;
+}
+
+// Déviation d'un jet par un obstacle (théorème d'Euler, frottements négligés) :
+// effort exercé par le jet et jets qui en repartent.
+export function deflexion(im, Q, rho) {
+  const o = im.o, seg = segmentObstacle(o), v = im.v, V = Math.hypot(v.x, v.z);
+  if (o.type === 'plaque') {
+    // plaque lisse : effort normal, nappes le long de la plaque à la même vitesse
+    const t = seg.t, n = { x: -t.z, z: t.x };
+    const vt = v.x * t.x + v.z * t.z, vn = v.x * n.x + v.z * n.z;
+    const Q1 = Q / 2 * (1 + vt / V), Q2 = Q - Q1;
+    const sorties = [];
+    if (Q1 > 1e-3 * Q) sorties.push({ x: seg.b.x, z: seg.b.z, vx: V * t.x, vz: V * t.z, Q: Q1 });
+    if (Q2 > 1e-3 * Q) sorties.push({ x: seg.a.x, z: seg.a.z, vx: -V * t.x, vz: -V * t.z, Q: Q2 });
+    return { o, x: im.x, z: im.z, Q, V, v, rho, vn, vt, alpha: Math.asin(Math.min(1, Math.abs(vn) / V)) * 180 / Math.PI, Q1, Q2,
+      F: { x: rho * Q * vn * n.x, z: rho * Q * vn * n.z }, sorties };
+  }
+  // auget animé de la vitesse u vers son fond (direction −f) : on raisonne en
+  // vitesses relatives, le jet est tourné de β puis rendu à l'absolu
+  const e = { x: -seg.f.x, z: -seg.f.z }, u = o.u || 0;
+  const vr = { x: v.x - u * e.x, z: v.z - u * e.z }, Vr = Math.hypot(vr.x, vr.z), Qr = Q * Vr / V;
+  const b = rad(o.beta) * (o.sens === -1 ? -1 : 1), c = Math.cos(b), sn = Math.sin(b);
+  const vro = { x: vr.x * c - vr.z * sn, z: vr.x * sn + vr.z * c };
+  const F = { x: rho * Qr * (vr.x - vro.x), z: rho * Qr * (vr.z - vro.z) };
+  const vo = { x: vro.x + u * e.x, z: vro.z + u * e.z };
+  // à 180°, l'arête partage le jet entre les deux lèvres (auget Pelton)
+  const levres = o.beta >= 179 ? [[seg.a, 0.5], [seg.b, 0.5]] : [[o.sens === -1 ? seg.a : seg.b, 1]];
+  return { o, x: im.x, z: im.z, Q, Qr, V, Vr, v, rho, u, F, P: (F.x * e.x + F.z * e.z) * u, vo,
+    sorties: levres.map(([l, k]) => ({ x: l.x, z: l.z, vx: vo.x, vz: vo.z, Q: Q * k })) };
+}
+// Lance un jet, le suit d'obstacle en obstacle et renvoie ses destinations.
+function lancerJet(scene, A, src, prof = 0) {
+  const E = A.ecoulement;
+  const tr = trajectoire(scene, A, src.x, src.z, src.vx, src.vz, src.exclu || null, src.sauf || null);
+  E.jets.push({ de: src.de, pts: src.depuis ? [src.depuis, ...tr.pts] : tr.pts, fluide: src.fluide, Q: src.Q, V: Math.hypot(src.vx, src.vz),
+    portee: prof ? null : tr.portee, d: src.d, nappe: prof > 0 });
+  if (!tr.impact || prof >= 3) return { tr, dests: [{ cible: tr.cible, Q: src.Q }] };
+  const im = deflexion(tr.impact, src.Q, src.rho);
+  let ob = E.obstacles.get(im.o.id);
+  if (!ob) E.obstacles.set(im.o.id, ob = { o: im.o, F: { x: 0, z: 0 }, P: 0, impacts: [] });
+  ob.F.x += im.F.x; ob.F.z += im.F.z; ob.P += im.P || 0; ob.impacts.push({ ...im, de: src.de });
+  const dests = [];
+  for (const so of im.sorties) dests.push(...lancerJet(scene, A, { ...so, fluide: src.fluide, rho: src.rho, de: src.de, sauf: im.o, depuis: { x: im.x, z: im.z } }, prof + 1).dests);
+  return { tr, im, dests };
 }
 
 // ---------- analyse complète ----------
 export function appliquerEcoulement(scene, A) {
   const mode = scene.env.ecoulement, g = A.ctx.g;
-  const E = { mode, chaines: [], parConduite: new Map(), orifices: new Map(), sorties: new Map(), robinets: new Map(), venturis: new Map(), transferts: [], jets: [] };
+  const E = { mode, chaines: [], parConduite: new Map(), orifices: new Map(), sorties: new Map(), robinets: new Map(), venturis: new Map(), lances: new Map(),
+    obstacles: new Map(), transferts: [], jets: [] };
   A.ecoulement = E;
   A.alertesEcoulement = [];
   for (const ch of chaines(scene, A.idx)) {
@@ -319,12 +397,14 @@ export function appliquerEcoulement(scene, A) {
       const der = sol.tuyaux[sol.tuyaux.length - 1], ec = A.conduites.get(der.c.id);
       const pts = ec.tr.pts, fin = der.sens > 0 ? pts[pts.length - 1] : pts[0], av = der.sens > 0 ? pts[pts.length - 2] : pts[1];
       const lg = Math.hypot(fin.x - av.x, fin.z - av.z) || 1, V = sol.Q / aire(der.D);
-      const jet = trajectoire(scene, A, fin.x, fin.z, V * (fin.x - av.x) / lg, V * (fin.z - av.z) / lg, sol.Dt.type === 'reservoir' ? null : null);
-      // Une sortie au-dessus d'un réservoir le remplit ; sinon le liquide part au sol.
-      const dst = sol.Dt.type === 'reservoir' ? sol.Dt.el : jet.cible;
-      E.jets.push({ de: sol.Dt.type === 'sortie' ? sol.Dt.el.id : der.c.id, pts: sol.Dt.type === 'reservoir' ? [] : jet.pts, fluide: sol.fluide, Q: sol.Q, V, portee: jet.portee });
-      if (sol.Dt.type === 'sortie') E.sorties.set(sol.Dt.el.id, { V, Q: sol.Q, jet, sol });
-      E.transferts.push({ src: sol.S.el, port: sol.S.port, fluide: sol.fluide, Q: sol.Q, dst, sol });
+      if (sol.Dt.type === 'reservoir') {
+        // sortie au-dessus de la surface d'un réservoir : elle le remplit directement
+        E.transferts.push({ src: sol.S.el, port: sol.S.port, fluide: sol.fluide, Q: sol.Q, dst: sol.Dt.el, sol });
+      } else {
+        const j = lancerJet(scene, A, { x: fin.x, z: fin.z, vx: V * (fin.x - av.x) / lg, vz: V * (fin.z - av.z) / lg, Q: sol.Q, fluide: sol.fluide, rho: sol.rho, de: sol.Dt.el.id, d: der.D });
+        E.sorties.set(sol.Dt.el.id, { V, Q: sol.Q, jet: j.tr, sol, reaction: sol.rho * sol.Q * V });
+        for (const d of j.dests) E.transferts.push({ src: sol.S.el, port: sol.S.port, fluide: sol.fluide, Q: d.Q, dst: d.cible, sol });
+      }
     } else E.transferts.push({ src: sol.S.el, port: sol.S.port, fluide: sol.fluide, Q: sol.Q, dst: sol.Dt.el, sol, H: sol.Hs - sol.Hd });
     // Cavitation : la colonne se rompt si la pression absolue tombe sous p_v.
     for (const [id] of sol.parTuyau) {
@@ -350,31 +430,88 @@ export function appliquerEcoulement(scene, A) {
     const st = etatOrifice(o, scene, A);
     E.orifices.set(o.id, st);
     if (st.Q > 0) {
-      E.jets.push({ de: o.id, pts: st.jet.pts, fluide: st.fluide, Q: st.Q, V: st.V, portee: st.jet.portee });
-      E.transferts.push({ src: st.r, port: { z: st.pos.z, x: st.pos.x }, fluide: st.fluide, Q: st.Q, dst: st.jet.cible, orifice: o });
+      const j = lancerJet(scene, A, { x: st.pos.x, z: st.pos.z, vx: st.V * st.n.x, vz: st.V * st.n.z, Q: st.Q, fluide: st.fluide, rho: st.rho, de: o.id, exclu: st.r, d: o.d });
+      st.jet = j.tr;
+      for (const d of j.dests) E.transferts.push({ src: st.r, port: { z: st.pos.z, x: st.pos.x }, fluide: st.fluide, Q: d.Q, dst: d.cible, orifice: o });
     }
   }
   for (const b of scene.elements) {
     if (b.type !== 'robinet') continue;
     const st = { b, Q: b.ouvert ? b.Q : 0 };
     if (st.Q > 0) {
-      st.jet = trajectoire(scene, A, b.x, b.z, 0, -0.3);
-      E.jets.push({ de: b.id, pts: st.jet.pts, fluide: b.fluide, Q: st.Q, V: 0.3 });
-      E.transferts.push({ src: null, fluide: b.fluide, Q: st.Q, dst: st.jet.cible, robinet: b });
+      const j = lancerJet(scene, A, { x: b.x, z: b.z, vx: 0, vz: -0.3, Q: st.Q, fluide: b.fluide, rho: A.ctx.rho(b.fluide), de: b.id, d: 0.03 });
+      st.jet = j.tr;
+      for (const d of j.dests) E.transferts.push({ src: null, fluide: b.fluide, Q: d.Q, dst: d.cible, robinet: b });
     }
     E.robinets.set(b.id, st);
+  }
+  // Lances : jet de vitesse et de diamètre imposés (alimentation extérieure).
+  for (const l of scene.elements) {
+    if (l.type !== 'lance') continue;
+    const rho = A.ctx.rho(l.fluide), Q = l.ouvert ? aire(l.d) * l.V : 0, a = rad(l.angle);
+    const st = { l, Q, V: l.V, rho, reaction: rho * Q * l.V, dir: { x: Math.cos(a), z: Math.sin(a) } };
+    if (Q > 0) {
+      const j = lancerJet(scene, A, { x: l.x, z: l.z, vx: l.V * st.dir.x, vz: l.V * st.dir.z, Q, fluide: l.fluide, rho, de: l.id, d: l.d });
+      st.jet = j.tr; st.im = j.im;
+      for (const d of j.dests) E.transferts.push({ src: null, fluide: l.fluide, Q: d.Q, dst: d.cible, lance: l });
+    }
+    E.lances.set(l.id, st);
   }
   return E;
 }
 export function analyserTout(scene) {
   const mode = scene.env.ecoulement || 'illustratif';
+  let A;
   if (mode === 'illustratif') {
-    const A = P.analyser(scene);
-    if (scene.elements.some(e => ['orifice', 'pompe', 'exutoire', 'robinet', 'raccord', 'venturi'].includes(e.type)))
-      A.alertes.push({ id: '', niveau: 'info', texte: 'Mode illustratif : orifices, pompes et sorties libres sont inactifs. Choisissez « fluide parfait » ou « fluide réel » pour simuler l’écoulement.' });
-    return A;
+    A = P.analyser(scene);
+    if (scene.elements.some(e => ['orifice', 'pompe', 'exutoire', 'robinet', 'raccord', 'venturi', 'lance'].includes(e.type)))
+      A.alertes.push({ id: '', niveau: 'info', texte: 'Mode illustratif : orifices, pompes, lances et sorties libres sont inactifs. Choisissez « fluide parfait » ou « fluide réel » pour simuler l’écoulement.' });
+  } else A = P.analyser(scene, { apresConduites: B => appliquerEcoulement(scene, B) });
+  A.efforts = effortsAncrage(scene, A);
+  return A;
+}
+
+// ---------- efforts sur les coudes et les raccords (théorème d'Euler) ----------
+// Effort de l'eau sur un coude : F = (p S + ρ Q V)(e₁ − e₂), e₁ et e₂ étant les
+// directions de l'écoulement à l'entrée et à la sortie (poids de l'eau contenue
+// négligé). Sur un raccord : F = (p₁S₁ + ρQV₁ − p₂S₂ − ρQV₂) dans l'axe.
+const unite = (a, b) => { const l = Math.hypot(b.x - a.x, b.z - a.z) || 1; return { x: (b.x - a.x) / l, z: (b.z - a.z) / l }; };
+export function effortsAncrage(scene, A) {
+  const E = A.ecoulement, coudes = [], raccords = [];
+  const debit = c => { const pc = E && E.parConduite.get(c.id); return pc ? { Q: pc.sol.Q, sens: pc.t.sens } : { Q: 0, sens: 1 }; };
+  const pression = (ec, t) => { const q = ec.en(t); return q && q.fluide && fini(q.p) ? { p: q.p, rho: A.ctx.rho(q.fluide) } : null; };
+  for (const c of scene.elements) {
+    if (c.type !== 'conduite') continue;
+    const ec = A.conduites.get(c.id);
+    if (!ec || !ec.tr || !ec.en) continue;
+    const { Q, sens } = debit(c), S = aire(c.D), V = Q / S, pts = ec.tr.pts;
+    for (let i = 1; i < pts.length - 1; i++) {
+      let e1 = unite(pts[i - 1], pts[i]), e2 = unite(pts[i], pts[i + 1]);
+      if (sens < 0) [e1, e2] = [{ x: -e2.x, z: -e2.z }, { x: -e1.x, z: -e1.z }];
+      const q = pression(ec, ec.tr.cum[i] / ec.tr.L);
+      if (!q) continue;
+      const m = q.p * S + q.rho * Q * V;
+      const dev = Math.acos(Math.max(-1, Math.min(1, e1.x * e2.x + e1.z * e2.z)));
+      coudes.push({ id: `${c.id}:${i}`, c, i, x: pts[i].x, z: pts[i].z, e1, e2, p: q.p, rho: q.rho, S, Q, V, m,
+        angle: dev * 180 / Math.PI, F: { x: m * (e1.x - e2.x), z: m * (e1.z - e2.z) } });
+    }
   }
-  return P.analyser(scene, { apresConduites: A => appliquerEcoulement(scene, A) });
+  for (const r of scene.elements) {
+    if (r.type !== 'raccord') continue;
+    const bout = port => {
+      const c = scene.elements.find(k => k.type === 'conduite' && ((k.a.el === r.id && k.a.port === port) || (k.b.el === r.id && k.b.port === port)));
+      const ec = c && A.conduites.get(c.id);
+      if (!ec || !ec.en) return null;
+      const q = pression(ec, c.a.el === r.id && c.a.port === port ? 0 : 1);
+      return q ? { c, ...q, S: aire(c.D), ...debit(c) } : null;
+    };
+    const a = bout('a'), b = bout('b');
+    if (!a || !b) continue;
+    const Q = a.Q, Va = Q / a.S, Vb = Q / b.S, pa = P.portAppareil(r, 'a'), pb = P.portAppareil(r, 'b'), e = unite(pa, pb);
+    const ma = a.p * a.S + a.rho * Q * Va, mb = b.p * b.S + b.rho * Q * Vb;
+    raccords.push({ id: r.id, r, x: r.x, z: r.z, e, a, b, Q, Va, Vb, Fa: ma - mb, F: { x: (ma - mb) * e.x, z: (ma - mb) * e.z } });
+  }
+  return { coudes, raccords };
 }
 
 // ---------- évolution dans le temps ----------

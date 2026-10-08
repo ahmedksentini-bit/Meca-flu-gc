@@ -34,7 +34,10 @@ const ICONES = {
   venturi: ic('<path d="M2 8h6l5 4h2l5-4h6v12h-6l-5-4h-2l-5 4H2z" fill="#C9D3D8" stroke="currentColor" stroke-width="1.6"/>'),
   pitot: ic('<path d="M2 18h24" stroke="currentColor" stroke-width="5"/><path d="M14 4v14h-6" fill="none" stroke="#A8492A" stroke-width="2"/>'),
   pitotDouble: ic('<path d="M2 8h24" stroke="currentColor" stroke-width="4.5"/><path d="M10 8v8a4 4 0 0 0 8 0V8" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M10 13v3a4 4 0 0 0 8 0v-5" fill="none" stroke="#8A949C" stroke-width="2"/>'),
-  robinet: ic('<path d="M2 9h12q4 0 4 4v2" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M8 9V5M5 5h6" stroke="currentColor" stroke-width="2"/><path d="M18 17v8" stroke="#5DA3BD" stroke-width="2.4"/>')
+  robinet: ic('<path d="M2 9h12q4 0 4 4v2" fill="none" stroke="currentColor" stroke-width="3.4"/><path d="M8 9V5M5 5h6" stroke="currentColor" stroke-width="2"/><path d="M18 17v8" stroke="#5DA3BD" stroke-width="2.4"/>'),
+  lance: ic('<path d="M2 10l10 2v4L2 18z" fill="#C9D3D8" stroke="currentColor" stroke-width="1.6"/><path d="M12 14h14" stroke="#5DA3BD" stroke-width="3"/>'),
+  plaque: ic('<path d="M3 14h13" stroke="#5DA3BD" stroke-width="3"/><path d="M19 4v20" stroke="currentColor" stroke-width="3.4"/><path d="M18 9q-3-3-4-6M18 19q-3 3-4 6" fill="none" stroke="#5DA3BD" stroke-width="2"/>'),
+  auget: ic('<path d="M2 12h12" stroke="#5DA3BD" stroke-width="3"/><path d="M15 6a8 8 0 0 1 0 16" fill="none" stroke="currentColor" stroke-width="3"/><path d="M14 17H5" stroke="#5DA3BD" stroke-width="2"/>')
 };
 const goutte = c => ic(`<path d="M14 3c4 6 8 10 8 14a8 8 0 0 1-16 0c0-4 4-8 8-14z" fill="${c}" stroke="currentColor" stroke-width="1.4"/>`);
 const PALETTE = [
@@ -43,7 +46,8 @@ const PALETTE = [
   { titre: 'Liaisons', items: [['conduite', 'Conduite'], ['vanne', 'Vanne']] },
   { titre: 'Mesure', items: [['piezometre', 'Piézomètre'], ['manometre', 'Manomètre'], ['tubeU', 'Tube en U'], ['tubeUdiff', 'U différentiel']] },
   { titre: 'Ouvrages', items: [['vp-rect', 'Vanne plane'], ['vp-cercle', 'Vanne circulaire'], ['flotteur', 'Flotteur']] },
-  { titre: 'Écoulement', items: [['orifice', 'Orifice'], ['exutoire', 'Sortie libre'], ['pompe', 'Pompe'], ['raccord', 'Changement de section'], ['venturi', 'Venturi'], ['pitot', 'Tube de Pitot'], ['pitotDouble', 'Pitot double'], ['robinet', 'Robinet']] }
+  { titre: 'Écoulement', items: [['orifice', 'Orifice'], ['exutoire', 'Sortie libre'], ['pompe', 'Pompe'], ['raccord', 'Changement de section'], ['venturi', 'Venturi'], ['pitot', 'Tube de Pitot'], ['pitotDouble', 'Pitot double'], ['robinet', 'Robinet']] },
+  { titre: 'Quantité de mouvement', items: [['lance', 'Lance (jet)'], ['plaque', 'Plaque'], ['auget', 'Auget']] }
 ];
 const AIDE_PALETTE = {
   ouvert: 'Déposez le réservoir : il s’accroche aux cotes rondes et s’aligne sur les autres.',
@@ -65,12 +69,17 @@ const AIDE_PALETTE = {
   venturi: 'Déposez sur une conduite : col rétréci et manomètre différentiel intégré.',
   pitot: 'Tube de Pitot : déposez sur une conduite, il lit la ligne de charge.',
   pitotDouble: 'Pitot double (prises totale et statique) relié à un tube en U au mercure.',
-  robinet: 'Arrivée d’eau à débit constant qui tombe dans le réservoir situé dessous.'
+  robinet: 'Arrivée d’eau à débit constant qui tombe dans le réservoir situé dessous.',
+  lance: 'Lance : jet de vitesse et de diamètre imposés (orientation réglable).',
+  plaque: 'Plaque lisse : placez-la sur la trajectoire d’un jet pour lire l’effort et le partage du débit.',
+  auget: 'Auget : retourne le jet (180°) ; fixe ou animé d’une vitesse u, comme sur une roue Pelton.'
 };
 // Éléments qui n'agissent qu'en mode écoulement (fluide parfait ou réel).
-const ECOULEMENT = ['orifice', 'exutoire', 'pompe', 'raccord', 'venturi', 'pitot', 'pitotDouble', 'robinet'];
+const ECOULEMENT = ['orifice', 'exutoire', 'pompe', 'raccord', 'venturi', 'pitot', 'pitotDouble', 'robinet', 'lance', 'plaque', 'auget'];
+const LIBRES = ['exutoire', 'pompe', 'raccord', 'robinet', 'lance', 'plaque', 'auget'];
 const NOMS = { reservoir: 'Réservoir', conduite: 'Conduite', vanne: 'Vanne', piezometre: 'Piézomètre', manometre: 'Manomètre', tubeU: 'Tube en U', vannePlane: 'Vanne plane', flotteur: 'Flotteur',
-  orifice: 'Orifice', exutoire: 'Sortie libre', pompe: 'Pompe', raccord: 'Changement de section', venturi: 'Venturi', robinet: 'Robinet' };
+  orifice: 'Orifice', exutoire: 'Sortie libre', pompe: 'Pompe', raccord: 'Changement de section', venturi: 'Venturi', robinet: 'Robinet',
+  lance: 'Lance', plaque: 'Plaque', auget: 'Auget' };
 const VITESSES = [1, 5, 10, 30, 60, 100, 300];
 function duree(t) {
   if (!(t > 0)) return '0 s';
@@ -92,7 +101,7 @@ export function monterLabo(racine, opts = {}) {
   // ---------- DOM ----------
   racine.classList.add('labo');
   if (integre) racine.classList.add('labo-integre');
-  const optScen = `<option value="">Atelier libre</option>` + Object.entries(GROUPES).map(([g, nom]) =>
+  const optScen = `<option value="">Atelier libre</option>` + GROUPES.map(([g, nom]) =>
     `<optgroup label="${esc(nom)}">${SCENARIOS.filter(s => (s.chapitre || '1-2') === g).map(s => `<option value="${s.id}">${esc(s.titre)}</option>`).join('')}</optgroup>`).join('');
   const optUnites = Object.keys(P.UNITES).map(u => `<option value="${u}">${P.UNITES[u].nom}</option>`).join('');
   racine.innerHTML = `
@@ -116,6 +125,7 @@ export function monterLabo(racine, opts = {}) {
           <label><input type="checkbox" data-v="cotes"> Cotes</label>
           <label><input type="checkbox" data-v="isobares"> Isobares</label>
           <label><input type="checkbox" data-v="lignes"> Lignes de charge</label>
+          <label><input type="checkbox" data-v="efforts"> Efforts (quantité de mouvement)</label>
           <label><input type="checkbox" data-anim> Animer les écoulements</label>
         </div></details>
       </div>
@@ -238,6 +248,8 @@ export function monterLabo(racine, opts = {}) {
   const modeEc = () => L.scene.env.ecoulement || 'illustratif';
   // Déposer un appareil d'écoulement en mode illustratif active le fluide parfait.
   function basculerEcoulement(kind) {
+    // jets et obstacles n'ont d'intérêt qu'avec leurs efforts affichés
+    if (['lance', 'plaque', 'auget'].includes(kind) && !L.scene.env.vues.efforts) { L.scene.env.vues.efforts = true; majBarre(); }
     if (!ECOULEMENT.includes(kind) || modeEc() !== 'illustratif') return;
     L.scene.env.ecoulement = 'parfait';
     L.pause = false;
@@ -253,7 +265,7 @@ export function monterLabo(racine, opts = {}) {
     const A = L.A || E.analyserTout(L.scene);
     for (const e of L.scene.elements) {
       if (e.type === 'reservoir') { ajoute(e.x, e.z); ajoute(e.x + Math.max(e.w, P.largeurA(e, e.H)), e.z + e.H + 0.3); }
-      if (['pompe', 'raccord', 'exutoire', 'robinet'].includes(e.type)) { ajoute(e.x - 0.5, e.z - 0.4); ajoute(e.x + 0.5, e.z + 0.4); }
+      if (LIBRES.includes(e.type)) { ajoute(e.x - 0.6, e.z - 0.5); ajoute(e.x + 0.6, e.z + 0.5); }
       const m = A.mesures.get(e.id);
       if (m && m.tap) {
         ajoute(m.tap.x, m.tap.z);
@@ -265,7 +277,8 @@ export function monterLabo(racine, opts = {}) {
       if (c) for (const p of c.tr.pts) ajoute(p.x, p.z - 0.25);
     }
     if (A.ecoulement) {
-      for (const j of A.ecoulement.jets) for (const p of j.pts || []) ajoute(p.x, p.z);
+      // les nappes déviées par un obstacle peuvent filer loin : on ne cadre que les jets
+      for (const j of A.ecoulement.jets) if (!j.nappe) for (const p of j.pts || []) ajoute(p.x, p.z);
       // la ligne de charge (relevée par une pompe) doit rester dans le cadre
       if (L.scene.env.vues.lignes !== false) for (const sol of A.ecoulement.chaines) for (const [id, pt] of sol.parTuyau || []) {
         const ec = A.conduites.get(id);
@@ -422,7 +435,7 @@ export function monterLabo(racine, opts = {}) {
   // Placement libre d'un appareil : grille et cotes remarquables.
   function placerLibre(x, z, sauf = null) {
     const res = L.scene.elements.filter(e => e.type === 'reservoir');
-    const devs = L.scene.elements.filter(e => (P.APPAREILS.includes(e.type) || e.type === 'robinet') && e.id !== sauf);
+    const devs = L.scene.elements.filter(e => LIBRES.includes(e.type) && e.id !== sauf);
     const cz = [{ v: L.scene.env.zSol ?? 0, texte: 'niveau du sol' },
       ...res.flatMap(r => [{ v: r.z, texte: `fond de ${r.id}` }, { v: r.z + r.H, texte: `haut de ${r.id}` }, { v: L.A.etats.get(r.id).zL, texte: `surface de ${r.id}` }]),
       ...devs.map(e => ({ v: e.z, texte: `axe de ${e.id}` }))];
@@ -510,6 +523,9 @@ export function monterLabo(racine, opts = {}) {
     const id = nouvelId(kind);
     if (kind === 'pompe') return { id, type: 'pompe', x, z, sens: 1, marche: true, mode: 'debit', Q: 0.01, H0: 30, k: 1e4, eta: 0.7 };
     if (kind === 'robinet') return { id, type: 'robinet', x, z, Q: 0.005, fluide: 'eau', ouvert: true };
+    if (kind === 'lance') return { id, type: 'lance', x, z, angle: 0, d: 0.05, V: 10, fluide: 'eau', ouvert: true };
+    if (kind === 'plaque') return { id, type: 'plaque', x, z, angle: 90, L: 0.8 };
+    if (kind === 'auget') return { id, type: 'auget', x, z, angle: 180, w: 0.3, beta: 180, sens: 1, u: 0 };
     return { id, type: kind, x, z };
   }
   const nouvelOrifice = (r, paroi, s) => ({ id: nouvelId('orifice'), type: 'orifice', reservoir: r.id, paroi, s, d: 0.05, Cd: 0.62, Cv: 0.98, ouvert: true });
@@ -530,6 +546,12 @@ export function monterLabo(racine, opts = {}) {
       return ajouter(nouvelOrifice(cible, 'd', Math.min(0.25, cible.H / 2)));
     }
     basculerEcoulement(kind);
+    const la = els.find(e => e.id === L.sel && e.type === 'lance') || els.find(e => e.type === 'lance');
+    if ((kind === 'plaque' || kind === 'auget') && la) {
+      const a = la.angle * Math.PI / 180, o = nouvelAppareil(kind, arr(la.x + 0.8 * Math.cos(a), 0.05), arr(la.z + 0.8 * Math.sin(a), 0.05));
+      if (kind === 'auget') o.angle = la.angle + 180; else o.angle = la.angle + 90;
+      return ajouter(o);
+    }
     if (kind === 'robinet' && cible) return ajouter(nouvelAppareil(kind, arr(cible.x + P.largeurA(cible, cible.H) / 2, 0.05), arr(cible.z + cible.H + 0.5, 0.05)));
     const b = els.length ? emprise() : { x1: 0 };
     ajouter(nouvelAppareil(kind, arr(b.x1 + 1, 0.25), cible ? arr(cible.z + 0.25, 0.25) : 0.5));
@@ -696,7 +718,7 @@ export function monterLabo(racine, opts = {}) {
       d.texteAide = pw ? 'Relâchez pour percer l’orifice.' : 'Approchez d’une paroi ou d’un fond de réservoir.';
       return;
     }
-    if (k === 'exutoire' || k === 'pompe' || k === 'raccord' || k === 'robinet') {
+    if (LIBRES.includes(k)) {
       const p = placerLibre(x, z);
       d.cible = p;
       d.ui.aimant = { x: p.x, z: p.z, texte: p.guide ? p.guide.texte : p.texte };
@@ -742,7 +764,7 @@ export function monterLabo(racine, opts = {}) {
     if (k === 'venturi') { ajouter(nouveauVenturi(elt(c.id), c.t)); return; }
     if (k === 'pitot' || k === 'pitotDouble') { ajouter(creerAppareil(k, c)); return; }
     if (k === 'orifice') { ajouter(nouvelOrifice(c.r, c.paroi, c.s)); return; }
-    if (k === 'exutoire' || k === 'pompe' || k === 'raccord' || k === 'robinet') { ajouter(nouvelAppareil(k, c.x, c.z)); return; }
+    if (LIBRES.includes(k)) { ajouter(nouvelAppareil(k, c.x, c.z)); return; }
     if (k === 'vp-rect' || k === 'vp-cercle') {
       ajouter({ id: nouvelId('vannePlane'), type: 'vannePlane', reservoir: c.r.id, paroi: c.paroi, s: c.s, forme: k === 'vp-cercle' ? 'cercle' : 'rect', a: c.a, l: k === 'vp-cercle' ? c.a : Math.min(c.r.b, 1), charniere: 'aucune' });
       return;
@@ -944,12 +966,13 @@ export function monterLabo(racine, opts = {}) {
       apresEdition(true);
       return;
     }
-    if (type === 'dev' && ['orifice', 'pompe', 'robinet'].includes(el.type)) {
+    if (type === 'dev' && ['orifice', 'pompe', 'robinet', 'lance'].includes(el.type)) {
       avantModif();
       if (el.type === 'pompe') el.marche = el.marche === false;
       else el.ouvert = !el.ouvert;
       L.sel = el.id; L.inspCle = null;
-      dire(el.type === 'pompe' ? `Pompe ${el.id} ${el.marche ? 'en marche' : 'arrêtée'}` : el.type === 'orifice' ? `Orifice ${el.id} ${el.ouvert ? 'débouché' : 'bouché'}` : `Robinet ${el.id} ${el.ouvert ? 'ouvert' : 'fermé'}`);
+      dire(el.type === 'pompe' ? `Pompe ${el.id} ${el.marche ? 'en marche' : 'arrêtée'}` : el.type === 'orifice' ? `Orifice ${el.id} ${el.ouvert ? 'débouché' : 'bouché'}`
+        : el.type === 'robinet' ? `Robinet ${el.id} ${el.ouvert ? 'ouvert' : 'fermé'}` : `Lance ${el.id} ${el.ouvert ? 'ouverte' : 'fermée'}`);
       apresEdition(true);
       return;
     }
@@ -1201,6 +1224,7 @@ export function monterLabo(racine, opts = {}) {
         }
         if (ecm === 'illustratif') h += `<div class="lb-sorties">${sortie('etat', 'État')}${sortie('contenu', 'Contenu')}${sortie('pA', 'p côté ' + esc(el.a.el))}${sortie('pB', 'p côté ' + esc(el.b.el))}${sortie('debit', 'Débit instantané')}${sortie('pire', 'p abs minimale')}</div>`;
         else h += `<div class="lb-sorties">${sortie('debit', 'Débit Q')}${sortie('V', 'Vitesse V')}${ecm === 'reel' ? sortie('Re', 'Reynolds') + sortie('lambda', 'λ') + sortie('pertes', 'Pertes dans la conduite') : ''}${sortie('pA', 'p côté ' + esc(el.a.el))}${sortie('pB', 'p côté ' + esc(el.b.el))}${sortie('pire', 'p abs minimale')}</div>`;
+        h += `<div class="lb-sorties">${sortie('coudes', 'Efforts sur les coudes')}</div>`;
         break;
       }
       case 'vanne':
@@ -1217,7 +1241,7 @@ export function monterLabo(racine, opts = {}) {
         h += `<button type="button" class="lb-btn lb-btn-fort" data-k="basculer">${el.ouvert ? 'Boucher l’orifice' : 'Déboucher l’orifice'}</button>`;
         h += `<div class="lb-grille2">${num('d', 'Diamètre d', el.d * 1000, 'mm', { pas: 1, min: 1, dec: 1 })}${num('Cd', 'C<sub>d</sub> (débit)', el.Cd, '', { pas: 0.01, min: 0.05, max: 1, dec: 3 })}${num('Cv', 'C<sub>v</sub> (vitesse)', el.Cv, '', { pas: 0.01, min: 0.05, max: 1, dec: 3 })}${sel_('paroi', 'Paroi', el.paroi, PAROIS)}${num('s', el.paroi === 'f' ? 'Centre depuis la gauche' : 'Centre depuis le pied', el.s, 'm', { pas: 0.05, min: 0 })}</div>`;
         h += `<p class="lb-note">Mince paroi : C<sub>c</sub> ≈ 0,62, C<sub>v</sub> ≈ 0,98, C<sub>d</sub> = C<sub>c</sub>C<sub>v</sub> ≈ 0,61. Ajutage cylindrique : C<sub>d</sub> ≈ 0,82 ; ajutage rentrant (Borda) : ≈ 0,5.</p>`;
-        h += `<div class="lb-sorties">${sortie('h', 'Charge h sur l’orifice')}${sortie('V', 'Vitesse du jet')}${sortie('Q', 'Débit')}${sortie('portee', 'Jet')}${sortie('T', 'Temps de vidange')}</div>`;
+        h += `<div class="lb-sorties">${sortie('h', 'Charge h sur l’orifice')}${sortie('V', 'Vitesse du jet')}${sortie('Q', 'Débit')}${sortie('portee', 'Jet')}${sortie('T', 'Temps de vidange')}${sortie('R', 'Réaction du jet')}</div>`;
         break;
       case 'pompe':
         h += `<button type="button" class="lb-btn lb-btn-fort" data-k="basculer">${el.marche === false ? 'Démarrer la pompe' : 'Arrêter la pompe'}</button>`;
@@ -1228,7 +1252,7 @@ export function monterLabo(racine, opts = {}) {
         break;
       case 'raccord':
         h += `<div class="lb-grille2">${num('x', 'x', el.x, 'm')}${num('z', 'Cote de l’axe', el.z, 'm')}</div><p class="lb-note">Les diamètres sont ceux des conduites raccordées : réglez-les dans chacune.</p>`;
-        h += `<div class="lb-sorties">${sortie('D', 'D₁ → D₂')}${sortie('V', 'V₁ → V₂')}${sortie('dH', 'Perte singulière')}${sortie('dp', 'p₂ − p₁')}</div>`;
+        h += `<div class="lb-sorties">${sortie('D', 'D₁ → D₂')}${sortie('V', 'V₁ → V₂')}${sortie('dH', 'Perte singulière')}${sortie('dp', 'p₂ − p₁')}${sortie('Fa', 'Effort de l’eau sur le raccord')}</div>`;
         break;
       case 'venturi': {
         const c = elt(el.conduite);
@@ -1238,7 +1262,23 @@ export function monterLabo(racine, opts = {}) {
       }
       case 'exutoire':
         h += `<div class="lb-grille2">${num('x', 'x', el.x, 'm')}${num('z', 'Cote de sortie', el.z, 'm')}</div>`;
-        h += `<div class="lb-sorties">${sortie('V', 'Vitesse de sortie')}${sortie('Q', 'Débit')}${sortie('portee', 'Jet')}</div>`;
+        h += `<div class="lb-sorties">${sortie('V', 'Vitesse de sortie')}${sortie('Q', 'Débit')}${sortie('portee', 'Jet')}${sortie('R', 'Réaction ρQV')}</div>`;
+        break;
+      case 'lance':
+        h += `<button type="button" class="lb-btn lb-btn-fort" data-k="basculer">${el.ouvert ? 'Fermer la lance' : 'Ouvrir la lance'}</button>`;
+        h += `<div class="lb-grille2">${num('d', 'Diamètre du jet d', el.d * 1000, 'mm', { pas: 1, min: 2, dec: 1 })}${num('V', 'Vitesse V', el.V, 'm/s', { pas: 0.5, min: 0, dec: 2 })}${num('angle', 'Orientation', el.angle, '°', { pas: 5, dec: 2 })}${sel_('fluide', 'Liquide', el.fluide, fluidesOpt)}${num('x', 'x de la buse', el.x, 'm')}${num('z', 'z de la buse', el.z, 'm')}</div>`;
+        h += `<p class="lb-note">Orientation : 0° vers la droite, 90° vers le haut, 180° vers la gauche.</p>`;
+        h += `<div class="lb-sorties">${sortie('Q', 'Débit Q = SV')}${sortie('qm', 'Débit massique')}${sortie('qdm', 'Flux de quantité de mouvement ρQV')}${sortie('Pj', 'Puissance du jet ½ρQV²')}${sortie('cible', 'Le jet frappe')}</div>`;
+        break;
+      case 'plaque':
+        h += `<div class="lb-grille2">${num('L', 'Longueur', el.L, 'm', { pas: 0.05, min: 0.05 })}${num('angle', 'Inclinaison sur l’horizontale', el.angle, '°', { pas: 5, dec: 1 })}${num('x', 'x du centre', el.x, 'm')}${num('z', 'z du centre', el.z, 'm')}</div>`;
+        h += `<div class="lb-sorties">${sortie('F', 'Effort du jet')}${sortie('alpha', 'Angle jet / plaque α')}${sortie('Q12', 'Partage Q₁ / Q₂')}${sortie('Fxz', 'F<sub>x</sub> / F<sub>z</sub>')}</div>`;
+        break;
+      case 'auget':
+        h += `<div class="lb-grille2">${num('w', 'Ouverture', el.w, 'm', { pas: 0.05, min: 0.05 })}${num('angle', 'Orientation de l’ouverture', el.angle, '°', { pas: 5, dec: 1 })}${num('beta', 'Déviation β', el.beta, '°', { pas: 5, min: 10, max: 180, dec: 0 })}${sel_('sens', 'Sens de déviation', el.sens, [['1', 'direct'], ['-1', 'indirect']])}${num('x', 'x', el.x, 'm')}${num('z', 'z', el.z, 'm')}</div>`;
+        h += `<label class="lb-champ lb-large"><span>Vitesse de l’auget u</span><input type="range" min="0" max="${Math.max(1, Math.ceil(vitesseJet(el) || 20))}" step="0.25" data-k="u" value="${el.u}"><em data-o="uV">${NB(el.u, 2)} m/s</em></label>`;
+        h += `<p class="lb-note">L’auget est supposé animé de la vitesse u en s’éloignant du jet (régime établi, comme un auget de roue Pelton).</p>`;
+        h += `<div class="lb-sorties">${sortie('F', 'Effort du jet')}${sortie('P', 'Puissance recueillie F·u')}${sortie('eta', 'Part de la puissance du jet')}${sortie('vo', 'Vitesse absolue de l’eau renvoyée')}</div><div data-o="courbe" class="lb-courbe"></div>`;
         break;
       case 'robinet':
         h += `<button type="button" class="lb-btn lb-btn-fort" data-k="basculer">${el.ouvert ? 'Fermer le robinet' : 'Ouvrir le robinet'}</button>`;
@@ -1308,7 +1348,7 @@ export function monterLabo(racine, opts = {}) {
   }
   function majInspecteur() {
     const el = L.sel ? elt(L.sel) : null;
-    const cle = el ? `${el.id}|${el.type}|${el.type === 'reservoir' ? `${el.ferme}|${el.ciel.mode}|${L.A.etats.get(el.id).niveaux.map(n => n.fluide).join(',')}` : ''}${el.type === 'vannePlane' ? el.forme + el.paroi + el.charniere : ''}${el.type === 'flotteur' ? `${!!el.creux}|${el.e}` : ''}${el.type === 'reservoir' ? `|${!!el.constant}` : ''}${el.type === 'vanne' ? el.ouverte : ''}${el.type === 'conduite' ? `${el.lambda == null}|${el.Lreel == null}` : ''}${el.type === 'orifice' || el.type === 'robinet' ? el.ouvert : ''}${el.type === 'pompe' ? `${el.mode}|${el.marche}` : ''}|${L.scene.env.unite}|${modeEc()}` : `global|${L.scene.elements.length}|${modeEc()}`;
+    const cle = el ? `${el.id}|${el.type}|${el.type === 'reservoir' ? `${el.ferme}|${el.ciel.mode}|${L.A.etats.get(el.id).niveaux.map(n => n.fluide).join(',')}` : ''}${el.type === 'vannePlane' ? el.forme + el.paroi + el.charniere : ''}${el.type === 'flotteur' ? `${!!el.creux}|${el.e}` : ''}${el.type === 'reservoir' ? `|${!!el.constant}` : ''}${el.type === 'vanne' ? el.ouverte : ''}${el.type === 'conduite' ? `${el.lambda == null}|${el.Lreel == null}` : ''}${['orifice', 'robinet', 'lance'].includes(el.type) ? el.ouvert : ''}${el.type === 'pompe' ? `${el.mode}|${el.marche}` : ''}|${L.scene.env.unite}|${modeEc()}` : `global|${L.scene.elements.length}|${modeEc()}`;
     if (cle !== L.inspCle) {
       if (insp.contains(document.activeElement) && document.activeElement.matches('input[type=number],input[type=text]') && L.inspCle && L.inspCle.split('|')[0] === cle.split('|')[0]) {
         // on garde le champ en cours de saisie
@@ -1352,6 +1392,9 @@ export function monterLabo(racine, opts = {}) {
       else if (Ec && e.type === 'venturi') { const st = Ec.venturis.get(e.id); if (st) t = `Δh = ${NB(Math.abs(st.dh) * 1000, 0)} mm · Q = ${NB(st.Qmes * 1000, 2)} L/s`; }
       else if (Ec && e.type === 'exutoire') { const so = Ec.sorties.get(e.id); t = so ? `V = ${NB(so.V, 2)} m/s · Q = ${NB(so.Q * 1000, 2)} L/s` : 'à sec'; }
       else if (e.type === 'robinet') t = e.ouvert ? `${NB(e.Q * 1000, 2)} L/s` : 'fermé';
+      else if (e.type === 'raccord' && A.efforts) { const r = A.efforts.raccords.find(k => k.r === e); if (r) t = `effort axial ${forceTexte(Math.abs(r.Fa))}`; }
+      else if (Ec && e.type === 'lance') { const st = Ec.lances.get(e.id); t = st && st.Q > 0 ? `Q = ${NB(st.Q * 1000, 2)} L/s · ρQV = ${forceTexte(st.reaction)}` : 'fermée'; }
+      else if (Ec && (e.type === 'plaque' || e.type === 'auget')) { const ob = Ec.obstacles.get(e.id); t = ob ? `F = ${forceTexte(Math.hypot(ob.F.x, ob.F.z))}${ob.P > 0.5 ? ` · P = ${NB(ob.P / 1000, 2)} kW` : ''}` : 'hors du jet'; }
       if (t) lignes.push(`<button type="button" data-sel="${esc(e.id)}"><b>${esc(e.id)}</b><span>${t}</span></button>`);
     }
     return lignes.join('') || '<p class="lb-note">Aucun élément.</p>';
@@ -1360,6 +1403,21 @@ export function monterLabo(racine, opts = {}) {
   const regime = r => (r < 2000 ? 'laminaire' : r < 4000 ? 'transitoire' : 'turbulent');
   const infoPompe = el => { const sol = L.A.ecoulement?.chaines.find(c => c.Q > 0 && c.pompes?.some(p => p.el === el)); return sol ? { sol, info: sol.pompes.find(p => p.el === el) } : null; };
   const nonSimule = 'Mode illustratif : choisissez « fluide parfait » ou « fluide réel » dans la barre pour simuler l’écoulement.';
+  const forceTexte = F => (Math.abs(F) >= 1000 ? `${NB(F / 1000, 2)} kN` : `${NB(F, Math.abs(F) < 10 ? 2 : 1)} N`);
+  // Vitesse du jet qui frappe un obstacle (pour borner le curseur de l'auget).
+  const vitesseJet = o => { const ob = L.A.ecoulement && L.A.ecoulement.obstacles.get(o.id), im = ob && ob.impacts[0]; return im ? im.V : null; };
+  // Courbe P(u) d'un auget : P = ρ S (V − u)² u (1 − cos β), maximum en u = V/3.
+  function courbeAuget(o, im) {
+    const S = im.Q / im.V, V = im.V, k = im.rho * S * (1 - Math.cos(o.beta * Math.PI / 180));
+    const Pu = u => k * (V - u) ** 2 * u, Pm = Pu(V / 3) || 1, W = 260, H = 120, mx = 34, my = 12;
+    const X = u => mx + (W - mx - 8) * u / V, Y = p => H - 22 - (H - 22 - my) * p / Pm;
+    let d = '';
+    for (let i = 0; i <= 60; i++) { const u = V * i / 60; d += `${i ? 'L' : 'M'}${X(u).toFixed(1)},${Y(Pu(u)).toFixed(1)}`; }
+    const u0 = Math.min(o.u, V);
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Puissance recueillie en fonction de la vitesse de l’auget"><line x1="${mx}" y1="${H - 22}" x2="${W - 6}" y2="${H - 22}" class="lb-axe-c"/><line x1="${mx}" y1="${my - 4}" x2="${mx}" y2="${H - 22}" class="lb-axe-c"/>`
+      + `<line x1="${X(V / 3).toFixed(1)}" y1="${my}" x2="${X(V / 3).toFixed(1)}" y2="${H - 22}" class="lb-repere-c"/><path d="${d}" class="lb-courbe-p"/><circle cx="${X(u0).toFixed(1)}" cy="${Y(Pu(u0)).toFixed(1)}" r="4" class="lb-point-c"/>`
+      + `<text x="${X(V / 3).toFixed(1)}" y="${H - 8}" text-anchor="middle">V/3</text><text x="${W - 8}" y="${H - 8}" text-anchor="end">u = V</text><text x="${mx - 4}" y="${my + 4}" text-anchor="end">${NB(Pm / 1000, 2)}</text><text x="${mx + 4}" y="${my + 4}">P (kW)</text></svg>`;
+  }
   // Bernoulli généralisé le long d'une chaîne, terme à terme.
   function etapesChaine(sol, focus = null) {
     const g = L.A.ctx.g, mode = modeEc(), et = [];
@@ -1642,7 +1700,75 @@ export function monterLabo(racine, opts = {}) {
         o.etapes = li(Ec ? [`Apport à débit constant Q = ${NB(el.Q * 1000, 2)} L/s.`, ...(S ? [`Dans ${esc(r.id)} (section S = ${NB(S, 3)} m²), en l’absence de sortie, le niveau monte de dz/dt = Q/S = ${NB(el.Q / S * 1000, 2)} mm/s ; s’il se vide en même temps, le niveau s’équilibre quand le débit sortant égale Q.`] : [])] : [nonSimule]);
         break;
       }
+      case 'lance': {
+        const st = Ec && Ec.lances.get(el.id);
+        if (!st) { o.etapes = li([nonSimule]); break; }
+        const S = Math.PI * el.d ** 2 / 4;
+        o.Q = `${NB(st.Q * 1000, 2)} L/s`;
+        o.qm = `${NB(st.Q * st.rho, 1)} kg/s`;
+        o.qdm = forceTexte(st.reaction);
+        o.Pj = `${NB(st.rho * st.Q * el.V ** 2 / 2 / 1000, 2)} kW`;
+        o.cible = !st.Q ? '—' : st.im ? `${esc(st.im.o.id)} à ${NB(st.im.V, 2)} m/s` : st.jet && st.jet.cible ? esc(st.jet.cible.id) : st.jet && st.jet.portee != null ? `le sol, à ${NB(Math.abs(st.jet.portee), 2)} m` : '—';
+        o.etapes = li(st.Q > 0 ? [`Section du jet S = πd²/4 = ${NB(S, 6)} m² ; débit Q = SV = ${NB(S, 6)} × ${NB(el.V, 2)} = <b>${NB(st.Q * 1000, 2)} L/s</b>`,
+          `Flux de quantité de mouvement emporté par le jet : ρQV = ${NB(st.rho, 0)} × ${NB(st.Q, 5)} × ${NB(el.V, 2)} = <b>${forceTexte(st.reaction)}</b> ; c’est aussi la réaction qui repousse la lance (propulsion par réaction).`,
+          `Puissance cinétique du jet : ½ρQV² = ${NB(st.rho * st.Q * el.V ** 2 / 2, 0)} W`,
+          'En vol libre, seule la pesanteur agit : la composante horizontale de la vitesse se conserve, le jet décrit une parabole.'] : ['Lance fermée.']);
+        break;
+      }
+      case 'plaque': {
+        const ob = Ec && Ec.obstacles.get(el.id), im = ob && ob.impacts[0];
+        if (!im) { o.F = o.alpha = o.Q12 = o.Fxz = '—'; o.etapes = li([Ec ? 'Aucun jet ne frappe la plaque : placez-la sur la trajectoire d’une lance, d’un orifice ou d’une sortie.' : nonSimule]); break; }
+        const F = Math.hypot(ob.F.x, ob.F.z), ca = Math.abs(im.vt) / im.V;
+        o.F = `<b>${forceTexte(F)}</b>`;
+        o.alpha = `${NB(im.alpha, 1)}°`;
+        o.Q12 = `${NB(im.Q1 * 1000, 2)} / ${NB(im.Q2 * 1000, 2)} L/s`;
+        o.Fxz = `${forceTexte(ob.F.x)} / ${forceTexte(ob.F.z)}`;
+        o.etapes = li([`Volume de contrôle : le jet entre l’arrivée et la plaque. Jet libre : pression atmosphérique partout, pressions relatives nulles ; pesanteur négligée sur ce petit volume.`,
+          `Le jet arrive à V = ${NB(im.V, 3)} m/s avec un débit Q = ${NB(im.Q * 1000, 2)} L/s, sous l’angle α = ${NB(im.alpha, 2)}° avec la plaque.`,
+          `Plaque lisse : pas d’effort tangentiel, la quantité de mouvement tangentielle se conserve : ρQ₁V − ρQ₂V = ρQV cos α. Avec Q₁ + Q₂ = Q : Q₁ = Q(1 + cos α)/2 = <b>${NB(im.Q1 * 1000, 2)} L/s</b>, Q₂ = Q(1 − cos α)/2 = <b>${NB(im.Q2 * 1000, 2)} L/s</b> (cos α = ${NB(ca, 3)}).`,
+          `Projection sur la normale : la composante V sin α est détruite, d’où l’effort du jet F = ρQV sin α = ${NB(im.rho, 0)} × ${NB(im.Q, 5)} × ${NB(im.V, 3)} × ${NB(Math.sin(im.alpha * Math.PI / 180), 3)} = <b>${forceTexte(F)}</b>.`,
+          ...(ob.impacts.length > 1 ? [`${ob.impacts.length} jets frappent la plaque : les efforts s’ajoutent.`] : [])]);
+        break;
+      }
+      case 'auget': {
+        const ob = Ec && Ec.obstacles.get(el.id), im = ob && ob.impacts[0];
+        o.uV = `${NB(el.u, 2)} m/s`;
+        if (!im) { o.F = o.P = o.eta = o.vo = '—'; o.courbe = ''; o.etapes = li([Ec ? (el.u > 0 ? 'Aucun jet n’atteint l’auget : il fuit plus vite que le jet, ou il est hors de sa trajectoire.' : 'Aucun jet ne frappe l’auget : orientez son ouverture face à une lance ou à un orifice.') : nonSimule]); break; }
+        const F = Math.hypot(ob.F.x, ob.F.z), Pj = im.rho * im.Q * im.V ** 2 / 2, S = im.Q / im.V;
+        o.F = `<b>${forceTexte(F)}</b>`;
+        o.P = el.u > 0 ? `${NB(ob.P / 1000, 3)} kW` : 'auget fixe : P = 0';
+        o.eta = el.u > 0 ? `${NB(ob.P / Pj * 100, 1)} %` : '—';
+        o.vo = `${NB(Math.hypot(im.vo.x, im.vo.z), 2)} m/s`;
+        o.courbe = courbeAuget(el, im);
+        const et = [`Le jet arrive à V = ${NB(im.V, 3)} m/s (section S = ${NB(S, 6)} m², débit Q = ${NB(im.Q * 1000, 2)} L/s).`];
+        if (el.u > 0) et.push(`Repère lié à l’auget : vitesse relative V − u = ${NB(im.Vr, 3)} m/s ; l’auget n’intercepte que Q<sub>r</sub> = S(V − u) = ${NB(im.Qr * 1000, 2)} L/s.`);
+        et.push(`Déviation de β = ${NB(el.beta, 0)}° sans frottement : la vitesse relative garde son module. Projection d’Euler sur l’axe du jet : F = ρQ<sub>r</sub>(V − u)(1 − cos β)${el.beta >= 179 ? ' = 2ρS(V − u)²' : ''} = <b>${forceTexte(F)}</b>.`);
+        if (el.u > 0) {
+          et.push(`Puissance recueillie : P = F·u = ${forceTexte(F)} × ${NB(el.u, 2)} m/s = <b>${NB(ob.P / 1000, 3)} kW</b>, soit ${NB(ob.P / Pj * 100, 1)} % de la puissance du jet ½ρQV² = ${NB(Pj / 1000, 2)} kW.`);
+          et.push(`P(u) = ρS(V − u)²u(1 − cos β) ; dP/du = ρS(V − u)(V − 3u)(1 − cos β) = 0 ⇒ <b>u = V/3 = ${NB(im.V / 3, 2)} m/s</b> pour un auget isolé (P<sub>max</sub> = 8/27 de la puissance du jet à 180°) ; une roue à augets multiples, qui intercepte tout le débit, a son optimum à V/2.`);
+        } else et.push('Auget fixe : la force est double de celle sur une plaque normale (ρQV), d’où l’intérêt des augets Pelton.');
+        et.push(`L’eau repart à la vitesse absolue ${el.beta >= 179 ? `2u − V = ${NB(2 * el.u - im.V, 2)} m/s` : `${NB(Math.hypot(im.vo.x, im.vo.z), 2)} m/s`}${Math.abs(2 * el.u - im.V) < 0.3 && el.beta >= 179 ? ' : elle tombe presque sans vitesse, toute son énergie cinétique a été cédée' : ''}.`);
+        o.etapes = li(et);
+        break;
+      }
     }
+    // Efforts d'ancrage (chapitre 5), quel que soit le modèle d'écoulement.
+    if (el.type === 'conduite' && A.efforts) {
+      const cs = A.efforts.coudes.filter(c => c.c === el);
+      o.coudes = cs.length ? cs.map(c => `${forceTexte(Math.hypot(c.F.x, c.F.z))} à z = ${NB(c.z, 2)} m`).join('<br>') : 'aucun coude en charge';
+      if (cs.length) o.etapes = (o.etapes || '') + li(cs.map(c => `Coude à ${NB(c.angle, 0)}° (z = ${NB(c.z, 2)} m) : p = ${NB(c.p / 1000, 2)} kPa, pS = ${NB(c.p * c.S, 0)} N, ρQV = ${NB(c.rho * c.Q * c.V, 0)} N ; Euler : F = (pS + ρQV)(e₁ − e₂) = ${NB(c.m, 0)} × ${NB(Math.hypot(c.e1.x - c.e2.x, c.e1.z - c.e2.z), 3)} = <b>${forceTexte(Math.hypot(c.F.x, c.F.z))}</b> (poids de l’eau du coude négligé).`));
+    }
+    if (el.type === 'raccord' && A.efforts) {
+      const r = A.efforts.raccords.find(k => k.r === el);
+      o.Fa = r ? `${forceTexte(Math.abs(r.Fa))} ${(r.Fa > 0) === (r.e.x > 0) ? 'vers la droite' : 'vers la gauche'}` : '—';
+      if (r) o.etapes = (o.etapes || '') + li([`Effort axial (Euler) : F = p₁S₁ + ρQV₁ − p₂S₂ − ρQV₂ = ${NB(r.a.p * r.a.S, 0)} + ${NB(r.a.rho * r.Q * r.Va, 0)} − ${NB(r.b.p * r.b.S, 0)} − ${NB(r.b.rho * r.Q * r.Vb, 0)} = <b>${forceTexte(r.Fa)}</b> ; les brides ou un massif doivent le reprendre.`]);
+    }
+    if (el.type === 'orifice' && Ec) {
+      const st = Ec.orifices.get(el.id);
+      o.R = st && st.Q > 0 ? forceTexte(st.reaction) : '—';
+      if (st && st.Q > 0) o.etapes = (o.etapes || '') + li([`Réaction du jet sur le réservoir (ex. 5.5) : F = ρQV = ρ C<sub>d</sub>C<sub>v</sub> s · 2gh = <b>${forceTexte(st.reaction)}</b>, ${el.Cd === 1 && el.Cv === 1 ? 'soit exactement' : 'à comparer à'} 2ρghs = ${forceTexte(2 * st.rho * g * st.h * Math.PI * el.d ** 2 / 4)} : le double de la poussée hydrostatique sur un bouchon.`]);
+    }
+    if (el.type === 'exutoire' && Ec) { const so = Ec.sorties.get(el.id); o.R = so ? forceTexte(so.reaction) : '—'; }
     return o;
   }
   // Saisie dans l'inspecteur.
@@ -1757,6 +1883,27 @@ export function monterLabo(racine, opts = {}) {
         if (k === 'fluide') { el.fluide = valeur; break; }
         if (!ok) return;
         if (k === 'Q') el.Q = clamp(v / 1000, 0, 100);
+        if (k === 'x') el.x = clamp(v, -500, 500);
+        if (k === 'z') el.z = clamp(v, -500, 500);
+        break;
+      case 'lance':
+        if (k === 'basculer') { el.ouvert = !el.ouvert; structure = true; break; }
+        if (k === 'fluide') { el.fluide = valeur; break; }
+        if (!ok) return;
+        if (k === 'd') el.d = clamp(v / 1000, 0.002, 2);
+        if (k === 'V') el.V = clamp(v, 0, 200);
+        if (k === 'angle') el.angle = clamp(v, -360, 360);
+        if (k === 'x') el.x = clamp(v, -500, 500);
+        if (k === 'z') el.z = clamp(v, -500, 500);
+        break;
+      case 'plaque': case 'auget':
+        if (k === 'sens') { el.sens = valeur === '-1' ? -1 : 1; break; }
+        if (!ok) return;
+        if (k === 'L') el.L = clamp(v, 0.05, 50);
+        if (k === 'w') el.w = clamp(v, 0.05, 10);
+        if (k === 'beta') el.beta = clamp(v, 10, 180);
+        if (k === 'u') el.u = clamp(v, 0, 200);
+        if (k === 'angle') el.angle = clamp(v, -360, 360);
         if (k === 'x') el.x = clamp(v, -500, 500);
         if (k === 'z') el.z = clamp(v, -500, 500);
         break;

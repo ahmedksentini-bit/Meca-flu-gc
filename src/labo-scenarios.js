@@ -1,7 +1,7 @@
-// Laboratoire virtuel : expériences guidées des chapitres 1, 2, 3, 4 et 6. Chaque
+// Laboratoire virtuel : expériences guidées des chapitres 1 à 6. Chaque
 // scénario reproduit une situation du cours (exercice résolu ou paragraphe) ;
 // les valeurs attendues figurent dans la consigne et sont vérifiées par les tests.
-import { sceneVide, couchesDepuisHauteurs, contexte, calerGaz } from './labo-physique.js';
+import { sceneVide, couchesDepuisHauteurs, contexte, calerGaz, G } from './labo-physique.js';
 
 function reservoir(id, o) {
   const r = { id, type: 'reservoir', nom: o.nom || '', x: o.x || 0, z: o.z || 0, w: o.w || 1.5, H: o.H || 3, b: o.b || 1,
@@ -24,6 +24,11 @@ const sortie = (id, x, z) => ({ id, type: 'exutoire', x, z });
 const raccord = (id, x, z) => ({ id, type: 'raccord', x, z });
 const orifice = (id, reservoir, paroi, s, o = {}) => ({ id, type: 'orifice', reservoir, paroi, s, d: o.d ?? 0.05, Cd: o.Cd ?? 0.62, Cv: o.Cv ?? 0.98, ouvert: true });
 const vanne = (id, c, t, o = {}) => ({ id, type: 'vanne', conduite: c, t, ouverte: o.ouverte !== false, ouverture: o.ouverture ?? 1, Kv: o.Kv ?? 0.2 });
+// Chapitre 5 : la lance est légèrement relevée pour que le jet, au sommet de sa
+// parabole, arrive horizontal sur l'obstacle placé à la distance x (sin 2a = 2gx/V²).
+const visee = (V, x) => { const a = Math.asin(Math.min(1, 2 * G * x / (V * V))) / 2; return { angle: a * 180 / Math.PI, dz: (V * Math.sin(a)) ** 2 / (2 * G) }; };
+const lance = (id, x, z, o = {}) => ({ id, type: 'lance', x, z, angle: o.angle ?? 0, d: o.d ?? 0.05, V: o.V ?? 10, fluide: o.fluide || 'eau', ouvert: true });
+const aire = d => Math.PI * d * d / 4;
 
 const fabriques = {
   vases(s) {
@@ -234,11 +239,51 @@ const fabriques = {
       mano('M2', 'R1', 'g:0.25', { mode: 'relatif' }),
       tubeU('U1', 'R1', 'd:1.75', 'mercure', { ox: 0.6, oz: -1.1, L: 1.4 }),
       piezo('P1', 'R1', 'g:1.00', 1.5, { ox: 0.9 }));
+  },
+  'jet-plaque'(s) {
+    const v = visee(15, 0.8);
+    s.elements.push(lance('LA1', 0, 1.2, { d: 0.06, V: 15, angle: v.angle }),
+      { id: 'PL1', type: 'plaque', x: 0.8, z: 1.2 + v.dz, angle: 90, L: 0.8 });
+  },
+  auget(s) {
+    const v = visee(15, 0.8);
+    s.elements.push(lance('LA1', 0, 1.2, { d: 0.06, V: 15, angle: v.angle }),
+      { id: 'AU1', type: 'auget', x: 0.8, z: 1.2 + v.dz, angle: 180, w: 0.3, beta: 180, sens: 1, u: 5 });
+  },
+  'plaque-inclinee'(s) {
+    const v = visee(12, 0.5);
+    s.elements.push(lance('LA1', 0, 1.2, { d: Math.sqrt(4 * 0.030 / (Math.PI * 12)), V: 12, angle: v.angle }),
+      { id: 'PL1', type: 'plaque', x: 0.5, z: 1.2 + v.dz, angle: 60, L: 0.8 });
+  },
+  reaction(s) {
+    const r = reservoir('R1', { nom: 'Réservoir sur rouleaux', x: 0, z: 0.4, w: 1.5, H: 3, constant: true, couches: [{ fluide: 'eau', h: 2.25 }] });
+    r.rouleaux = true;
+    s.elements.push(r, orifice('O1', 'R1', 'd', 0.25, { d: Math.sqrt(4 * 20e-4 / Math.PI), Cd: 1, Cv: 1 }));
+  },
+  coude(s) {
+    // Ciels sous pression imposée : p = 200 kPa dans les coudes hauts, Q = 250 L/s.
+    const V = 0.250 / aire(0.3), pv = 1000 * V * V / 2;
+    s.elements.push(
+      reservoir('R1', { nom: 'Réservoir sous pression', x: 0, z: 0, w: 1.4, H: 2, ferme: true, p: Math.round(200000 + pv), constant: true, couches: [{ fluide: 'eau', h: 1.5 }] }),
+      reservoir('R2', { nom: 'Réservoir aval sous pression', x: 5.6, z: 0, w: 1.4, H: 2, ferme: true, p: 200000, constant: true, couches: [{ fluide: 'eau', h: 1.5 }] }),
+      conduite('C1', { el: 'R1', port: 'd:0.50' }, { el: 'R2', port: 'g:0.50' }, { D: 0.3, zr: 1.5 }));
+  },
+  convergent(s) {
+    // p₁ = 180 kPa juste en amont du convergent (z = 0,5 m), Q = 80 L/s.
+    const V1 = 0.080 / aire(0.25), V2 = 0.080 / aire(0.15), g = 9.81;
+    const p0 = 180000 + 1000 * V1 * V1 / 2 - 1000 * g * 1.0;
+    s.elements.push(
+      reservoir('R1', { nom: 'Réservoir sous pression', x: 0, z: 0, w: 1.4, H: 2, ferme: true, p: Math.round(p0), constant: true, couches: [{ fluide: 'eau', h: 1.5 }] }),
+      raccord('RC1', 3.2, 0.5),
+      reservoir('R2', { nom: 'Réservoir aval sous pression', x: 6, z: 0, w: 1.4, H: 2, ferme: true, p: Math.round(p0 - 1000 * V2 * V2 / 2), constant: true, couches: [{ fluide: 'eau', h: 1.5 }] }),
+      conduite('C1', { el: 'R1', port: 'd:0.50' }, { el: 'RC1', port: 'a' }, { D: 0.25 }),
+      conduite('C2', { el: 'RC1', port: 'b' }, { el: 'R2', port: 'g:0.50' }, { D: 0.15 }));
   }
 };
 
 // Chapitres des expériences (groupes du sélecteur) ; les écoulements fixent leur modèle de fluide.
-export const GROUPES = { '1-2': 'Chapitres 1 et 2 — hydrostatique', '3-4': 'Chapitres 3 et 4 — écoulements, Bernoulli', '6': 'Chapitre 6 — pertes de charge' };
+// (liste ordonnée : des clés numériques passeraient avant les autres dans un objet)
+export const GROUPES = [['1-2', 'Chapitres 1 et 2 — hydrostatique'], ['3-4', 'Chapitres 3 et 4 — écoulements, Bernoulli'], ['5', 'Chapitre 5 — quantité de mouvement'], ['6', 'Chapitre 6 — pertes de charge']];
 export const SCENARIOS = [
   { id: 'vases', chapitre: '1-2', titre: 'Vases communicants', ref: '§ 2.2.2', ancre: 's-cas-du-liquide-incompressible',
     consigne: 'Ouvrez la vanne V1 (clic) : le liquide passe du château d’eau au bassin jusqu’à l’égalité des surfaces libres. Le volume se conserve : le niveau commun vaut Σ(hᵢSᵢ)/ΣSᵢ. Les piézomètres de la conduite suivent la charge.' },
@@ -288,6 +333,18 @@ export const SCENARIOS = [
     consigne: 'Siphon d = 80 mm, point haut 1,50 m au-dessus de la surface, sortie 3,00 m dessous : V = √(2g·3) = 7,67 m/s, Q = 38,6 L/s, pression absolue au sommet 57,2 kPa. Montez le passage de la conduite (poignée) : au-delà de 7,09 m, la veine se rompt (cavitation).' },
   { id: 'pompage', chapitre: '3-4', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 4.7 — Pompage (fluide parfait)', ref: 'Ex. 4.7', ancre: 's-exercice-4.7-pompage-entre-deux-réservoirs-fluide-parfait',
     consigne: 'Sans frottement, la pompe ne fournit que la hauteur géométrique : H = 35,0 m pour 30 L/s, puissance hydraulique 10,3 kW, absorbée 14,7 kW (η = 0,70). Passez en fluide réel : les pertes de charge s’ajoutent.' },
+  { id: 'jet-plaque', chapitre: '5', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 5.1 — Jet sur une plaque fixe', ref: 'Ex. 5.1', ancre: 's-exercice-5.1-jet-sur-plaque-fixe-perpendiculaire',
+    consigne: 'Jet d = 60 mm, V = 15 m/s, Q = 42,4 L/s, normal à la plaque : la quantité de mouvement ρQV = 636 N, détruite dans l’axe, pousse la plaque. Le jet se partage en deux nappes égales qui filent le long de la plaque. Inclinez la plaque (inspecteur) : l’effort normal devient ρQV sin α.' },
+  { id: 'auget', chapitre: '5', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 5.2 — Auget fixe puis mobile', ref: 'Ex. 5.2', ancre: 's-exercice-5.2-jet-sur-auget-fixe-puis-mobile',
+    consigne: 'L’auget retourne le jet : fixe, F = 2ρSV² = 1 272 N. Animé de u = 5 m/s, il ne voit plus que la vitesse relative V − u : F = 2ρS(V − u)² = 565 N et P = F·u = 2,83 kW, le maximum (u = V/3, courbe P(u) dans l’inspecteur). À u = V/2, l’eau renvoyée repart à vitesse nulle.' },
+  { id: 'coude', chapitre: '5', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 5.3 — Effort sur un coude', ref: 'Ex. 5.3', ancre: 's-exercice-5.3-force-dancrage-dun-coude-horizontal',
+    consigne: 'DN 300, Q = 250 L/s, V = 3,54 m/s, p = 200 kPa dans les coudes hauts : chaque coude à 90° subit F = (pS + ρQV)√2 = (14,1 + 0,9)√2 = 21,2 kN sur sa bissectrice extérieure. Coudes ici dans le plan vertical, poids de l’eau négligé. Fermez la conduite par la pression aval : l’effort de pression demeure, c’est lui qui dimensionne les butées.' },
+  { id: 'convergent', chapitre: '5', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 5.4 — Convergent : effort sur la bride', ref: 'Ex. 5.4', ancre: 's-exercice-5.4-convergent-horizontal-effort-sur-la-bride',
+    consigne: 'D = 250 → 150 mm, Q = 80 L/s, p₁ = 180 kPa : Bernoulli donne p₂ = 171 kPa, et le bilan axial F = p₁S₁ + ρQV₁ − p₂S₂ − ρQV₂ = 5,58 kN pousse le convergent vers l’aval. Sélectionnez le raccord pour suivre la projection d’Euler.' },
+  { id: 'reaction', chapitre: '5', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 5.5 — Réaction d’un jet', ref: 'Ex. 5.5', ancre: 's-exercice-5.5-réaction-dun-jet-à-la-sortie-dun-réservoir',
+    consigne: 'Orifice profilé (C_d = 1) de 20 cm² sous h = 2 m : V = 6,26 m/s, Q = 12,5 L/s, et le réservoir sur rouleaux est repoussé par F = ρQV = 2ρghs = 78,4 N, le double de la poussée hydrostatique sur un bouchon. Doublez la charge : la réaction double aussi.' },
+  { id: 'plaque-inclinee', chapitre: '5', ecoulement: 'parfait', vitesse: 1, titre: 'Ex. 5.6 — Jet sur plaque inclinée', ref: 'Ex. 5.6', ancre: 's-exercice-5.6-jet-incliné-sur-plaque-décomposition-du-débit',
+    consigne: 'Jet V = 12 m/s, Q = 30 L/s, plaque lisse à 60° : effort normal ρQV sin α = 312 N ; la quantité de mouvement tangentielle se conserve, d’où Q₁ = Q(1 + cos α)/2 = 22,5 L/s vers l’aval et Q₂ = 7,5 L/s vers l’amont. Tournez la plaque pour voir le partage changer.' },
   { id: 'gravitaire', chapitre: '6', ecoulement: 'reel', vitesse: 1, titre: 'Ex. 6.4 — Conduite gravitaire', ref: 'Ex. 6.4', ancre: 's-exercice-6.4-conduite-gravitaire-entre-deux-réservoirs',
     consigne: 'Fonte ε = 0,25 mm, D = 150 mm, L = 1 200 m, ΣK = 4,5, Δz = 18 m : Colebrook donne λ ≈ 0,023 et Q ≈ 24 L/s. La ligne de charge descend de l’amont à l’aval. Fermez progressivement la vanne : le débit ne baisse vraiment qu’en fin de course.' },
   { id: 'station', chapitre: '6', ecoulement: 'reel', vitesse: 1, titre: 'Ex. 6.6 — Station de pompage', ref: 'Ex. 6.6', ancre: 's-exercice-6.6-installation-de-pompage-complète',
@@ -303,6 +360,7 @@ export function creerScenario(id) {
   const s = sceneVide(meta ? meta.titre : 'Nouvelle expérience');
   if (meta && fabriques[id]) fabriques[id](s);
   if (meta && meta.ecoulement) { s.env.ecoulement = meta.ecoulement; s.env.vitesse = meta.vitesse || 1; s.env.vues.champ = false; }
+  if (meta && meta.chapitre === '5') { s.env.vues.efforts = true; s.env.vues.lignes = false; }
   const ctx = contexte(s);
   for (const e of s.elements) if (e.type === 'reservoir') calerGaz(e, ctx, s);
   if (id === 'caisson') s.env.vues.champ = false;

@@ -965,7 +965,7 @@ export function sonder(scene, analyse, x, z) {
 // ---------- création, contrôle et nettoyage des scènes ----------
 const ID = /^[A-Za-z][A-Za-z0-9_-]{0,15}$/;
 export const PREFIXES = { reservoir: 'R', conduite: 'C', vanne: 'V', piezometre: 'P', manometre: 'M', tubeU: 'U', vannePlane: 'VP', flotteur: 'F',
-  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB' };
+  orifice: 'O', exutoire: 'S', pompe: 'PO', raccord: 'RC', venturi: 'VT', robinet: 'RB', lance: 'LA', plaque: 'PL', auget: 'AU' };
 export const ECOULEMENTS = ['illustratif', 'parfait', 'reel'];
 export function nouvelId(scene, type) {
   const p = PREFIXES[type] || 'E';
@@ -974,7 +974,7 @@ export function nouvelId(scene, type) {
 }
 export function sceneVide(nom = 'Nouvelle expérience') {
   return { version: VERSION, nom, env: { g: G, patm: PATM, unite: 'kPa', reference: 'relative', ecoulement: 'illustratif', vitesse: 1, zSol: 0,
-    vues: { champ: true, charge: true, cotes: true, isobares: false, lignes: true } }, perso: { rho: FLUIDES.perso.rho }, elements: [] };
+    vues: { champ: true, charge: true, cotes: true, isobares: false, lignes: true, efforts: false } }, perso: { rho: FLUIDES.perso.rho }, elements: [] };
 }
 // Recalcule la quantité de gaz piégé pour que le ciel soit à la pression p.
 export function calerGaz(r, ctx, scene = null) {
@@ -1023,7 +1023,7 @@ export function verifierScene(brut) {
       Object.assign(o, { nom: texte(e.nom, 40, ''), x: nb(e.x, `${nom} x`, -200, 200), z: nb(e.z, `${nom} cote du fond`, -100, 200),
         w: nb(e.w, `${nom} largeur`, 0.2, 60), H: nb(e.H, `${nom} hauteur`, 0.3, 60), b: nb(e.b, `${nom} profondeur`, 0.05, 60),
         alpha: nb(e.alpha ?? 90, `${nom} inclinaison`, 30, 150), ferme: !!e.ferme, diagramme: ['g', 'd', 'f'].includes(e.diagramme) ? e.diagramme : 'aucune',
-        constant: !!e.constant, aspect: e.aspect === 'sol' ? 'sol' : 'liquide' });
+        constant: !!e.constant, aspect: e.aspect === 'sol' ? 'sol' : 'liquide', rouleaux: !!e.rouleaux });
       if (o.constant) o.hc = nb(e.hc ?? o.H / 2, `${nom} niveau imposé`, 0, o.H);
       if (largeurA(o, o.H) < 0.2) throw Error(`${nom} : l’inclinaison referme le réservoir.`);
       const c = e.ciel || {};
@@ -1072,6 +1072,14 @@ export function verifierScene(brut) {
     } else if (e.type === 'robinet') {
       Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), Q: nb(e.Q ?? 0.005, `${nom} débit`, 0, 100),
         fluide: LIQUIDES.includes(e.fluide) ? e.fluide : 'eau', ouvert: e.ouvert !== false });
+    } else if (e.type === 'lance') {
+      Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), angle: nb(e.angle ?? 0, `${nom} angle`, -360, 360),
+        d: nb(e.d ?? 0.05, `${nom} diamètre`, 0.002, 2), V: nb(e.V ?? 10, `${nom} vitesse`, 0, 200), fluide: LIQUIDES.includes(e.fluide) ? e.fluide : 'eau', ouvert: e.ouvert !== false });
+    } else if (e.type === 'plaque') {
+      Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), angle: nb(e.angle ?? 90, `${nom} angle`, -360, 360), L: nb(e.L ?? 1, `${nom} longueur`, 0.05, 50) });
+    } else if (e.type === 'auget') {
+      Object.assign(o, { x: nb(e.x, `${nom} x`, -500, 500), z: nb(e.z, `${nom} z`, -500, 500), angle: nb(e.angle ?? 180, `${nom} orientation`, -360, 360),
+        w: nb(e.w ?? 0.4, `${nom} ouverture`, 0.05, 10), beta: nb(e.beta ?? 180, `${nom} déviation`, 10, 180), sens: e.sens === -1 ? -1 : 1, u: nb(e.u ?? 0, `${nom} vitesse`, 0, 200) });
     } else if (e.type === 'flotteur') {
       Object.assign(o, { reservoir: String(e.reservoir), x: nb(e.x, `${nom} position`, 0, 200), l: nb(e.l, `${nom} largeur`, 0.05, 60), h: nb(e.h, `${nom} hauteur`, 0.05, 60),
         b: nb(e.b, `${nom} profondeur`, 0.05, 60), m: nb(e.m, `${nom} masse`, 0.01, 1e9), zG: nb(e.zG ?? e.h / 2, `${nom} centre de gravité`, 0, 60), gite: nb(e.gite ?? 0, `${nom} gîte`, -45, 45),
@@ -1135,7 +1143,7 @@ export function nettoyerScene(scene) {
           e.d = Math.min(e.d, c.D * 0.95);
           return true;
         }
-        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': return true;
+        case 'exutoire': case 'pompe': case 'raccord': case 'robinet': case 'lance': case 'plaque': case 'auget': return true;
         case 'vanne': return idx.get(e.conduite)?.type === 'conduite';
         case 'piezometre': case 'manometre': return okRef(e.piquage);
         case 'tubeU': return okRef(e.piquage) && (!e.piquage2 || okRef(e.piquage2));
