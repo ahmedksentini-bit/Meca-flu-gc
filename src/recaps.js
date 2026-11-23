@@ -408,6 +408,30 @@ const recaps = {
     ],
     watch: "Ne pas mélanger des K écrits avec des vitesses différentes (amont/aval d’un élargissement)."
   },
+  totalLosses: {
+    title: "Perte de charge totale — linéaire + singulières",
+    problem: "Une conduite réelle avec accessoires. Il faut h_lin par Darcy–Colebrook, h_sing par ΣK, et leur somme.",
+    lead: "Les deux familles de pertes partagent le même facteur V²/(2g). Une fois la hauteur dynamique calculée, la perte linéaire pèse λL/D et les singularités ΣK : il suffit de comparer ces deux nombres pour savoir qui domine.",
+    points: [
+      "h_t = [λ(L/D) + ΣK] · V²/(2g) : une seule parenthèse, deux contributions.",
+      "λ par Colebrook–White (ou Moody) après Re = VD/ν et ε/D.",
+      "Longueur équivalente : L_eq = ΣK·D/λ, la longueur de conduite qui dissiperait autant que les accessoires.",
+      "λL/D ≫ ΣK sur une conduite longue (adduction) ; l’inverse sur un montage court d’atelier."
+    ],
+    watch: "Tous les K doivent être rapportés à la même vitesse. Un ΣK de 5 à 10 est banal sur un départ de pompe : le négliger fausse le dimensionnement."
+  },
+  flowFromHead: {
+    title: "Problème inverse — débit sous charge disponible",
+    problem: "La dénivelée H est donnée, le débit est cherché. λ dépend de V, donc de l’inconnue : il faut itérer.",
+    lead: "Entre deux surfaces libres au repos, toute la dénivelée se dissipe : H = [λ(L/D) + ΣK]·V²/(2g). Comme λ dépend de Re, donc de V, on part de λ₀ = 0,02, on en tire V, on recalcule λ, et on boucle. Deux ou trois tours suffisent.",
+    points: [
+      "V = √( 2gH / [λ(L/D) + ΣK] ) : la formule de l’itération.",
+      "Initialisation λ₀ = 0,02 (turbulent courant), puis Re = VD/ν et λ par Colebrook.",
+      "Convergence rapide car V varie en λ^(−1/2) : l’erreur sur λ est amortie de moitié.",
+      "Vérification : recalculer h_lin + h_sing et retrouver H."
+    ],
+    watch: "H est la dénivelée entre plans d’eau, pas la hauteur de la conduite. Si la sortie est en jet libre, l’énergie cinétique terminale n’est plus une perte : K de sortie à retirer."
+  },
   froudeSimilarity: {
     title: "Similitude de Froude",
     problem: "Un ouvrage à surface libre est reproduit au 1/N. On transpose vitesses et débits du modèle au prototype.",

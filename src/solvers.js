@@ -442,6 +442,66 @@ export const solvers = {
       ["Darcy-Weisbach", `h_f = λ(L/D)V²/(2g) = ${n(hf)} m`]
     ]);
   },
+  // Conduite reelle : la perte lineaire et les pertes singulieres s ajoutent. La
+  // longueur equivalente traduit les accessoires en metres de conduite, ce qui rend
+  // leur poids comparable d un coup d oeil.
+  totalLosses(d) {
+    const D = d.D / 1000, Q = d.Q / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6;
+    const S = circle(D), V = Q / S, Re = V * D / nu;
+    const { f, history } = colebrookSolve(Re, eps / D);
+    const dynamique = V ** 2 / (2 * G);
+    const hLin = f * (d.L / D) * dynamique;
+    const hSing = d.Ksum * dynamique;
+    const hTot = hLin + hSing;
+    const Leq = d.Ksum * D / f;
+    const partSing = 100 * hSing / hTot;
+    const regime = Re < 2000 ? "laminaire" : Re < 4000 ? "transition (résultat indicatif)" : "turbulent";
+    return steps({ V, Re, f, hLin, hSing, hTot }, [
+      ["Conversions et vitesse", `D = ${n(D)} m ; Q = ${n(Q)} m³/s ; S = πD²/4 = ${n(S)} m² ; V = Q/S = ${n(V)} m/s`],
+      ["Hauteur dynamique", `V²/(2g) = ${n(dynamique)} m — c’est le facteur commun aux deux familles de pertes`],
+      ["Nombre de Reynolds", `Re = VD/ν = ${n(Re)} : régime ${regime} ; rugosité relative ε/D = ${n(eps / D)}`],
+      Re < 2000
+        ? ["Loi laminaire", `λ = 64/Re = ${n(f)}`]
+        : ["Itérations de Colebrook–White", colebrookIterationText(history)],
+      ["Perte linéaire", `h_lin = λ(L/D)·V²/(2g) = ${n(f)} × ${n(d.L / D)} × ${n(dynamique)} = ${n(hLin)} m`],
+      ["Pertes singulières", `h_sing = ΣK·V²/(2g) = ${n(d.Ksum)} × ${n(dynamique)} = ${n(hSing)} m`],
+      ["Perte totale", `h_t = h_lin + h_sing = ${n(hTot)} m, dont ${n(partSing, 3)} % de singulières`],
+      ["Longueur équivalente", `L_eq = ΣK·D/λ = ${n(Leq)} m : les accessoires coûtent autant que ${n(Leq)} m de cette conduite`]
+    ]);
+  },
+  // Probleme inverse : la charge disponible est connue, le debit ne l est pas. Comme
+  // lambda depend de la vitesse cherchee, la resolution passe par une iteration.
+  flowFromHead(d) {
+    const D = d.D / 1000, eps = d.eps / 1000, nu = d.nu * 1e-6, S = circle(D);
+    const history = [];
+    let f = 0.02, V = 0, Re = 0;
+    for (let i = 1; i <= 20; i++) {
+      const precedent = V;
+      V = Math.sqrt(2 * G * d.H / (f * d.L / D + d.Ksum));
+      Re = V * D / nu;
+      const suivant = colebrookSolve(Re, eps / D).f;
+      history.push({ i, f, V, Re, next: suivant });
+      f = suivant;
+      // Critere relatif : V stable a 7 chiffres significatifs. Un seuil absolu trop
+      // serre faisait afficher trois iterations identiques, ce qui brouille la lecture.
+      if (i >= 2 && Math.abs(V - precedent) < 1e-7 * V) break;
+    }
+    const Q = V * S, dynamique = V ** 2 / (2 * G);
+    const hLin = f * (d.L / D) * dynamique, hSing = d.Ksum * dynamique;
+    const nf = x => Number(x).toLocaleString("fr-FR", { maximumSignificantDigits: 6 });
+    const iterations = [
+      "λ dépend de Re, donc de la vitesse que l’on cherche : on part de λ₀ = 0,02 et on boucle. On s’arrête quand V ne varie plus au septième chiffre : le dernier tour est donc celui de la confirmation.",
+      ...history.map(r => `Itération ${r.i} : λ = ${nf(r.f)} → V = ${nf(r.V)} m/s → Re = ${nf(r.Re)} → λ' = ${nf(r.next)}`),
+      `Convergence en ${history.length} itération${history.length > 1 ? "s" : ""} : V = ${nf(V)} m/s.`
+    ].join("\n");
+    return steps({ V, Q: Q * 1000, Re, f }, [
+      ["Bilan de charge", `Entre deux surfaces libres au repos, toute la dénivelée est dissipée : H = ${n(d.H)} m = h_lin + h_sing`],
+      ["Mise en équation", `H = [λ(L/D) + ΣK]·V²/(2g), avec L/D = ${n(d.L / D)} et ΣK = ${n(d.Ksum)}`],
+      ["Itérations", iterations],
+      ["Vitesse et débit", `V = ${n(V)} m/s ; Q = V·S = ${n(V)} × ${n(S)} = ${n(Q)} m³/s = ${n(Q * 1000)} L/s`],
+      ["Vérification", `h_lin = ${n(hLin)} m et h_sing = ${n(hSing)} m, somme ${n(hLin + hSing)} m : on retrouve bien H`]
+    ]);
+  },
   moodyRead(d) {
     const Re = d.Re, epsRel = d.epsRel, { f, history } = colebrookSolve(Re, epsRel);
     const fInf = epsRel > 0 ? 1 / (-2 * Math.log10(epsRel / 3.7)) ** 2 : 0;

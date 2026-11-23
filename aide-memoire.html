@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Aide-mémoire — Pertes de charge : Darcy, Colebrook, Moody, singularités — ENIS Sfax</title>
+<meta name="description" content="Aide-mémoire de mécanique des fluides sur les pertes de charge : Darcy–Weisbach, nombre de Reynolds, Colebrook–White, diagramme de Moody calculé, coefficients K des singularités, longueur équivalente, et deux exercices entièrement corrigés (problème direct et problème inverse).">
+<meta name="theme-color" content="#0B5B72">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#EDF1F2;--surface:#fff;--ink:#0F1E28;--ink2:#4C616C;--eau:#0B5B72;--rule:#C6D5DA;--brique:#A8492A;--vert:#2F6B4F;
+  --serif:"Newsreader",Georgia,serif;--disp:"Instrument Serif",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.55;-webkit-text-size-adjust:100%}
+.retour{position:sticky;top:0;z-index:99;display:block;padding:9px 14px;background:#082f49;color:#e0f2fe;font:700 13px/1.4 system-ui,sans-serif;text-decoration:none}
+header{padding:1rem 1.2rem .8rem;border-bottom:1px solid var(--rule);background:
+  repeating-linear-gradient(to right,transparent 0 23px,rgba(11,91,114,.06) 23px 24px),
+  repeating-linear-gradient(to bottom,transparent 0 23px,rgba(11,91,114,.06) 23px 24px),var(--surface)}
+.wrap{max-width:1100px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--eau);margin:0 0 .4rem}
+h1{font-family:var(--disp);font-weight:400;font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.05;margin:0 0 .3rem;letter-spacing:-.01em}
+header p.sous{margin:0;color:var(--ink2);max-width:60rem;font-size:16px}
+header nav{margin-top:.7rem;display:flex;flex-wrap:wrap;gap:.4rem .9rem;font-family:var(--mono);font-size:12px}
+header nav a{color:var(--eau)}
+main{padding:1.1rem 1.2rem 3rem}
+section{max-width:1100px;margin:0 auto 1.5rem;background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:1.1rem 1.3rem 1.3rem}
+h2{font-family:var(--disp);font-weight:400;font-size:1.55rem;line-height:1.15;margin:0 0 .15rem;letter-spacing:-.01em}
+h2 .no{font-family:var(--mono);font-size:.62em;color:var(--eau);letter-spacing:.06em;margin-right:.55rem;vertical-align:.12em}
+h3{font-family:var(--mono);font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--eau);margin:1.3rem 0 .35rem;font-weight:500}
+.sym{text-transform:none}
+p{margin:.55rem 0}
+.chapo{color:var(--ink2);margin:.1rem 0 .9rem;max-width:62rem}
+ul,ol{margin:.5rem 0;padding-left:1.3rem}
+li{margin:.3rem 0}
+code,.v{font-family:var(--mono);font-size:.88em;background:#F2F6F7;padding:.08em .34em;border-radius:2px;white-space:nowrap}
+.cle{background:#FBF7EC;border-left:3px solid #C9922B;padding:.7rem .95rem;margin:.9rem 0;border-radius:0 2px 2px 0}
+.cle strong{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:#8A6412;display:block;margin-bottom:.25rem;font-weight:500}
+.piege{background:#FCF2EF;border-left:3px solid var(--brique)}
+.piege strong{color:var(--brique)}
+.bon{background:#F1F7F3;border-left:3px solid var(--vert)}
+.bon strong{color:var(--vert)}
+table{border-collapse:collapse;width:100%;margin:.7rem 0;font-size:15.5px}
+caption{caption-side:bottom;text-align:left;font-size:13px;color:var(--ink2);padding-top:.4rem;font-style:italic}
+th,td{border-bottom:1px solid var(--rule);padding:.36rem .5rem;text-align:left;vertical-align:top}
+thead th{border-bottom:1.5px solid var(--eau);font-family:var(--mono);font-size:12px;letter-spacing:.05em;color:var(--eau);font-weight:500}
+td.n,th.n{text-align:right;font-family:var(--mono);font-size:14px;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tfoot td{border-top:1.5px solid var(--eau);border-bottom:none;font-weight:600}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden;max-width:100%;padding:.15rem 0}
+mjx-container{max-width:100%}
+.chaine{display:flex;flex-wrap:wrap;align-items:stretch;gap:.4rem;margin:.9rem 0;font-family:var(--mono);font-size:12.5px}
+.chaine div{flex:1 1 7.5rem;min-width:7rem;background:#F2F6F7;border:1px solid var(--rule);border-top:2px solid var(--eau);padding:.45rem .55rem;border-radius:2px}
+.chaine b{display:block;color:var(--eau);font-size:11px;letter-spacing:.08em;font-weight:500}
+.chaine span{color:var(--ink2);font-family:var(--serif);font-size:13.5px;line-height:1.35;display:block;margin-top:.15rem}
+figure{margin:1rem 0 .4rem}
+figure svg{width:100%;height:auto;display:block;background:var(--surface)}
+figcaption{font-size:13.5px;color:var(--ink2);margin-top:.45rem;font-style:italic}
+.grid line.gmaj{stroke:#BCCCD2;stroke-width:1}
+.grid line.gmin{stroke:#E3EAEC;stroke-width:.7}
+rect.frame{fill:none;stroke:#4C616C;stroke-width:1.2}
+rect.trans{fill:#0B5B72;opacity:.07}
+polyline{fill:none}
+polyline.cb{stroke:#0B5B72;stroke-width:1.5;stroke-linejoin:round}
+polyline.lam{stroke:#A8492A;stroke-width:2.2}
+polyline.lamx{stroke:#A8492A;stroke-width:1.6;stroke-dasharray:5 4}
+polyline.front{stroke:#2F6B4F;stroke-width:1.4;stroke-dasharray:7 5}
+text{font-family:"IBM Plex Mono",ui-monospace,monospace}
+text.ax{font-size:11px;fill:#4C616C}
+text.axt{font-size:12px;fill:#0F1E28;letter-spacing:.04em}
+text.er{font-size:10.5px;fill:#0B5B72}
+text.note{font-size:11px;fill:#4C616C;font-style:italic}
+.exo{border-left:4px solid var(--eau)}
+.enonce{background:#F2F6F7;border:1px solid var(--rule);border-radius:2px;padding:.8rem 1rem;margin:.6rem 0 1rem}
+.enonce p:first-child{margin-top:0}.enonce p:last-child{margin-bottom:0}
+.etape{margin:1.1rem 0 0;padding-left:2.5rem;position:relative}
+.etape>b{position:absolute;left:0;top:.05rem;width:1.85rem;height:1.85rem;border-radius:50%;background:var(--eau);color:#fff;font-family:var(--mono);font-size:12.5px;font-weight:500;display:grid;place-items:center}
+.etape>h4{margin:.15rem 0 .3rem;font-size:17px;font-weight:600;font-family:var(--serif)}
+.calc{font-family:var(--mono);font-size:14px;background:#FAFCFC;border:1px solid var(--rule);border-radius:2px;padding:.55rem .75rem;margin:.5rem 0;overflow-x:auto;line-height:1.75;white-space:pre-wrap}
+.res{background:#F1F7F3;border:1px solid #BFD8C9;border-radius:2px;padding:.65rem .9rem;margin:1rem 0 .2rem;font-size:16px}
+.res b{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--vert);display:block;margin-bottom:.2rem;font-weight:500}
+.imprimer{font-family:var(--mono);font-size:12px;background:var(--eau);color:#fff;border:none;border-radius:2px;padding:.45rem .9rem;cursor:pointer;letter-spacing:.04em}
+footer{padding:1.2rem;border-top:1px solid var(--rule);font-family:var(--mono);font-size:11.5px;color:var(--ink2);text-align:center}
+@media(max-width:700px){
+  header{padding:1rem .9rem}main{padding:.7rem .6rem 2rem}
+  section{padding:.9rem .8rem 1.1rem;border-radius:0;margin-bottom:1rem}
+  body{font-size:16.5px}h2{font-size:1.35rem}
+  .etape{padding-left:0}.etape>b{position:static;display:inline-grid;vertical-align:-.45rem;margin-right:.4rem;width:1.6rem;height:1.6rem}
+  .etape>h4{display:inline}
+  .calc{font-size:12.5px}
+  table{font-size:14px}th,td{padding:.3rem .35rem}
+  td.n,th.n{font-size:12.5px}
+}
+@media print{
+  .retour,.imprimer,header nav{display:none}
+  body{background:#fff;font-size:11pt}
+  section{border:none;padding:0;margin:0 0 1.1rem;break-inside:avoid}
+  header{border-bottom:1.5px solid #000;background:#fff;padding:0 0 .5rem;margin-bottom:1rem}
+  h2{break-after:avoid}figure{break-inside:avoid}
+  .exo{border-left:none;break-before:page}
+  a{color:inherit;text-decoration:none}
+}
+</style>
+<script>
+window.MathJax = { tex:{ inlineMath:[['\\(','\\)']], displayMath:[['\\[','\\]']] },
+  options:{ skipHtmlTags:['script','noscript','style','textarea','pre','code'] },
+  chtml:{ scale:1.02 } };
+</script>
+<script id="MathJax-script" async src="vendor/mathjax/tex-chtml.js"></script>
+</head>
+<body>
+<a class="retour" href="./">← Retour à MécaFlu GC</a>
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Chapitre 6 · Dynamique des fluides réels</p>
+    <h1>Aide-mémoire — Pertes de charge</h1>
+    <p class="sous">Tout ce qui sert à calculer une conduite en charge : Darcy–Weisbach, nombre de Reynolds, Colebrook–White, lecture du diagramme de Moody, coefficients <span class="v">K</span> des singularités et longueur équivalente. Puis deux exercices entièrement corrigés — le problème direct (débit connu, perte cherchée) et le problème inverse (charge connue, débit cherché).</p>
+    <nav><a href="cours.html#s-dynamique-des-fluides-réels-pertes-de-charge">Cours — chapitre 6</a><a href="exerciseur.html">Exerciseur</a><a href="labo.html">Laboratoire virtuel</a><a href="docs/Cours_Mecanique_des_Fluides_GC_S1_v01.pdf">Polycopié</a><a href="#moody">Diagramme de Moody</a><a href="#exo-a">Exercice corrigé A</a><a href="#exo-b">Exercice corrigé B</a><button class="imprimer" type="button" onclick="window.print()">Imprimer</button></nav>
+  </div>
+</header>
+<main>
+
+<section>
+  <h2><span class="no">§ 1</span>La chaîne de calcul</h2>
+  <p class="chapo">Un calcul de perte de charge se déroule toujours dans le même ordre. Les données d’entrée sont une géométrie (<span class="v">D</span>, <span class="v">L</span>, <span class="v">ε</span>, les accessoires) et un débit ; le reste s’enchaîne mécaniquement. Savoir réciter cet ordre dispense d’apprendre les formules par cœur.</p>
+  <div class="chaine">
+    <div><b>1 · Section</b><span>\(S=\pi D^2/4\)</span></div>
+    <div><b>2 · Vitesse</b><span>\(V=Q/S\)</span></div>
+    <div><b>3 · Reynolds</b><span>\(Re=VD/\nu\)</span></div>
+    <div><b>4 · Rugosité</b><span>\(\varepsilon/D\)</span></div>
+    <div><b>5 · Lambda</b><span>Moody ou Colebrook</span></div>
+    <div><b>6 · Linéaire</b><span>\(h_{lin}=\lambda\frac{L}{D}\frac{V^2}{2g}\)</span></div>
+    <div><b>7 · Singulier</b><span>\(h_{sing}=\sum K\,\frac{V^2}{2g}\)</span></div>
+    <div><b>8 · Total</b><span>\(h_t=h_{lin}+h_{sing}\)</span></div>
+  </div>
+  <div class="cle">
+    <strong>La formule à retenir</strong>
+    <p style="margin:0">Les deux familles de pertes partagent le même facteur \(V^2/2g\). Tout le chapitre 6 tient donc dans une seule parenthèse :</p>
+    \[ h_t=\Big[\underbrace{\lambda\frac{L}{D}}_{\text{linéaire}}+\underbrace{\textstyle\sum K}_{\text{singulier}}\Big]\,\frac{V^2}{2g} \]
+    <p style="margin:0">Calculez \(V^2/2g\) une fois pour toutes, puis comparez les deux nombres <span class="v">λL/D</span> et <span class="v">ΣK</span> : le plus grand dit lequel domine, avant tout calcul détaillé.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">§ 2</span>Pertes linéaires — Darcy–Weisbach</h2>
+  <p class="chapo">La charge diminue régulièrement le long d’une conduite droite, par frottement du fluide sur la paroi et sur lui-même. C’est la perte linéaire, dite aussi régulière ou répartie.</p>
+  \[ h_{lin}=\lambda\,\frac{L}{D}\,\frac{V^{2}}{2g}\qquad\text{[m de colonne de fluide]} \]
+  <h3>Ce que chaque facteur fait</h3>
+  <ul>
+    <li><b>\(\lambda\)</b> — coefficient de perte de charge, sans dimension, entre 0,008 et 0,1 en pratique. Il porte toute la physique du frottement et c’est le seul terme qui demande un travail (§ 4 et § 5). Noté \(f\) dans la littérature anglo-saxonne.</li>
+    <li><b>\(L/D\)</b> — élancement, sans dimension. Vite très grand : une adduction de 250 m en DN 150 vaut déjà \(L/D\approx 1\,670\).</li>
+    <li><b>\(V^2/2g\)</b> — hauteur dynamique, en mètres. C’est l’énergie cinétique par unité de poids.</li>
+  </ul>
+  <h3>Les variantes de la même formule</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Forme</th><th>Expression</th><th>Quand l’employer</th></tr></thead>
+    <tbody>
+      <tr><td>Perte en mètres</td><td>\(h_{lin}=\lambda\frac{L}{D}\frac{V^2}{2g}\)</td><td>Forme de base, celle du cours.</td></tr>
+      <tr><td>Gradient hydraulique</td><td>\(J=\dfrac{h_{lin}}{L}=\dfrac{\lambda}{D}\dfrac{V^2}{2g}\)</td><td>Tracé de la ligne de charge ; en m/m ou m/km.</td></tr>
+      <tr><td>En fonction du débit</td><td>\(h_{lin}=\dfrac{8\lambda L}{\pi^{2}g}\,\dfrac{Q^{2}}{D^{5}}\)</td><td>Dimensionnement : montre la dépendance en \(D^{-5}\).</td></tr>
+      <tr><td>Perte de pression</td><td>\(\Delta p=\rho g\,h_{lin}\)</td><td>Choix d’une pompe, lecture d’un manomètre.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cle">
+    <strong>Le réflexe de dimensionnement</strong>
+    <p style="margin:0">À débit imposé, \(h_{lin}\propto D^{-5}\) : passer de DN 150 à DN 200 divise la perte par \((200/150)^5\approx 4{,}2\). C’est pourquoi un diamètre un cran au-dessus règle presque toujours un problème de perte de charge — au prix du tube.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">§ 3</span>Régime d’écoulement — le nombre de Reynolds</h2>
+  <p class="chapo">Avant de chercher \(\lambda\), il faut savoir dans quel régime on se trouve : la loi n’est pas la même.</p>
+  \[ Re=\frac{VD}{\nu}=\frac{\rho V D}{\mu}=\frac{4Q}{\pi D\nu} \]
+  <div class="scroll"><table>
+    <thead><tr><th>Régime</th><th class="n">Re</th><th>Loi pour \(\lambda\)</th><th>Dépendance</th></tr></thead>
+    <tbody>
+      <tr><td>Laminaire</td><td class="n">&lt; 2 000</td><td>\(\lambda=64/Re\) <i>(Poiseuille)</i></td><td>\(Re\) seul — la rugosité ne joue pas</td></tr>
+      <tr><td>Transition</td><td class="n">2 000 – 4 000</td><td>indéterminé</td><td>à éviter en projet : résultat non reproductible</td></tr>
+      <tr><td>Turbulent lisse</td><td class="n">&gt; 4 000</td><td>Blasius \(\lambda=0{,}316\,Re^{-1/4}\) <i>(Re &lt; 10⁵)</i></td><td>\(Re\) seul</td></tr>
+      <tr><td>Turbulent de transition</td><td class="n">&gt; 4 000</td><td>Colebrook–White</td><td>\(Re\) <b>et</b> \(\varepsilon/D\)</td></tr>
+      <tr><td>Turbulent rugueux</td><td class="n">grand</td><td>von Kármán \(\dfrac1{\sqrt\lambda}=-2\log_{10}\dfrac{\varepsilon}{3{,}7D}\)</td><td>\(\varepsilon/D\) seul — \(\lambda\) devient constant</td></tr>
+    </tbody>
+    <caption>En hydraulique urbaine, l’eau en conduite est presque toujours turbulente : \(V\approx 1\) m/s dans un DN 100 donne déjà \(Re=10^5\). Le laminaire concerne les huiles, les sols et les très petits diamètres.</caption>
+  </table></div>
+  <div class="cle piege">
+    <strong>Les deux viscosités</strong>
+    <p style="margin:0">\(\nu\) (cinématique, m²/s) et \(\mu\) (dynamique, Pa·s) sont liées par \(\nu=\mu/\rho\). Le Reynolds se calcule avec \(\nu\). Pour l’eau : \(\nu\approx 1{,}31\cdot10^{-6}\) m²/s à 10 °C, \(1{,}00\cdot10^{-6}\) à 20 °C, \(0{,}80\cdot10^{-6}\) à 30 °C. Sauf indication, prendre \(10^{-6}\) m²/s.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">§ 4</span>Le coefficient λ — Colebrook–White</h2>
+  <p class="chapo">Colebrook et White (1939) ont raccordé par une seule formule le régime lisse et le régime rugueux. C’est la référence du calcul, et c’est elle que trace le diagramme de Moody.</p>
+  \[ \boxed{\ \frac{1}{\sqrt{\lambda}}=-2\log_{10}\!\left(\frac{\varepsilon}{3{,}7\,D}+\frac{2{,}51}{Re\sqrt{\lambda}}\right)\ } \]
+  <p>La formule est <b>implicite</b> : \(\lambda\) figure des deux côtés, aucune réécriture ne l’isole. On la résout par itérations successives, ce qui est immédiat à la main :</p>
+  <div class="cle bon">
+    <strong>La boucle, en quatre lignes</strong>
+    <ol style="margin:.2rem 0">
+      <li>Partir de \(\lambda_0=0{,}02\) (ordre de grandeur de tout écoulement turbulent d’eau).</li>
+      <li>Porter \(\lambda_0\) dans le membre de droite ; il en sort \(\lambda_1\).</li>
+      <li>Recommencer avec \(\lambda_1\).</li>
+      <li>S’arrêter dès que deux valeurs successives coïncident à trois chiffres. <b>Trois à quatre tours suffisent toujours</b> : la racine carrée amortit l’erreur de moitié à chaque passage.</li>
+    </ol>
+  </div>
+  <h3>Les deux termes de la parenthèse</h3>
+  <p>Leur rapport dit dans quel sous-régime on se trouve, et c’est l’information utile :</p>
+  <ul>
+    <li>\(\varepsilon/3{,}7D\) — terme de <b>rugosité</b>, indépendant du débit. S’il écrase l’autre, le régime est rugueux : \(\lambda\) ne bougera plus si le débit change.</li>
+    <li>\(2{,}51/(Re\sqrt\lambda)\) — terme <b>visqueux</b>, qui décroît quand le débit monte. S’il écrase l’autre, la conduite se comporte comme lisse : la rugosité est sans effet.</li>
+  </ul>
+  <h3>Formules explicites — pour se dispenser d’itérer</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Auteur</th><th>Expression</th><th>Domaine et écart</th></tr></thead>
+    <tbody>
+      <tr><td>Swamee–Jain (1976)</td><td>\(\lambda=\dfrac{0{,}25}{\left[\log_{10}\!\left(\frac{\varepsilon}{3{,}7D}+\frac{5{,}74}{Re^{0{,}9}}\right)\right]^{2}}\)</td><td>\(10^{-6}&lt;\varepsilon/D&lt;10^{-2}\), \(5\cdot10^{3}&lt;Re&lt;10^{8}\) ; écart &lt; 1 % avec Colebrook. <b>La plus utile en examen.</b></td></tr>
+      <tr><td>Haaland (1983)</td><td>\(\dfrac1{\sqrt\lambda}=-1{,}8\log_{10}\!\left[\left(\frac{\varepsilon}{3{,}7D}\right)^{1{,}11}+\frac{6{,}9}{Re}\right]\)</td><td>Écart &lt; 2 % ; une seule évaluation.</td></tr>
+      <tr><td>Blasius (1913)</td><td>\(\lambda=0{,}316\,Re^{-1/4}\)</td><td>Conduite <b>lisse</b> seulement, \(4\cdot10^{3}&lt;Re&lt;10^{5}\).</td></tr>
+    </tbody>
+    <caption>Une explicite remplace Colebrook sans dommage pour un calcul de projet ; l’énoncé peut cependant exiger le diagramme de Moody ou l’itération. Lire la question.</caption>
+  </table></div>
+  <h3>Rugosités absolues <span class="sym">ε</span></h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Matériau</th><th class="n">ε (mm)</th><th>Matériau</th><th class="n">ε (mm)</th></tr></thead>
+    <tbody>
+      <tr><td>PVC, PEHD, cuivre étiré</td><td class="n">0,007 – 0,01</td><td>Fonte ductile neuve revêtue</td><td class="n">0,10 – 0,25</td></tr>
+      <tr><td>Acier neuf, laminé</td><td class="n">0,05</td><td>Acier rouillé</td><td class="n">0,4 – 1,0</td></tr>
+      <tr><td>Acier galvanisé</td><td class="n">0,15</td><td>Fonte incrustée (vieux réseau)</td><td class="n">1,0 – 3,0</td></tr>
+      <tr><td>Béton lissé / centrifugé</td><td class="n">0,3 – 0,8</td><td>Béton brut de coffrage</td><td class="n">1,0 – 3,0</td></tr>
+    </tbody>
+    <caption>Valeurs de projet. Pour un réseau existant, majorer : l’entartrage double ou triple ε en vingt ans, et réduit D. Un calcul de réhabilitation sur ε neuf est toujours optimiste.</caption>
+  </table></div>
+  <div class="cle piege">
+    <strong>Piège d’unités</strong>
+    <p style="margin:0">\(\varepsilon\) est donné en <b>millimètres</b> et \(D\) en millimètres ou en mètres : ramener les deux à la même unité avant de former \(\varepsilon/D\). Pour \(\varepsilon=0{,}1\) mm et \(D=150\) mm, \(\varepsilon/D=6{,}67\cdot10^{-4}\) — un nombre sans dimension, toujours petit. Si vous obtenez 0,1 ou 15, l’erreur est là.</p>
+  </div>
+</section>
+
+<section id="moody">
+  <h2><span class="no">§ 5</span>Le diagramme de Moody</h2>
+  <p class="chapo">Moody (1944) a tracé \(\lambda\) en fonction de \(Re\), pour une famille de rugosités relatives \(\varepsilon/D\). Ce n’est pas une autre théorie : <b>c’est le graphe de Colebrook–White</b>, qui remplace l’itération par une lecture. Les deux échelles sont logarithmiques.</p>
+  <figure>
+    <svg viewBox="0 0 1000 620" role="img" aria-label="Diagramme de Moody : coefficient de perte de charge lambda en fonction du nombre de Reynolds, pour des rugosités relatives de 10⁻⁵ à 0,05. Échelles logarithmiques. La droite laminaire lambda = 64/Re occupe la gauche, la bande de transition 2000-4000 la sépare du faisceau turbulent, et la ligne tiretée marque l'entrée en régime rugueux où lambda devient constant.">
+<!-- Courbes calculees par Colebrook-White (script, pas a la main). -->
+<g class="grid"><line class="gmaj" x1="136.5" y1="26" x2="136.5" y2="558"/><line class="gmin" x1="180.8" y1="26" x2="180.8" y2="558"/><line class="gmin" x1="206.7" y1="26" x2="206.7" y2="558"/><line class="gmin" x1="225.1" y1="26" x2="225.1" y2="558"/><line class="gmin" x1="239.4" y1="26" x2="239.4" y2="558"/><line class="gmin" x1="251" y1="26" x2="251" y2="558"/><line class="gmin" x1="260.8" y1="26" x2="260.8" y2="558"/><line class="gmin" x1="269.4" y1="26" x2="269.4" y2="558"/><line class="gmin" x1="276.9" y1="26" x2="276.9" y2="558"/><line class="gmaj" x1="283.6" y1="26" x2="283.6" y2="558"/><line class="gmin" x1="327.9" y1="26" x2="327.9" y2="558"/><line class="gmin" x1="353.8" y1="26" x2="353.8" y2="558"/><line class="gmin" x1="372.2" y1="26" x2="372.2" y2="558"/><line class="gmin" x1="386.4" y1="26" x2="386.4" y2="558"/><line class="gmin" x1="398.1" y1="26" x2="398.1" y2="558"/><line class="gmin" x1="407.9" y1="26" x2="407.9" y2="558"/><line class="gmin" x1="416.5" y1="26" x2="416.5" y2="558"/><line class="gmin" x1="424" y1="26" x2="424" y2="558"/><line class="gmaj" x1="430.7" y1="26" x2="430.7" y2="558"/><line class="gmin" x1="475" y1="26" x2="475" y2="558"/><line class="gmin" x1="500.9" y1="26" x2="500.9" y2="558"/><line class="gmin" x1="519.3" y1="26" x2="519.3" y2="558"/><line class="gmin" x1="533.5" y1="26" x2="533.5" y2="558"/><line class="gmin" x1="545.2" y1="26" x2="545.2" y2="558"/><line class="gmin" x1="555" y1="26" x2="555" y2="558"/><line class="gmin" x1="563.6" y1="26" x2="563.6" y2="558"/><line class="gmin" x1="571.1" y1="26" x2="571.1" y2="558"/><line class="gmaj" x1="577.8" y1="26" x2="577.8" y2="558"/><line class="gmin" x1="622.1" y1="26" x2="622.1" y2="558"/><line class="gmin" x1="648" y1="26" x2="648" y2="558"/><line class="gmin" x1="666.4" y1="26" x2="666.4" y2="558"/><line class="gmin" x1="680.6" y1="26" x2="680.6" y2="558"/><line class="gmin" x1="692.3" y1="26" x2="692.3" y2="558"/><line class="gmin" x1="702.1" y1="26" x2="702.1" y2="558"/><line class="gmin" x1="710.7" y1="26" x2="710.7" y2="558"/><line class="gmin" x1="718.2" y1="26" x2="718.2" y2="558"/><line class="gmaj" x1="724.9" y1="26" x2="724.9" y2="558"/><line class="gmin" x1="769.2" y1="26" x2="769.2" y2="558"/><line class="gmin" x1="795.1" y1="26" x2="795.1" y2="558"/><line class="gmin" x1="813.5" y1="26" x2="813.5" y2="558"/><line class="gmin" x1="827.7" y1="26" x2="827.7" y2="558"/><line class="gmin" x1="839.4" y1="26" x2="839.4" y2="558"/><line class="gmin" x1="849.2" y1="26" x2="849.2" y2="558"/><line class="gmin" x1="857.7" y1="26" x2="857.7" y2="558"/><line class="gmin" x1="865.3" y1="26" x2="865.3" y2="558"/><line class="gmaj" x1="872" y1="26" x2="872" y2="558"/><line class="gmin" x1="78" y1="545" x2="872" y2="545"/><text class="ax" x="70" y="549" text-anchor="end">0,008</text><line class="gmin" x1="78" y1="521.2" x2="872" y2="521.2"/><text class="ax" x="70" y="525.2" text-anchor="end">0,009</text><line class="gmaj" x1="78" y1="500" x2="872" y2="500"/><text class="ax" x="70" y="504" text-anchor="end">0,01</text><line class="gmin" x1="78" y1="463.3" x2="872" y2="463.3"/><text class="ax" x="70" y="467.3" text-anchor="end">0,012</text><line class="gmin" x1="78" y1="418.3" x2="872" y2="418.3"/><text class="ax" x="70" y="422.3" text-anchor="end">0,015</text><line class="gmaj" x1="78" y1="360.3" x2="872" y2="360.3"/><text class="ax" x="70" y="364.3" text-anchor="end">0,02</text><line class="gmin" x1="78" y1="315.3" x2="872" y2="315.3"/><text class="ax" x="70" y="319.3" text-anchor="end">0,025</text><line class="gmin" x1="78" y1="278.5" x2="872" y2="278.5"/><text class="ax" x="70" y="282.5" text-anchor="end">0,03</text><line class="gmin" x1="78" y1="220.5" x2="872" y2="220.5"/><text class="ax" x="70" y="224.5" text-anchor="end">0,04</text><line class="gmaj" x1="78" y1="175.6" x2="872" y2="175.6"/><text class="ax" x="70" y="179.6" text-anchor="end">0,05</text><line class="gmin" x1="78" y1="138.8" x2="872" y2="138.8"/><text class="ax" x="70" y="142.8" text-anchor="end">0,06</text><line class="gmin" x1="78" y1="80.8" x2="872" y2="80.8"/><text class="ax" x="70" y="84.8" text-anchor="end">0,08</text><line class="gmaj" x1="78" y1="35.8" x2="872" y2="35.8"/><text class="ax" x="70" y="39.8" text-anchor="end">0,1</text></g>
+<rect class="trans" x="180.8" y="26" width="44.3" height="532"/>
+<polyline class="lam" points="104.9,26 107.9,35.3 110.8,44.6 113.7,53.9 116.7,63.1 119.6,72.4 122.6,81.7 125.5,91 128.5,100.3 131.4,109.6 134.3,118.8 137.3,128.1 140.2,137.4 143.2,146.7 146.1,156 149,165.3 152,174.5 154.9,183.8 157.9,193.1 160.8,202.4 163.8,211.7 166.7,221 169.6,230.2 172.6,239.5 175.5,248.8 178.5,258.1"/>
+<polyline class="lamx" points="180.8,265.5 183.8,274.8 186.7,284.1 189.6,293.4 192.6,302.7 195.5,311.9 198.5,321.2 201.4,330.5 204.4,339.8 207.3,349.1 210.2,358.4 213.2,367.6 216.1,376.9 219.1,386.2 222,395.5 224.9,404.8"/>
+<polyline class="front" points="762.8,485.9 714.4,460 665.8,432.2 601,392.3 551.5,359.3 501.6,323.4 451.2,283.9 400.1,240.1 353,195.8 300.1,140.6 260.3,94.5"/>
+<polyline class="cb" points="225.1,221 232.5,227.8 239.8,234.5 247.2,241.1 254.5,247.6 261.9,254.1 269.2,260.4 276.6,266.7 283.9,272.8 291.3,278.9 298.6,285 306,290.9 313.4,296.7 320.7,302.5 328.1,308.2 335.4,313.9 342.8,319.4 350.1,324.9 357.5,330.4 364.8,335.7 372.2,341 379.5,346.3 386.9,351.5 394.3,356.6 401.6,361.6 409,366.6 416.3,371.5 423.7,376.4 431,381.2 438.4,386 445.7,390.7 453.1,395.3 460.4,399.9 467.8,404.4 475.2,408.9 482.5,413.3 489.9,417.7 497.2,422 504.6,426.3 511.9,430.5 519.3,434.6 526.6,438.7 534,442.7 541.3,446.7 548.7,450.6 556.1,454.4 563.4,458.2 570.8,462 578.1,465.6 585.5,469.2 592.8,472.7 600.2,476.2 607.5,479.5 614.9,482.8 622.2,486 629.6,489.2 637,492.2 644.3,495.2 651.7,498.1 659,500.9 666.4,503.6 673.7,506.1 681.1,508.6 688.4,511 695.8,513.3 703.1,515.5 710.5,517.6 717.9,519.6 725.2,521.4 732.6,523.2 739.9,524.8 747.3,526.4 754.6,527.8 762,529.2 769.3,530.5 776.7,531.6 784,532.7 791.4,533.7 798.8,534.6 806.1,535.5 813.5,536.2 820.8,536.9 828.2,537.6 835.5,538.1 842.9,538.7 850.2,539.2 857.6,539.6 864.9,540"/>
+<text class="er" x="878" y="546.9">1·10⁻⁵</text>
+<polyline class="cb" points="225.1,220.8 232.5,227.6 239.8,234.2 247.2,240.8 254.5,247.3 261.9,253.8 269.2,260.1 276.6,266.3 283.9,272.4 291.3,278.5 298.6,284.5 306,290.4 313.4,296.2 320.7,301.9 328.1,307.6 335.4,313.1 342.8,318.6 350.1,324.1 357.5,329.4 364.8,334.7 372.2,339.9 379.5,345 386.9,350.1 394.3,355.1 401.6,360 409,364.8 416.3,369.6 423.7,374.2 431,378.9 438.4,383.4 445.7,387.9 453.1,392.2 460.4,396.5 467.8,400.8 475.2,404.9 482.5,408.9 489.9,412.9 497.2,416.8 504.6,420.6 511.9,424.3 519.3,427.8 526.6,431.3 534,434.7 541.3,438 548.7,441.2 556.1,444.2 563.4,447.2 570.8,450 578.1,452.7 585.5,455.3 592.8,457.8 600.2,460.2 607.5,462.4 614.9,464.5 622.2,466.5 629.6,468.4 637,470.1 644.3,471.8 651.7,473.3 659,474.7 666.4,476.1 673.7,477.3 681.1,478.4 688.4,479.4 695.8,480.4 703.1,481.2 710.5,482 717.9,482.8 725.2,483.4 732.6,484 739.9,484.5 747.3,485 754.6,485.5 762,485.9 769.3,486.2 776.7,486.5 784,486.8 791.4,487.1 798.8,487.3 806.1,487.5 813.5,487.7 820.8,487.9 828.2,488.1 835.5,488.2 842.9,488.3 850.2,488.4 857.6,488.5 864.9,488.6"/>
+<text class="er" x="878" y="492.8">5·10⁻⁵</text>
+<polyline class="cb" points="225.1,220.5 232.5,227.3 239.8,233.9 247.2,240.5 254.5,247 261.9,253.4 269.2,259.6 276.6,265.8 283.9,271.9 291.3,278 298.6,283.9 306,289.7 313.4,295.5 320.7,301.1 328.1,306.7 335.4,312.2 342.8,317.6 350.1,323 357.5,328.2 364.8,333.4 372.2,338.5 379.5,343.5 386.9,348.4 394.3,353.2 401.6,357.9 409,362.6 416.3,367.2 423.7,371.6 431,376 438.4,380.3 445.7,384.5 453.1,388.6 460.4,392.6 467.8,396.5 475.2,400.2 482.5,403.9 489.9,407.4 497.2,410.9 504.6,414.2 511.9,417.4 519.3,420.5 526.6,423.4 534,426.2 541.3,428.9 548.7,431.5 556.1,433.9 563.4,436.2 570.8,438.4 578.1,440.5 585.5,442.4 592.8,444.2 600.2,445.9 607.5,447.4 614.9,448.9 622.2,450.2 629.6,451.5 637,452.6 644.3,453.6 651.7,454.6 659,455.5 666.4,456.3 673.7,457 681.1,457.7 688.4,458.3 695.8,458.8 703.1,459.3 710.5,459.7 717.9,460.1 725.2,460.5 732.6,460.8 739.9,461.1 747.3,461.4 754.6,461.6 762,461.8 769.3,462 776.7,462.2 784,462.3 791.4,462.5 798.8,462.6 806.1,462.7 813.5,462.8 820.8,462.9 828.2,463 835.5,463 842.9,463.1 850.2,463.1 857.6,463.2 864.9,463.2"/>
+<text class="er" x="878" y="467.1">1·10⁻⁴</text>
+<polyline class="cb" points="225.1,220 232.5,226.7 239.8,233.3 247.2,239.9 254.5,246.3 261.9,252.6 269.2,258.8 276.6,264.9 283.9,270.9 291.3,276.9 298.6,282.7 306,288.4 313.4,294.1 320.7,299.6 328.1,305.1 335.4,310.4 342.8,315.7 350.1,320.8 357.5,325.9 364.8,330.8 372.2,335.7 379.5,340.5 386.9,345.1 394.3,349.7 401.6,354.1 409,358.4 416.3,362.6 423.7,366.7 431,370.7 438.4,374.6 445.7,378.3 453.1,381.9 460.4,385.4 467.8,388.7 475.2,391.9 482.5,395 489.9,398 497.2,400.7 504.6,403.4 511.9,405.9 519.3,408.3 526.6,410.5 534,412.7 541.3,414.6 548.7,416.5 556.1,418.2 563.4,419.8 570.8,421.3 578.1,422.6 585.5,423.9 592.8,425 600.2,426.1 607.5,427.1 614.9,428 622.2,428.8 629.6,429.5 637,430.2 644.3,430.8 651.7,431.3 659,431.8 666.4,432.2 673.7,432.7 681.1,433 688.4,433.3 695.8,433.6 703.1,433.9 710.5,434.1 717.9,434.3 725.2,434.5 732.6,434.7 739.9,434.8 747.3,435 754.6,435.1 762,435.2 769.3,435.3 776.7,435.4 784,435.5 791.4,435.5 798.8,435.6 806.1,435.7 813.5,435.7 820.8,435.7 828.2,435.8 835.5,435.8 842.9,435.9 850.2,435.9 857.6,435.9 864.9,435.9"/>
+<text class="er" x="878" y="439.6">2·10⁻⁴</text>
+<polyline class="cb" points="225.1,218.5 232.5,225.1 239.8,231.6 247.2,237.9 254.5,244.2 261.9,250.3 269.2,256.3 276.6,262.2 283.9,268 291.3,273.7 298.6,279.3 306,284.7 313.4,290 320.7,295.2 328.1,300.3 335.4,305.2 342.8,310.1 350.1,314.8 357.5,319.3 364.8,323.7 372.2,328 379.5,332.2 386.9,336.2 394.3,340.1 401.6,343.8 409,347.3 416.3,350.8 423.7,354 431,357.1 438.4,360.1 445.7,362.9 453.1,365.5 460.4,368 467.8,370.4 475.2,372.6 482.5,374.6 489.9,376.6 497.2,378.3 504.6,380 511.9,381.5 519.3,382.9 526.6,384.2 534,385.4 541.3,386.5 548.7,387.5 556.1,388.4 563.4,389.2 570.8,390 578.1,390.6 585.5,391.2 592.8,391.8 600.2,392.3 607.5,392.7 614.9,393.2 622.2,393.5 629.6,393.8 637,394.1 644.3,394.4 651.7,394.6 659,394.9 666.4,395 673.7,395.2 681.1,395.4 688.4,395.5 695.8,395.6 703.1,395.7 710.5,395.8 717.9,395.9 725.2,396 732.6,396.1 739.9,396.1 747.3,396.2 754.6,396.2 762,396.3 769.3,396.3 776.7,396.4 784,396.4 791.4,396.4 798.8,396.4 806.1,396.5 813.5,396.5 820.8,396.5 828.2,396.5 835.5,396.5 842.9,396.5 850.2,396.5 857.6,396.6 864.9,396.6"/>
+<text class="er" x="878" y="400.1">5·10⁻⁴</text>
+<polyline class="cb" points="225.1,216 232.5,222.4 239.8,228.7 247.2,234.8 254.5,240.8 261.9,246.6 269.2,252.3 276.6,257.9 283.9,263.4 291.3,268.7 298.6,273.8 306,278.8 313.4,283.7 320.7,288.4 328.1,292.9 335.4,297.3 342.8,301.6 350.1,305.6 357.5,309.6 364.8,313.3 372.2,316.9 379.5,320.3 386.9,323.5 394.3,326.6 401.6,329.5 409,332.3 416.3,334.9 423.7,337.3 431,339.6 438.4,341.7 445.7,343.6 453.1,345.5 460.4,347.2 467.8,348.7 475.2,350.1 482.5,351.5 489.9,352.7 497.2,353.8 504.6,354.8 511.9,355.7 519.3,356.5 526.6,357.3 534,358 541.3,358.6 548.7,359.1 556.1,359.6 563.4,360.1 570.8,360.5 578.1,360.9 585.5,361.2 592.8,361.5 600.2,361.8 607.5,362 614.9,362.2 622.2,362.4 629.6,362.6 637,362.7 644.3,362.9 651.7,363 659,363.1 666.4,363.2 673.7,363.3 681.1,363.3 688.4,363.4 695.8,363.5 703.1,363.5 710.5,363.6 717.9,363.6 725.2,363.7 732.6,363.7 739.9,363.7 747.3,363.8 754.6,363.8 762,363.8 769.3,363.8 776.7,363.8 784,363.9 791.4,363.9 798.8,363.9 806.1,363.9 813.5,363.9 820.8,363.9 828.2,363.9 835.5,363.9 842.9,363.9 850.2,363.9 857.6,363.9 864.9,363.9"/>
+<text class="er" x="878" y="367.5">0,001</text>
+<polyline class="cb" points="225.1,211.2 232.5,217.3 239.8,223.1 247.2,228.8 254.5,234.3 261.9,239.7 269.2,244.9 276.6,249.9 283.9,254.7 291.3,259.4 298.6,263.9 306,268.2 313.4,272.3 320.7,276.3 328.1,280 335.4,283.6 342.8,287 350.1,290.2 357.5,293.3 364.8,296.1 372.2,298.8 379.5,301.3 386.9,303.6 394.3,305.8 401.6,307.8 409,309.7 416.3,311.4 423.7,313 431,314.5 438.4,315.8 445.7,317.1 453.1,318.2 460.4,319.2 467.8,320.1 475.2,321 482.5,321.7 489.9,322.4 497.2,323 504.6,323.6 511.9,324.1 519.3,324.6 526.6,325 534,325.3 541.3,325.7 548.7,326 556.1,326.2 563.4,326.5 570.8,326.7 578.1,326.9 585.5,327 592.8,327.2 600.2,327.3 607.5,327.4 614.9,327.5 622.2,327.6 629.6,327.7 637,327.8 644.3,327.9 651.7,327.9 659,328 666.4,328 673.7,328.1 681.1,328.1 688.4,328.2 695.8,328.2 703.1,328.2 710.5,328.2 717.9,328.3 725.2,328.3 732.6,328.3 739.9,328.3 747.3,328.3 754.6,328.3 762,328.4 769.3,328.4 776.7,328.4 784,328.4 791.4,328.4 798.8,328.4 806.1,328.4 813.5,328.4 820.8,328.4 828.2,328.4 835.5,328.4 842.9,328.4 850.2,328.4 857.6,328.4 864.9,328.4"/>
+<text class="er" x="878" y="332">0,002</text>
+<polyline class="cb" points="225.1,202.3 232.5,207.7 239.8,212.8 247.2,217.8 254.5,222.6 261.9,227.2 269.2,231.5 276.6,235.7 283.9,239.7 291.3,243.4 298.6,247 306,250.4 313.4,253.5 320.7,256.5 328.1,259.3 335.4,261.9 342.8,264.3 350.1,266.5 357.5,268.6 364.8,270.5 372.2,272.3 379.5,273.9 386.9,275.4 394.3,276.8 401.6,278 409,279.1 416.3,280.2 423.7,281.1 431,282 438.4,282.7 445.7,283.4 453.1,284 460.4,284.6 467.8,285.1 475.2,285.6 482.5,286 489.9,286.4 497.2,286.7 504.6,287 511.9,287.2 519.3,287.5 526.6,287.7 534,287.9 541.3,288.1 548.7,288.2 556.1,288.3 563.4,288.5 570.8,288.6 578.1,288.7 585.5,288.8 592.8,288.8 600.2,288.9 607.5,289 614.9,289 622.2,289.1 629.6,289.1 637,289.2 644.3,289.2 651.7,289.2 659,289.3 666.4,289.3 673.7,289.3 681.1,289.3 688.4,289.3 695.8,289.4 703.1,289.4 710.5,289.4 717.9,289.4 725.2,289.4 732.6,289.4 739.9,289.4 747.3,289.4 754.6,289.4 762,289.4 769.3,289.4 776.7,289.4 784,289.4 791.4,289.5 798.8,289.5 806.1,289.5 813.5,289.5 820.8,289.5 828.2,289.5 835.5,289.5 842.9,289.5 850.2,289.5 857.6,289.5 864.9,289.5"/>
+<text class="er" x="878" y="293">0,004</text>
+<polyline class="cb" points="225.1,186.4 232.5,190.8 239.8,195 247.2,199 254.5,202.7 261.9,206.2 269.2,209.5 276.6,212.6 283.9,215.5 291.3,218.2 298.6,220.7 306,223 313.4,225.2 320.7,227.1 328.1,228.9 335.4,230.6 342.8,232.1 350.1,233.5 357.5,234.8 364.8,235.9 372.2,237 379.5,237.9 386.9,238.8 394.3,239.6 401.6,240.3 409,240.9 416.3,241.5 423.7,242 431,242.4 438.4,242.8 445.7,243.2 453.1,243.5 460.4,243.8 467.8,244.1 475.2,244.3 482.5,244.6 489.9,244.7 497.2,244.9 504.6,245.1 511.9,245.2 519.3,245.3 526.6,245.4 534,245.5 541.3,245.6 548.7,245.7 556.1,245.8 563.4,245.8 570.8,245.9 578.1,245.9 585.5,246 592.8,246 600.2,246 607.5,246.1 614.9,246.1 622.2,246.1 629.6,246.2 637,246.2 644.3,246.2 651.7,246.2 659,246.2 666.4,246.2 673.7,246.2 681.1,246.3 688.4,246.3 695.8,246.3 703.1,246.3 710.5,246.3 717.9,246.3 725.2,246.3 732.6,246.3 739.9,246.3 747.3,246.3 754.6,246.3 762,246.3 769.3,246.3 776.7,246.3 784,246.3 791.4,246.3 798.8,246.3 806.1,246.3 813.5,246.3 820.8,246.3 828.2,246.3 835.5,246.3 842.9,246.3 850.2,246.3 857.6,246.3 864.9,246.3"/>
+<text class="er" x="878" y="249.8">0,008</text>
+<polyline class="cb" points="225.1,163.3 232.5,166.6 239.8,169.7 247.2,172.6 254.5,175.3 261.9,177.8 269.2,180.1 276.6,182.2 283.9,184.2 291.3,186 298.6,187.6 306,189.1 313.4,190.4 320.7,191.7 328.1,192.8 335.4,193.8 342.8,194.7 350.1,195.5 357.5,196.3 364.8,197 372.2,197.6 379.5,198.1 386.9,198.6 394.3,199 401.6,199.4 409,199.8 416.3,200.1 423.7,200.4 431,200.6 438.4,200.9 445.7,201.1 453.1,201.3 460.4,201.4 467.8,201.6 475.2,201.7 482.5,201.8 489.9,201.9 497.2,202 504.6,202.1 511.9,202.2 519.3,202.2 526.6,202.3 534,202.3 541.3,202.4 548.7,202.4 556.1,202.5 563.4,202.5 570.8,202.5 578.1,202.5 585.5,202.6 592.8,202.6 600.2,202.6 607.5,202.6 614.9,202.6 622.2,202.7 629.6,202.7 637,202.7 644.3,202.7 651.7,202.7 659,202.7 666.4,202.7 673.7,202.7 681.1,202.7 688.4,202.7 695.8,202.7 703.1,202.7 710.5,202.7 717.9,202.7 725.2,202.7 732.6,202.7 739.9,202.7 747.3,202.7 754.6,202.7 762,202.7 769.3,202.8 776.7,202.8 784,202.8 791.4,202.8 798.8,202.8 806.1,202.8 813.5,202.8 820.8,202.8 828.2,202.8 835.5,202.8 842.9,202.8 850.2,202.8 857.6,202.8 864.9,202.8"/>
+<text class="er" x="878" y="206.3">0,015</text>
+<polyline class="cb" points="225.1,125.6 232.5,127.7 239.8,129.7 247.2,131.6 254.5,133.2 261.9,134.7 269.2,136.1 276.6,137.4 283.9,138.5 291.3,139.5 298.6,140.5 306,141.3 313.4,142 320.7,142.7 328.1,143.3 335.4,143.9 342.8,144.4 350.1,144.8 357.5,145.2 364.8,145.6 372.2,145.9 379.5,146.2 386.9,146.4 394.3,146.6 401.6,146.8 409,147 416.3,147.2 423.7,147.3 431,147.5 438.4,147.6 445.7,147.7 453.1,147.8 460.4,147.9 467.8,147.9 475.2,148 482.5,148.1 489.9,148.1 497.2,148.2 504.6,148.2 511.9,148.2 519.3,148.3 526.6,148.3 534,148.3 541.3,148.3 548.7,148.4 556.1,148.4 563.4,148.4 570.8,148.4 578.1,148.4 585.5,148.4 592.8,148.5 600.2,148.5 607.5,148.5 614.9,148.5 622.2,148.5 629.6,148.5 637,148.5 644.3,148.5 651.7,148.5 659,148.5 666.4,148.5 673.7,148.5 681.1,148.5 688.4,148.5 695.8,148.5 703.1,148.5 710.5,148.5 717.9,148.5 725.2,148.5 732.6,148.5 739.9,148.5 747.3,148.5 754.6,148.5 762,148.5 769.3,148.5 776.7,148.5 784,148.5 791.4,148.5 798.8,148.5 806.1,148.5 813.5,148.5 820.8,148.5 828.2,148.5 835.5,148.5 842.9,148.5 850.2,148.5 857.6,148.5 864.9,148.5"/>
+<text class="er" x="878" y="152">0,03</text>
+<polyline class="cb" points="225.1,88.6 232.5,90 239.8,91.4 247.2,92.6 254.5,93.7 261.9,94.7 269.2,95.6 276.6,96.4 283.9,97.1 291.3,97.8 298.6,98.3 306,98.9 313.4,99.3 320.7,99.8 328.1,100.1 335.4,100.5 342.8,100.8 350.1,101.1 357.5,101.3 364.8,101.5 372.2,101.7 379.5,101.9 386.9,102 394.3,102.2 401.6,102.3 409,102.4 416.3,102.5 423.7,102.6 431,102.7 438.4,102.7 445.7,102.8 453.1,102.9 460.4,102.9 467.8,103 475.2,103 482.5,103 489.9,103.1 497.2,103.1 504.6,103.1 511.9,103.1 519.3,103.2 526.6,103.2 534,103.2 541.3,103.2 548.7,103.2 556.1,103.2 563.4,103.2 570.8,103.2 578.1,103.3 585.5,103.3 592.8,103.3 600.2,103.3 607.5,103.3 614.9,103.3 622.2,103.3 629.6,103.3 637,103.3 644.3,103.3 651.7,103.3 659,103.3 666.4,103.3 673.7,103.3 681.1,103.3 688.4,103.3 695.8,103.3 703.1,103.3 710.5,103.3 717.9,103.3 725.2,103.3 732.6,103.3 739.9,103.3 747.3,103.3 754.6,103.3 762,103.3 769.3,103.3 776.7,103.3 784,103.3 791.4,103.3 798.8,103.3 806.1,103.3 813.5,103.3 820.8,103.3 828.2,103.3 835.5,103.3 842.9,103.3 850.2,103.3 857.6,103.3 864.9,103.3"/>
+<text class="er" x="878" y="106.8">0,05</text>
+<text class="ax" x="136.5" y="576" text-anchor="middle">10³</text>
+<text class="ax" x="283.6" y="576" text-anchor="middle">10⁴</text>
+<text class="ax" x="430.7" y="576" text-anchor="middle">10⁵</text>
+<text class="ax" x="577.8" y="576" text-anchor="middle">10⁶</text>
+<text class="ax" x="724.9" y="576" text-anchor="middle">10⁷</text>
+<text class="ax" x="872" y="576" text-anchor="middle">10⁸</text>
+<text class="ax" x="180.8" y="576" text-anchor="middle">2·10³</text>
+<rect class="frame" x="78" y="26" width="794" height="532"/>
+<text class="axt" x="475" y="600" text-anchor="middle">Nombre de Reynolds  Re = V D / ν</text>
+<text class="axt" transform="rotate(-90 22 292)" x="22" y="292" text-anchor="middle">Coefficient de perte de charge  λ</text>
+<text class="axt" x="878" y="36">ε/D</text>
+<text class="note" x="202.7" y="68.6">laminaire λ = 64/Re</text>
+<text class="note" x="183.6" y="40">transition</text>
+<text class="note" x="651.4" y="504.1">turbulent lisse</text>
+<text class="note" x="460.1" y="39.9">régime rugueux : λ ne dépend plus que de ε/D</text>
+    </svg>
+    <figcaption>Diagramme de Moody. Courbes bleues : Colebrook–White, une par rugosité relative \(\varepsilon/D\) (valeurs en marge droite). Droite brique à gauche : \(\lambda=64/Re\), laminaire, prolongée en tirets dans la bande de transition. Tireté vert : entrée en régime rugueux, au-delà duquel les courbes deviennent horizontales. Les courbes de cette figure sont calculées par itération de Colebrook, non décalquées.</figcaption>
+  </figure>
+  <h3>Lire le diagramme en quatre gestes</h3>
+  <ol>
+    <li><b>Calculer \(Re\)</b> et se placer sur l’axe horizontal.</li>
+    <li><b>Calculer \(\varepsilon/D\)</b> et repérer la courbe correspondante dans la marge de droite. Si la valeur tombe entre deux courbes, interpoler à vue — l’écart de \(\lambda\) entre deux courbes voisines est de quelques pour cent.</li>
+    <li><b>Monter à la verticale de \(Re\)</b> jusqu’à cette courbe.</li>
+    <li><b>Lire \(\lambda\)</b> sur l’axe vertical gauche. Deux chiffres significatifs sont tout ce qu’une lecture graphique autorise, et c’est suffisant.</li>
+  </ol>
+  <h3>Les quatre zones, et ce qu’elles signifient physiquement</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Zone</th><th>Aspect</th><th>Lecture physique</th></tr></thead>
+    <tbody>
+      <tr><td><b>Laminaire</b>, à gauche</td><td>Droite unique de pente −1</td><td>Les filets ne se mélangent pas. La paroi est « noyée » dans la sous-couche visqueuse : sa rugosité est invisible. Toutes les conduites sont sur la même droite.</td></tr>
+      <tr><td><b>Transition</b>, bande grisée</td><td>Zone sans courbe</td><td>L’écoulement hésite entre les deux régimes. Aucune prévision fiable : ne jamais dimensionner là.</td></tr>
+      <tr><td><b>Turbulent de transition</b>, faisceau incliné</td><td>Courbes décroissantes</td><td>Les aspérités commencent à percer la sous-couche visqueuse. \(\lambda\) dépend des deux paramètres. C’est le cas courant des réseaux d’eau.</td></tr>
+      <tr><td><b>Rugueux</b>, à droite du tireté</td><td>Courbes horizontales</td><td>Les aspérités sont entièrement dans la turbulence : seule la géométrie compte. \(\lambda\) ne dépend plus de \(Re\), donc <b>\(h_{lin}\propto V^{2}\) exactement</b>. Les abaques anciennes (Hazen–Williams, Scimemi) valent dans cette zone.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cle">
+    <strong>À quoi sert la zone rugueuse en projet</strong>
+    <p style="margin:0">Dès que la conduite y est, \(\lambda\) est un nombre fixe : plus d’itération, et la perte varie exactement comme le carré du débit. C’est ce qui autorise la courbe caractéristique parabolique \(h=rQ^2\) du réseau, celle qu’on croise avec la courbe de pompe. Hors de cette zone, \(r\) dérive légèrement avec le débit.</p>
+  </div>
+  <div class="cle piege">
+    <strong>Deux erreurs de lecture classiques</strong>
+    <ul style="margin:.2rem 0">
+      <li>Lire sur la courbe \(\varepsilon/D=0\) parce que « la conduite est lisse ». Une conduite lisse n’est pas une conduite d’\(\varepsilon\) nul : le PVC vaut \(\varepsilon/D\approx 10^{-4}\) en DN 100, et il rejoint le faisceau dès \(Re\approx 10^{6}\).</li>
+      <li>Oublier que les échelles sont logarithmiques : à mi-distance entre 0,02 et 0,04, on lit 0,028 et non 0,03.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">§ 6</span>Pertes singulières</h2>
+  <p class="chapo">Chaque accident de parcours — entrée, coude, vanne, Té, changement de section, sortie — détruit une fraction de l’énergie cinétique par décollement et tourbillons. On parle de perte singulière, locale ou accidentelle.</p>
+  \[ h_{sing}=K\,\frac{V^{2}}{2g}\qquad\text{puis}\qquad h_{sing,\,total}=\Big(\textstyle\sum K\Big)\frac{V^{2}}{2g} \]
+  <p>Le coefficient \(K\) est sans dimension, tabulé, et presque indépendant de \(Re\) en régime turbulent — ce qui explique qu’on n’itère jamais sur les singularités.</p>
+  <h3>Coefficients K usuels</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Singularité</th><th class="n">K</th><th>Remarque</th></tr></thead>
+    <tbody>
+      <tr><td>Entrée depuis un réservoir, bords vifs</td><td class="n">0,50</td><td>Le classique du départ de conduite.</td></tr>
+      <tr><td>Entrée arrondie (rayon ≥ 0,15 D)</td><td class="n">0,04 – 0,05</td><td>Dix fois moins : un congé coûte peu et rapporte.</td></tr>
+      <tr><td>Entrée en saillie dans le réservoir</td><td class="n">0,8 – 1,0</td><td>Tube rentrant, à éviter.</td></tr>
+      <tr><td>Sortie dans un réservoir</td><td class="n">1,00</td><td>Toute l’énergie cinétique est perdue dans la masse au repos ; \(K=1\) quelle que soit la forme.</td></tr>
+      <tr><td>Coude 90° à bords vifs</td><td class="n">1,1 – 1,3</td><td>Deux coudes vifs valent une sortie de réservoir.</td></tr>
+      <tr><td>Coude 90° standard (R ≈ D)</td><td class="n">0,75</td><td>Valeur de référence des raccords du commerce.</td></tr>
+      <tr><td>Coude 90° à grand rayon (R ≥ 4 D)</td><td class="n">0,2 – 0,3</td><td>Préférer en adduction dès que la place le permet.</td></tr>
+      <tr><td>Coude 45°</td><td class="n">0,35 – 0,4</td><td>Deux coudes à 45° &lt; un coude à 90°.</td></tr>
+      <tr><td>Vanne opercule grande ouverte</td><td class="n">0,15 – 0,2</td><td>Négligeable ouverte, dominante dès qu’on ferme.</td></tr>
+      <tr><td>Vanne opercule à moitié fermée</td><td class="n">5 – 6</td><td>Au ¾ fermée : 20 à 25. C’est le principe du réglage par vanne.</td></tr>
+      <tr><td>Vanne papillon grande ouverte</td><td class="n">0,3 – 0,5</td><td>L’obturateur reste dans la veine.</td></tr>
+      <tr><td>Clapet anti-retour à battant</td><td class="n">1,0 – 2,5</td><td>Souvent la plus grosse singularité d’un poste de pompage.</td></tr>
+      <tr><td>Té, passage direct</td><td class="n">0,3 – 0,4</td><td>Le fluide poursuit tout droit.</td></tr>
+      <tr><td>Té, passage latéral (prise ou dérivation)</td><td class="n">1,0 – 1,8</td><td>Le fluide tourne à 90° dans le raccord.</td></tr>
+      <tr><td>Crépine / panier de pied</td><td class="n">2 – 8</td><td>Selon le colmatage. Majorer sur un réseau en service.</td></tr>
+      <tr><td>Compteur d’eau</td><td class="n">5 – 15</td><td>À ne pas oublier sur un branchement.</td></tr>
+    </tbody>
+    <caption>Ordres de grandeur de projet. Les catalogues de fabricants donnent le \(K\) exact, ou directement une longueur équivalente, ou un \(K_v\) en m³/h sous 1 bar.</caption>
+  </table></div>
+  <h3>Les deux cas qui se calculent au lieu de se lire</h3>
+  <p><b>Élargissement brusque — perte de Borda.</b> Seul cas où la perte s’établit théoriquement, par le théorème des quantités de mouvement :</p>
+  \[ h=\frac{(V_1-V_2)^2}{2g}=\left(1-\frac{S_1}{S_2}\right)^{2}\frac{V_1^{2}}{2g} \]
+  <p>Si \(S_2\to\infty\) (débouché en réservoir), il reste \(h=V_1^2/2g\), soit \(K=1\) : la valeur du tableau n’est pas conventionnelle, elle se démontre.</p>
+  <p><b>Rétrécissement brusque.</b> La perte se produit en aval, par réexpansion après la section contractée ; on retient \(K\approx 0{,}5\) pour un rapport de sections sévère, rapporté à la vitesse <b>aval</b>, la plus grande.</p>
+  <h3>Longueur équivalente</h3>
+  <p>Pour comparer les deux familles de pertes dans la même unité, on convertit les accessoires en mètres de conduite dissipant autant. En écrivant \(\lambda\dfrac{L_{eq}}{D}=\sum K\) :</p>
+  \[ L_{eq}=\frac{\sum K\cdot D}{\lambda} \]
+  <p>C’est un outil de lecture, pas une longueur à commander : il permet de dire « ces six accessoires coûtent autant que cinquante mètres de tube », donc de savoir s’il faut les soigner ou les négliger. Noter que \(L_{eq}\) dépend de \(\lambda\), donc du régime.</p>
+  <div class="cle piege">
+    <strong>Le piège de la vitesse de référence</strong>
+    <p style="margin:0">Les \(K\) ne s’additionnent <b>que</b> s’ils sont rapportés à la même vitesse. Sur une conduite de diamètre constant, c’est automatique. Dès qu’il y a un changement de section, chaque \(K\) doit être ramené à la vitesse que sa table désigne — généralement la plus grande, donc celle du plus petit diamètre. Vérifier ce point avant de sommer.</p>
+  </div>
+  <div class="cle">
+    <strong>Peut-on négliger les singularités ?</strong>
+    <p style="margin:0">Comparer \(\sum K\) à \(\lambda L/D\). En adduction (\(L/D\) de l’ordre du millier), \(\lambda L/D\approx 20\) à 40 contre \(\sum K\approx 5\) : les singularités pèsent 10 à 20 %, à retenir mais non critiques. Sur un poste de pompage ou un montage d’atelier (\(L\) de quelques mètres), le rapport s’inverse complètement et les négliger fausse tout. La règle « on néglige en dessous de 5 % du linéaire » se vérifie, elle ne se suppose pas.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">§ 7</span>Les deux problèmes types</h2>
+  <p class="chapo">Toutes les questions du chapitre se ramènent à trois situations, dont deux seulement demandent une méthode particulière.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Problème</th><th>Donné</th><th>Cherché</th><th>Méthode</th></tr></thead>
+    <tbody>
+      <tr><td><b>Direct</b> — type 1</td><td>\(Q,\ D,\ L,\ \varepsilon\)</td><td>\(h_t\)</td><td>Direct : \(V\to Re\to\lambda\to h\). Une seule passe. <i>Exercice A</i></td></tr>
+      <tr><td><b>Inverse</b> — type 2</td><td>\(h_t\) ou \(H,\ D,\ L,\ \varepsilon\)</td><td>\(Q\)</td><td>Itératif : \(\lambda\) dépend de \(V\) cherché. <i>Exercice B</i></td></tr>
+      <tr><td><b>Dimensionnement</b> — type 3</td><td>\(Q,\ h_t\ \text{admissible},\ L\)</td><td>\(D\)</td><td>Itératif sur un \(D\) normalisé, puis vérification. On essaie un DN, on calcule \(h_t\), on compare.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Bilan de charge — l’équation qui porte tout</h3>
+  <p>Entre deux points 1 et 2 d’un même circuit, Bernoulli généralisé s’écrit :</p>
+  \[ \underbrace{z_1+\frac{p_1}{\rho g}+\frac{V_1^{2}}{2g}}_{\text{charge en 1}}+H_{pompe}=\underbrace{z_2+\frac{p_2}{\rho g}+\frac{V_2^{2}}{2g}}_{\text{charge en 2}}+h_{lin}+h_{sing} \]
+  <p>Entre <b>deux surfaces libres au repos</b> — le cas de l’exercice B — les trois simplifications tombent ensemble : \(p_1=p_2=p_{atm}\), \(V_1=V_2\approx 0\), et il ne reste que</p>
+  \[ H=z_1-z_2=h_{lin}+h_{sing} \]
+  <p>C’est-à-dire : <b>toute la dénivelée disponible est dissipée</b>. C’est l’équation de départ de tout problème inverse.</p>
+  <div class="cle piege">
+    <strong>Sortie en jet libre</strong>
+    <p style="margin:0">Si la conduite débouche à l’air libre au lieu de plonger dans un réservoir, l’énergie cinétique terminale \(V^2/2g\) n’est pas une perte mais une sortie utile : il faut alors <b>retirer le \(K=1\) de sortie</b> et porter ce terme dans le membre de gauche. Lire l’énoncé et regarder le schéma avant d’écrire le bilan.</p>
+  </div>
+</section>
+
+<section class="exo" id="exo-a">
+  <h2><span class="no">Exercice A</span>Problème direct — conduite avec accessoires</h2>
+  <p class="chapo">Débit connu, perte cherchée. On traverse toute la chaîne du § 1 une seule fois, puis on sépare les deux familles de pertes pour en comparer le poids.</p>
+  <div class="enonce">
+    <p><b>Énoncé.</b> Une conduite en <b>acier galvanisé</b> relie un réservoir surélevé à un réservoir de distribution. Elle mesure \(L=250\) m de longueur et son diamètre intérieur est \(D=150\) mm. Elle transporte un débit d’eau \(Q=30\) L/s à 20 °C (\(\nu=10^{-6}\) m²/s). La rugosité absolue est \(\varepsilon=0{,}1\) mm. Le parcours comporte les accessoires suivants :</p>
+    <div class="scroll"><table style="margin:.4rem 0 .5rem">
+      <thead><tr><th>Accessoire</th><th class="n">Nombre</th><th class="n">K unitaire</th><th class="n">ΣK partiel</th></tr></thead>
+      <tbody>
+        <tr><td>Entrée depuis le réservoir, bords vifs</td><td class="n">1</td><td class="n">0,50</td><td class="n">0,50</td></tr>
+        <tr><td>Coude 90° standard</td><td class="n">4</td><td class="n">0,75</td><td class="n">3,00</td></tr>
+        <tr><td>Clapet anti-retour à battant</td><td class="n">1</td><td class="n">1,40</td><td class="n">1,40</td></tr>
+        <tr><td>Té, passage direct</td><td class="n">1</td><td class="n">0,40</td><td class="n">0,40</td></tr>
+        <tr><td>Vanne opercule grande ouverte</td><td class="n">1</td><td class="n">0,20</td><td class="n">0,20</td></tr>
+        <tr><td>Sortie dans le réservoir aval</td><td class="n">1</td><td class="n">1,00</td><td class="n">1,00</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="3">Somme des coefficients de pertes singulières</td><td class="n">ΣK = 6,50</td></tr></tfoot>
+    </table></div>
+    <p><b>Questions.</b> 1 · Calculer la vitesse moyenne et le nombre de Reynolds ; préciser le régime. 2 · Déterminer \(\lambda\) par Colebrook–White, et le vérifier sur le diagramme de Moody. 3 · Calculer la perte linéaire et la perte singulière totale. 4 · En déduire la perte de charge totale et la part des singularités. 5 · Exprimer les accessoires en longueur équivalente de conduite.</p>
+  </div>
+
+  <div class="etape"><b>1</b><h4>Section, vitesse et hauteur dynamique</h4>
+    <p>Le diamètre passe en mètres et le débit en m³/s avant tout calcul.</p>
+    <div class="calc">D = 150 mm = 0,150 m          Q = 30 L/s = 0,030 m³/s
+S = πD²/4 = π × 0,150² / 4   = 0,017671 m²
+V = Q / S = 0,030 / 0,017671 = 1,6977 m/s
+V²/(2g) = 1,6977² / (2 × 9,81) = 2,8822 / 19,62 = 0,14689 m</div>
+    <p>La vitesse est dans la plage usuelle de 1 à 2 m/s des conduites d’adduction. La hauteur dynamique, 0,147 m, sera le facteur commun aux deux familles de pertes : il est économique de la calculer dès maintenant.</p>
+  </div>
+
+  <div class="etape"><b>2</b><h4>Régime d’écoulement</h4>
+    <div class="calc">Re = V·D / ν = 1,6977 × 0,150 / 10⁻⁶ = 2,546 × 10⁵
+ε/D = 0,1 / 150 = 6,667 × 10⁻⁴   (sans dimension)</div>
+    <p>\(Re=2{,}5\cdot10^{5}\gg 4\,000\) : l’écoulement est <b>franchement turbulent</b>. Il faut donc Colebrook, et non \(\lambda=64/Re\) — qui donnerait ici 0,00025, absurde pour un \(\lambda\).</p>
+  </div>
+
+  <div class="etape"><b>3</b><h4>Coefficient λ par itération de Colebrook–White</h4>
+    <p>La formule \(1/\sqrt\lambda=-2\log_{10}\!\big[\varepsilon/(3{,}7D)+2{,}51/(Re\sqrt\lambda)\big]\) est implicite. Le premier terme de la parenthèse est fixe :</p>
+    <div class="calc">ε/(3,7D) = 6,667×10⁻⁴ / 3,7 = 1,8019 × 10⁻⁴   (constant)</div>
+    <p>On part de \(\lambda_0=0{,}02\) et on boucle :</p>
+    <div class="scroll"><table>
+      <thead><tr><th class="n">Tour</th><th class="n">λ en entrée</th><th class="n">2,51/(Re√λ)</th><th class="n">Parenthèse</th><th class="n">λ en sortie</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td class="n">0,020 000</td><td class="n">6,970 × 10⁻⁵</td><td class="n">2,4989 × 10⁻⁴</td><td class="n">0,019 266</td></tr>
+        <tr><td class="n">2</td><td class="n">0,019 266</td><td class="n">7,100 × 10⁻⁵</td><td class="n">2,5119 × 10⁻⁴</td><td class="n">0,019 290</td></tr>
+        <tr><td class="n">3</td><td class="n">0,019 290</td><td class="n">7,096 × 10⁻⁵</td><td class="n">2,5115 × 10⁻⁴</td><td class="n">0,019 289</td></tr>
+        <tr><td class="n">4</td><td class="n">0,019 289</td><td class="n">7,096 × 10⁻⁵</td><td class="n">2,5115 × 10⁻⁴</td><td class="n">0,019 289</td></tr>
+      </tbody>
+      <caption>Le quatrième tour confirme le troisième : c’est le critère d’arrêt. Deux tours suffisaient pour les trois chiffres utiles.</caption>
+    </table></div>
+    <div class="res"><b>Résultat de l’étape</b>\(\lambda=0{,}0193\)</div>
+    <p><b>Contrôles.</b> Sur le diagramme du § 5, l’intersection de \(Re=2{,}5\cdot10^{5}\) avec la courbe \(\varepsilon/D\approx 7\cdot10^{-4}\) se lit entre 0,019 et 0,020 : la lecture graphique confirme l’itération. Swamee–Jain donne 0,01942 et Haaland 0,01916, soit moins de 0,7 % d’écart de part et d’autre : les explicites du § 4 tiennent leur promesse. Enfin, le terme visqueux (7,1·10⁻⁵) reste inférieur au terme de rugosité (1,80·10⁻⁴) sans l’écraser : on est bien dans le régime turbulent de transition, celui du faisceau incliné — \(\lambda\) dépend encore un peu du débit.</p>
+  </div>
+
+  <div class="etape"><b>4</b><h4>Perte linéaire</h4>
+    <div class="calc">L/D = 250 / 0,150 = 1 666,7
+h_lin = λ · (L/D) · V²/(2g)
+      = 0,019289 × 1 666,7 × 0,14689
+      = 32,15 × 0,14689 = 4,722 m</div>
+    <p>Le nombre intermédiaire \(\lambda L/D=32{,}15\) est celui qu’il faut retenir : c’est lui qui se comparera directement à \(\sum K\).</p>
+  </div>
+
+  <div class="etape"><b>5</b><h4>Pertes singulières</h4>
+    <p>Le diamètre est constant sur tout le parcours : tous les \(K\) se rapportent à la même vitesse et s’additionnent sans correction.</p>
+    <div class="calc">h_sing = ΣK · V²/(2g) = 6,50 × 0,14689 = 0,9548 m</div>
+  </div>
+
+  <div class="etape"><b>6</b><h4>Perte totale et partage</h4>
+    <div class="calc">h_t = h_lin + h_sing = 4,722 + 0,955 = 5,677 m
+
+Part des singularités = 0,955 / 5,677 = 16,8 %
+Rapport des coefficients : ΣK / (λL/D) = 6,50 / 32,15 = 0,202</div>
+    <div class="res"><b>Réponse</b>\(h_t=5{,}68\) m, dont 4,72 m de perte linéaire (83,2 %) et 0,95 m de pertes singulières (16,8 %).</div>
+    <p>Les deux lectures du partage concordent, comme il se doit : le rapport des coefficients, 0,202, et le rapport des pertes, 0,955/4,722 = 0,202. Le partage ne dépend donc <b>presque pas</b> du débit : il ne dérive qu’à travers \(\lambda\). À débit doublé, \(\lambda\) tombe à 0,0186 et la part singulière ne monte qu’à 17,3 % — autant dire qu’elle est fixe. Un sixième de la perte vient des accessoires : trop pour être négligé, pas assez pour justifier de les reprendre.</p>
+  </div>
+
+  <div class="etape"><b>7</b><h4>Longueur équivalente</h4>
+    <div class="calc">L_eq = ΣK · D / λ = 6,50 × 0,150 / 0,019289 = 50,5 m</div>
+    <p>Les six accessoires dissipent autant que 50,5 m de cette conduite, soit 20 % de sa longueur réelle — la même information que les 16,8 %, exprimée dans une unité qui parle au projeteur : « ce clapet et ces quatre coudes me coûtent cinquante mètres de tube ».</p>
+    <div class="cle">
+      <strong>Pour aller plus loin, sans calcul nouveau</strong>
+      <ul style="margin:.2rem 0">
+        <li><b>Remplacer les quatre coudes standard par des coudes à grand rayon</b> (\(K=0{,}3\)) ramène \(\sum K\) à 4,70 et \(h_t\) à 5,41 m : 0,26 m gagné pour un simple changement de raccords.</li>
+        <li><b>Passer en DN 200</b> au même débit : \(V=0{,}955\) m/s, \(V^2/2g=0{,}0465\) m, \(\lambda=0{,}0189\), et \(h_t\) tombe à <b>1,40 m</b> — la perte est divisée par 4,05. Le détail confirme le § 2 : la part linéaire est divisée par 4,30 (le \(D^{-5}\), un peu amplifié par la baisse de \(\lambda\)), la part singulière par 3,16 seulement, soit exactement \((200/150)^4\), car elle ne suit qu’en \(D^{-4}\). Le total se place entre les deux.</li>
+        <li><b>Si la conduite était en fonte incrustée</b> (\(\varepsilon=2\) mm, \(\varepsilon/D=0{,}0133\)) : \(\lambda\approx 0{,}0421\), soit \(h_{lin}\approx 10{,}3\) m et \(h_t\approx 11{,}3\) m. Le vieillissement du réseau <b>double</b> la perte à débit égal : c’est l’argument chiffré d’une réhabilitation.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="exo" id="exo-b">
+  <h2><span class="no">Exercice B</span>Problème inverse — débit sous charge disponible</h2>
+  <p class="chapo">Charge connue, débit cherché. Comme \(\lambda\) dépend du Reynolds, donc de la vitesse que l’on cherche, la chaîne du § 1 ne peut pas être parcourue d’un trait : il faut boucler.</p>
+  <div class="enonce">
+    <p><b>Énoncé.</b> Deux réservoirs à surface libre sont reliés par une conduite en <b>acier galvanisé</b> de diamètre intérieur \(D=200\) mm et de longueur \(L=400\) m, de rugosité \(\varepsilon=0{,}15\) mm. La dénivelée entre les deux plans d’eau est \(H=12\) m, maintenue constante. L’eau est à 20 °C (\(\nu=10^{-6}\) m²/s). Le parcours comporte : une entrée à bords vifs (\(K=0{,}50\)), trois coudes 90° à rayon moyen (\(K=0{,}50\) chacun), une vanne opercule grande ouverte (\(K=0{,}20\)), un clapet anti-retour (\(K=1{,}30\)) et la sortie dans le réservoir aval (\(K=1{,}00\)), soit \(\sum K=4{,}50\).</p>
+    <p><b>Questions.</b> 1 · Écrire le bilan de charge entre les deux plans d’eau. 2 · Mettre l’équation sous la forme qui donne \(V\). 3 · Résoudre par itérations et donner \(V\), \(Q\), \(Re\) et \(\lambda\). 4 · Vérifier le bilan. 5 · Que devient le débit si la dénivelée est doublée ?</p>
+  </div>
+
+  <div class="etape"><b>1</b><h4>Bilan de charge entre les deux surfaces libres</h4>
+    <p>Bernoulli généralisé entre le plan d’eau amont (1) et le plan d’eau aval (2). Les deux surfaces sont à l’air libre et pratiquement au repos :</p>
+    <div class="calc">p₁ = p₂ = p_atm        →  les termes de pression s'annulent
+V₁ ≈ V₂ ≈ 0            →  les termes cinétiques disparaissent
+                           (section du réservoir ≫ section de la conduite)
+Il reste :  H = z₁ − z₂ = h_lin + h_sing = 12 m</div>
+    <p>Toute la dénivelée disponible est dissipée en frottements. Aucune hypothèse supplémentaire n’est nécessaire : c’est l’équation complète du problème.</p>
+  </div>
+
+  <div class="etape"><b>2</b><h4>Mise en équation</h4>
+    <p>En remplaçant chaque perte par son expression, le facteur \(V^2/2g\) se met en facteur :</p>
+    \[ H=\left[\lambda\frac{L}{D}+\sum K\right]\frac{V^{2}}{2g} \qquad\Longrightarrow\qquad V=\sqrt{\frac{2gH}{\lambda\dfrac{L}{D}+\sum K}} \]
+    <div class="calc">L/D = 400 / 0,200 = 2 000        ΣK = 4,50
+S = πD²/4 = π × 0,200² / 4 = 0,031416 m²
+2gH = 2 × 9,81 × 12 = 235,44 m²/s²</div>
+    <p><b>Pourquoi itérer.</b> Le \(V^2\) ne gêne pas : la racine carrée le règle. L’obstacle est que \(\lambda=\lambda(Re,\varepsilon/D)\) avec \(Re=VD/\nu\) : on ne peut pas écrire \(\lambda\) avant de connaître \(V\), et on ne peut pas calculer \(V\) sans \(\lambda\). D’où la boucle.</p>
+  </div>
+
+  <div class="etape"><b>3</b><h4>Résolution par itérations</h4>
+    <p>On amorce avec \(\lambda_0=0{,}02\), l’ordre de grandeur de tout écoulement turbulent d’eau, puis on enchaîne \(\lambda\to V\to Re\to\lambda'\). La rugosité relative est fixe : \(\varepsilon/D=0{,}15/200=7{,}5\cdot10^{-4}\).</p>
+    <div class="scroll"><table>
+      <thead><tr><th class="n">Tour</th><th class="n">λ</th><th class="n">λL/D + ΣK</th><th class="n">V (m/s)</th><th class="n">Re</th><th class="n">λ′ (Colebrook)</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td class="n">0,020 000</td><td class="n">44,50</td><td class="n">2,3002</td><td class="n">4,600 × 10⁵</td><td class="n">0,019 121</td></tr>
+        <tr><td class="n">2</td><td class="n">0,019 121</td><td class="n">42,74</td><td class="n">2,3470</td><td class="n">4,694 × 10⁵</td><td class="n">0,019 106</td></tr>
+        <tr><td class="n">3</td><td class="n">0,019 106</td><td class="n">42,71</td><td class="n">2,3478</td><td class="n">4,696 × 10⁵</td><td class="n">0,019 106</td></tr>
+        <tr><td class="n">4</td><td class="n">0,019 106</td><td class="n">42,71</td><td class="n">2,3478</td><td class="n">4,696 × 10⁵</td><td class="n">0,019 106</td></tr>
+      </tbody>
+      <caption>Convergence au troisième tour, confirmée au quatrième. L’estimation initiale \(\lambda_0=0{,}02\) donnait déjà 2,30 m/s, à 2 % de la solution : la boucle est très peu sensible à l’amorce, car \(V\) varie comme \(\lambda^{-1/2}\) et amortit l’erreur de moitié.</caption>
+    </table></div>
+    <div class="calc">V = 2,348 m/s
+Q = V · S = 2,348 × 0,031416 = 0,07376 m³/s = 73,8 L/s</div>
+    <div class="res"><b>Réponse</b>\(V=2{,}35\) m/s, \(Q=73{,}8\) L/s, avec \(Re=4{,}70\cdot10^{5}\) et \(\lambda=0{,}0191\).</div>
+    <p>La vitesse de 2,35 m/s est un peu élevée pour une adduction gravitaire — on reste généralement sous 2 m/s pour limiter l’érosion et le coup de bélier. Si le débit n’est pas requis en totalité, une vanne de réglage permet de le brider ; le débit maximal calculé ici est celui que la conduite peut passer sous cette charge.</p>
+  </div>
+
+  <div class="etape"><b>4</b><h4>Vérification du bilan</h4>
+    <p>Un problème inverse se vérifie toujours en repassant par le problème direct avec le débit trouvé.</p>
+    <div class="calc">V²/(2g) = 2,3478² / 19,62 = 5,5122 / 19,62 = 0,28094 m
+
+h_lin  = λ (L/D) · V²/(2g) = 0,019106 × 2 000 × 0,28094 = 10,74 m
+h_sing = ΣK · V²/(2g)      = 4,50 × 0,28094            =  1,26 m
+                                                  somme = 12,00 m  =  H  ✓</div>
+    <p>Le bilan se referme exactement sur les 12 m de dénivelée : la solution est bonne. Les singularités pèsent ici 10,5 % de la perte totale, et \(\sum K=4{,}50\) contre \(\lambda L/D=38{,}2\) — on retrouve la règle du § 6 : une conduite longue est dominée par son frottement linéaire.</p>
+  </div>
+
+  <div class="etape"><b>5</b><h4>Si la dénivelée est doublée</h4>
+    <p>À \(\lambda\) figé, \(V\propto\sqrt H\) : doubler \(H\) devrait multiplier le débit par \(\sqrt2=1{,}414\). Mais \(V\) augmentant, \(Re\) augmente et \(\lambda\) baisse légèrement, ce qui fait gagner un peu plus. En reprenant la boucle avec \(H=24\) m :</p>
+    <div class="calc">H = 24 m  →  λ = 0,018 89 ;  V = 3,337 m/s ;  Q = 104,8 L/s
+Rapport des débits : 104,8 / 73,8 = 1,421   ( √2 = 1,414 )</div>
+    <p>L’écart avec la racine carrée est de 0,5 % : négligeable en pratique. <b>Retenir \(Q\propto\sqrt H\)</b>, et son corollaire \(h\propto Q^2\) — c’est la loi quadratique du réseau, celle qu’on croise avec la courbe caractéristique d’une pompe. Doubler le débit d’une conduite existante demanderait quatre fois la charge : autant dire qu’on change le diamètre.</p>
+    <div class="cle piege">
+      <strong>Erreur fréquente sur ce type d’exercice</strong>
+      <p style="margin:0">Écrire \(H=h_{lin}\) en oubliant \(\sum K\). Ici cela donnerait \(V=2{,}48\) m/s et \(Q=78{,}1\) L/s, soit <b>près de 6 % de surestimation du débit</b> — assez pour fausser un dimensionnement de station. À l’inverse, compter deux fois la sortie (une fois en \(K=1\), une fois en terme cinétique au second membre) sous-estime le débit d’autant.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">§ 8</span>Vérifications finales et ordres de grandeur</h2>
+  <p class="chapo">Avant de rendre une copie ou un calcul de projet, ces cinq contrôles coûtent une minute et rattrapent l’essentiel des erreurs.</p>
+  <ol>
+    <li><b>Les sans-dimension sont-ils plausibles ?</b> \(\varepsilon/D\) entre \(10^{-5}\) et \(10^{-2}\) ; \(\lambda\) entre 0,008 et 0,1 ; \(Re\) entre \(10^{4}\) et \(10^{7}\) pour de l’eau en conduite. Hors de ces plages, chercher une conversion oubliée avant de chercher autre chose.</li>
+    <li><b>La vitesse est-elle réaliste ?</b> 0,5 à 2 m/s en distribution, jusqu’à 3 m/s en refoulement court. 10 m/s signale une erreur de section ou un débit en m³/h pris pour des L/s.</li>
+    <li><b>Le gradient est-il raisonnable ?</b> \(J=h_{lin}/L\) vaut typiquement 1 à 10 m/km. Un gradient de 100 m/km dénonce un diamètre trop petit d’un ou deux crans.</li>
+    <li><b>Le partage linéaire / singulier est-il cohérent avec la géométrie ?</b> Conduite longue → le linéaire domine. Montage court → l’inverse. Si le résultat contredit la géométrie, un \(K\) est faux ou \(L/D\) est mal calculé.</li>
+    <li><b>Les unités de la réponse.</b> \(h\) en mètres de colonne d’eau ; pour des pascals ou des bars, multiplier par \(\rho g\) (1 bar ≈ 10,2 mCE).</li>
+  </ol>
+  <h3>Les six erreurs les plus coûteuses</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Erreur</th><th>Conséquence</th><th>Garde-fou</th></tr></thead>
+    <tbody>
+      <tr><td>\(\varepsilon\) en mm et \(D\) en m dans \(\varepsilon/D\)</td><td>\(\varepsilon/D\) mille fois trop grand, \(\lambda\) doublé</td><td>\(\varepsilon/D\) doit être petit : \(10^{-5}\) à \(10^{-2}\)</td></tr>
+      <tr><td>\(\lambda=64/Re\) appliqué en turbulent</td><td>\(\lambda\) ridicule, perte quasi nulle</td><td>Vérifier \(Re&lt;2\,000\) <b>avant</b> d’écrire 64/Re</td></tr>
+      <tr><td>\(D\) nominal pris pour \(D\) intérieur</td><td>Jusqu’à 10 % sur \(D\), donc 60 % sur \(h\) (en \(D^{-5}\))</td><td>Lire le diamètre intérieur au catalogue</td></tr>
+      <tr><td>\(\sum K\) oublié dans un problème inverse</td><td>Débit surestimé de 5 à 20 %</td><td>Toujours écrire la parenthèse complète \([\lambda L/D+\sum K]\)</td></tr>
+      <tr><td>\(K\) rapportés à des vitesses différentes</td><td>Pertes singulières fausses d’un facteur 2 ou plus</td><td>Un seul \(V\) de référence, ou conversion explicite</td></tr>
+      <tr><td>Sortie comptée deux fois (\(K=1\) et terme cinétique)</td><td>Débit sous-estimé</td><td>Un schéma coté : jet libre ou réservoir ?</td></tr>
+    </tbody>
+  </table></div>
+  <div class="cle bon">
+    <strong>Pour s’entraîner sur d’autres valeurs</strong>
+    <p style="margin:0">Les deux exercices ci-dessus existent dans l’<a href="exerciseur.html">exerciseur</a> sous les numéros <b>6.8</b> et <b>6.9</b>, avec des données modifiables : chaque jeu de valeurs produit sa propre correction détaillée, itérations de Colebrook comprises. Le <a href="labo.html">laboratoire virtuel</a> permet en complément de monter le circuit et d’en observer les lignes de charge.</p>
+  </div>
+</section>
+</main>
+<footer>Aide-mémoire — Pertes de charge · Mécanique des fluides, Génie civil S1 — ENIS Sfax · Dr. Ahmed Ksentini<br>Chapitre 6 du polycopié. Les courbes du diagramme de Moody sont calculées par itération de Colebrook–White.</footer>
+</body>
+</html>
