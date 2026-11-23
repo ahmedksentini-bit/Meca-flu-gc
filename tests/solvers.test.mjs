@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { solve, isClose, solvers } from "../src/solvers.js";
+import { solve, isClose, solvers, G } from "../src/solvers.js";
 import { warmups } from "../src/warmups.js";
 
 const exercise = solver => ({ solver });
@@ -329,6 +329,56 @@ assert.ok(brk.Fr1 > 1 && brk.Fr2 < 1);
 
 const jump5 = solvers.hydraulicJump({ y1: 1.5, V1: 20 }).values;
 assert.ok(jump5.Fr1 > 5 && jump5.y2 > 8);
+
+// Pertes de charge totales : les deux familles partagent V²/(2g), donc le partage
+// ne depend que du rapport de SigmaK a lambda·L/D — pas du debit.
+const pertes = solvers.totalLosses({ D: 150, L: 250, Q: 30, eps: 0.1, nu: 1, Ksum: 6.5 });
+const pv = pertes.values;
+assert.ok(isClose(pv.V, 1.6977, 1e-3), `V = ${pv.V}`);
+assert.ok(isClose(pv.Re, 254648, 1e-3), `Re = ${pv.Re}`);
+assert.ok(isClose(pv.f, 0.019289, 1e-3), `lambda = ${pv.f}`);
+assert.ok(isClose(pv.hLin, 4.7224, 1e-3) && isClose(pv.hSing, 0.9548, 1e-3), "h_lin / h_sing");
+assert.ok(isClose(pv.hTot, pv.hLin + pv.hSing, 1e-12), "h_t doit etre la somme exacte");
+assert.ok(pertes.steps.some(s => String(s[0]).includes("Itérations") && String(s[1]).includes("Itération 1")),
+  "le detail doit montrer les iterations de Colebrook");
+assert.ok(pertes.steps.some(s => String(s[0]).includes("Longueur équivalente")), "L_eq attendue dans le detail");
+
+// Le partage lineaire/singulier est invariant par changement de debit a lambda fige,
+// et la longueur equivalente vaut SigmaK·D/lambda.
+const doubleQ = solvers.totalLosses({ D: 150, L: 250, Q: 60, eps: 0.1, nu: 1, Ksum: 6.5 }).values;
+// A debit double, lambda baisse de 3,5 % : le partage derive d autant, pas plus.
+assert.ok(isClose(doubleQ.hSing / doubleQ.hLin, pv.hSing / pv.hLin, 0.05), "partage quasi invariant");
+assert.ok(doubleQ.hTot > 3.5 * pv.hTot && doubleQ.hTot < 4.1 * pv.hTot, "h varie a peu pres comme Q²");
+
+// Regime laminaire : la loi 64/Re prend le relais de Colebrook.
+const lamin = solvers.totalLosses({ D: 150, L: 250, Q: 0.1, eps: 0.1, nu: 100, Ksum: 2 });
+assert.ok(lamin.values.Re < 2000 && isClose(lamin.values.f, 64 / lamin.values.Re, 1e-9), "lambda = 64/Re");
+assert.ok(lamin.steps.some(s => String(s[0]).includes("Loi laminaire")), "le detail doit basculer en laminaire");
+
+// Probleme inverse : la charge disponible est entierement dissipee. La verification
+// doit refermer le bilan au micron pres sur 12 m — l iteration s arretant quand V est
+// stable a 1e-7 pres, exiger mieux reviendrait a tester le critere, pas la physique.
+const inverse = solvers.flowFromHead({ D: 200, L: 400, H: 12, eps: 0.15, nu: 1, Ksum: 4.5 });
+const iv = inverse.values;
+assert.ok(isClose(iv.V, 2.3478, 1e-3) && isClose(iv.Q, 73.759, 1e-3), `V = ${iv.V}, Q = ${iv.Q}`);
+assert.ok(isClose(iv.f, 0.019106, 1e-3), `lambda = ${iv.f}`);
+const bilan = (iv.f * 400 / 0.2 + 4.5) * iv.V ** 2 / (2 * G);
+assert.ok(Math.abs(bilan - 12) < 1e-6, `bilan de charge referme a ${bilan} au lieu de 12`);
+
+// Les deux solveurs sont coherents entre eux : la perte calculee au debit trouve
+// par flowFromHead doit redonner la denivelee de depart.
+const retour = solvers.totalLosses({ D: 200, L: 400, Q: iv.Q, eps: 0.15, nu: 1, Ksum: 4.5 }).values;
+assert.ok(isClose(retour.hTot, 12, 1e-6), `aller-retour : ${retour.hTot} au lieu de 12`);
+
+// Q varie comme la racine de H, a quelques pour cent pres (lambda baisse un peu).
+const h24 = solvers.flowFromHead({ D: 200, L: 400, H: 24, eps: 0.15, nu: 1, Ksum: 4.5 }).values;
+const rapport = h24.Q / iv.Q;
+assert.ok(rapport > Math.SQRT2 && rapport < 1.03 * Math.SQRT2, `Q(2H)/Q(H) = ${rapport}`);
+
+// L iteration doit converger et s arreter : pas de ligne repetee a l infini.
+const tours = inverse.steps.find(s => String(s[0]).includes("Itérations"))[1].split("\n")
+  .filter(l => l.startsWith("Itération")).length;
+assert.ok(tours >= 2 && tours <= 8, `${tours} iterations affichees`);
 
 assert.ok(isClose(100.024, 100));
 assert.ok(!isClose(103, 100));

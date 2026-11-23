@@ -609,6 +609,50 @@ export const warmups = {
       explain: "V₂ < V₁ donc une partie de V²/2g se reconvertit en pression. Borda retranche (V₁ − V₂)²/2g : la remontée de p est réelle, mais incomplète. Ce n’est pas un Venturi, il y a décollement."
     }
   ],
+  LOSSES_TOTAL_03: [
+    {
+      prompt: "Sur une conduite de 250 m en DN 150, le poids relatif des pertes singulières par rapport aux pertes linéaires est surtout gouverné par…",
+      choices: [
+        { id: "ratio", label: "la comparaison de ΣK avec λL/D" },
+        { id: "vit", label: "la vitesse, qui pénalise les singularités plus que le linéaire" },
+        { id: "rug", label: "la rugosité seule, les K n’en dépendant pas" }
+      ],
+      correct: "ratio",
+      explain: "h_t = [λ(L/D) + ΣK]·V²/(2g). Les deux termes partagent exactement le même V²/(2g) : la vitesse ne déplace donc pas le partage, elle amplifie les deux. Tout se joue entre le nombre λL/D (ici ≈ 0,019 × 1667 ≈ 32) et ΣK (ici 6,5) : la conduite longue l’emporte, mais 17 % de pertes singulières ne se négligent pas."
+    },
+    {
+      prompt: "La longueur équivalente L_eq = ΣK·D/λ sert à…",
+      choices: [
+        { id: "comp", label: "exprimer les accessoires en mètres de cette conduite" },
+        { id: "add", label: "majorer la longueur réelle pour la commande du tube" },
+        { id: "sing", label: "remplacer le calcul de λ par une lecture directe" }
+      ],
+      correct: "comp",
+      explain: "L_eq traduit ΣK en longueur de conduite dissipant autant : un ΣK de 6,5 à λ = 0,019 et D = 0,15 m vaut ≈ 51 m de tube. C’est un outil de comparaison, pas une quantité à acheter — et il dépend de λ, donc du régime."
+    }
+  ],
+  LOSSES_INVERSE_04: [
+    {
+      prompt: "Dans le problème inverse (H donné, Q cherché), pourquoi itère-t-on ?",
+      choices: [
+        { id: "lambda", label: "λ dépend de Re, donc de la vitesse que l’on cherche" },
+        { id: "nonlin", label: "parce que H est en V², équation du second degré" },
+        { id: "sing", label: "parce que les K varient avec le débit" }
+      ],
+      correct: "lambda",
+      explain: "Le V² se traite directement par une racine carrée ; ce n’est pas lui qui bloque. L’obstacle est λ = λ(Re, ε/D) avec Re = VD/ν : on ne peut pas écrire λ avant de connaître V. D’où la boucle λ₀ = 0,02 → V → Re → λ, qui converge en deux ou trois tours car V ∝ λ^(−1/2) amortit l’erreur."
+    },
+    {
+      prompt: "Si la dénivelée disponible H est doublée, le débit est…",
+      choices: [
+        { id: "sqrt", label: "multiplié par un peu moins que √2" },
+        { id: "two", label: "doublé, le débit étant proportionnel à la charge" },
+        { id: "same", label: "inchangé, H ne fixant que la pression" }
+      ],
+      correct: "sqrt",
+      explain: "V = √(2gH/[λL/D + ΣK]) : à λ figé, Q ∝ √H, soit ×1,41. Mais V augmente, donc Re aussi, donc λ baisse légèrement… ce qui fait gagner un peu plus que √2. L’écart reste de quelques pour cent : retenir la racine carrée."
+    }
+  ],
   SIM_FROUDE_01: [
     {
       prompt: "Sur ce modèle à surface libre (Froude), la vitesse en vraie grandeur, comparée au modèle, est…",
